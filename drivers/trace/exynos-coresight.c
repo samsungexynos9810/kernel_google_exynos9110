@@ -58,6 +58,8 @@ struct cs_dbg {
 };
 static struct cs_dbg dbg;
 
+
+extern struct atomic_notifier_head hardlockup_notifier_list;
 static DEFINE_SPINLOCK(debug_lock);
 static unsigned int cs_arm_arch;
 static unsigned int cs_reg_base;
@@ -96,8 +98,6 @@ static inline void dbg_os_unlock(void __iomem *base)
 }
 
 #ifdef CONFIG_EXYNOS_CORESIGHT_PC_INFO
-static int exynos_cs_stat;
-
 static inline u32 logical_to_phy_cpu(unsigned int cpu)
 {
 	u32 mpidr = cpu_logical_map(cpu);
@@ -112,28 +112,43 @@ static inline bool have_pc_offset(void __iomem *base)
 	 return !(CS_READ(base, DBGDEVID1) & 0xf);
 }
 
-unsigned long exynos_cs_get_pcval(int cpu)
+static int exynos_cs_lockup_handler(struct notifier_block *nb,
+					unsigned long l, void *core)
 {
-	unsigned long valLo, valHi;
+
+	unsigned long val, valHi, iter;
 	void __iomem *base;
+	char buf[KSYM_SYMBOL_LEN];
+	unsigned int *cpu = (unsigned int *)core;
 
-	if(!cpu_online(cpu) || !exynos_cpu.power_state(cpu))
-		return 0;
+	pr_err("CPU[%d] saved pc value\n", *cpu);
+	for (iter = 0; iter < ITERATION; iter++) {
+		if(!cpu_online(*cpu) || !exynos_cpu.power_state(*cpu))
+			return 0;
 
-	cpu = logical_to_phy_cpu(cpu);
-	base = dbg.cpu[cpu].base;
-	DBG_UNLOCK(base);
-	dbg_os_unlock(base);
-	valLo = CS_READ(base, DBGPCSRlo);
-	valHi = CS_READ(base, DBGPCSRhi);
-	dbg_os_lock(base);
-	DBG_LOCK(base);
+		base = dbg.cpu[*cpu].base;
+		DBG_UNLOCK(base);
+		dbg_os_unlock(base);
+		val = CS_READ(base, DBGPCSRlo);
+		valHi = CS_READ(base, DBGPCSRhi);
 
-	return ((valHi << 32UL) | valLo);
+		val |= (valHi << 32L);
+		if (have_pc_offset(base))
+			val -= 0x8;
+		if (MSB_MASKING == (MSB_MASKING & val))
+		val |= MSB_PADDING;
+
+		dbg_os_lock(base);
+		DBG_LOCK(base);
+
+		sprint_symbol(buf, val);
+		pr_err("      0x%016zx : %s\n",	val, buf);
+	}
+	return 0;
 }
-EXPORT_SYMBOL(exynos_cs_get_pcval);
 
-void exynos_cs_show_pcval(void)
+static int exynos_cs_panic_handler(struct notifier_block *np,
+				unsigned long l, void *msg)
 {
 	unsigned long flags;
 	unsigned int cpu, iter, curr_cpu;
@@ -141,19 +156,15 @@ void exynos_cs_show_pcval(void)
 	void __iomem *base;
 	char buf[KSYM_SYMBOL_LEN];
 
-	if (exynos_cs_stat < 0)
-		return;
-
 	if (num_online_cpus() <= 1)
-		return;
+		return 0;
 
 	spin_lock_irqsave(&debug_lock, flags);
 	curr_cpu = raw_smp_processor_id();
 
 	for (iter = 0; iter < ITERATION; iter++) {
 		for (cpu = 0; cpu < CORE_CNT; cpu++) {
-			u32 core = logical_to_phy_cpu(cpu);
-			base = dbg.cpu[core].base;
+			base = dbg.cpu[cpu].base;
 			exynos_cs_pc[cpu][iter] = 0;
 
 			if (!base || cpu == curr_cpu || !exynos_cpu.power_state(cpu))
@@ -192,35 +203,16 @@ void exynos_cs_show_pcval(void)
 				exynos_cs_pc[cpu][iter], buf);
 		}
 	}
+	return 0;
 }
-EXPORT_SYMBOL(exynos_cs_show_pcval);
 
-/* check sjtag status */
-static int __init exynos_cs_sjtag_init(void)
-{
-	void __iomem *sjtag_base;
-	unsigned int sjtag;
+static struct notifier_block exynos_cs_lockup_nb = {
+	.notifier_call = exynos_cs_lockup_handler,
+};
 
-	/* Check Secure JTAG */
-	sjtag_base = ioremap(cs_reg_base + CS_SJTAG_OFFSET, SZ_8);
-	if (!sjtag_base) {
-		pr_err("%s: cannot ioremap cs base.\n", __func__);
-		exynos_cs_stat = -ENOMEM;
-		goto err_func;
-	}
-
-	sjtag = __raw_readl(sjtag_base + SJTAG_STATUS);
-	iounmap(sjtag_base);
-
-	if (sjtag & SJTAG_SOFT_LOCK) {
-		exynos_cs_stat = -EIO;
-		goto err_func;
-	}
-
-	pr_info("exynos-coresight Secure Jtag state is soft unlock.\n");
-err_func:
-	return exynos_cs_stat;
-}
+static struct notifier_block exynos_cs_panic_nb = {
+	.notifier_call = exynos_cs_panic_handler,
+};
 #endif
 
 #ifdef CONFIG_EXYNOS_CORESIGHT_MAINTAIN_DBG_REG
@@ -515,27 +507,39 @@ static const struct of_device_id of_exynos_cs_matches[] __initconst= {
 static int exynos_cs_init_dt(void)
 {
 	struct device_node *np = NULL;
-	const unsigned int *cs_reg, *offset;
-	unsigned int cs_offset;
-	int len, i = 0;
+	unsigned int offset, sj_offset, val;
+	int ret = 0, i = 0, cpu;
+	void __iomem *sj_base;
 
 	np = of_find_matching_node(NULL, of_exynos_cs_matches);
 
-	cs_reg = of_get_property(np, "base", &len);
-	if (!cs_reg)
+	if (of_property_read_u32(np, "base", &cs_reg_base))
 		return -EINVAL;
 
-	cs_reg_base = be32_to_cpup(cs_reg);
+	if (of_property_read_u32(np, "sj-offset", &sj_offset))
+		sj_offset = CS_SJTAG_OFFSET;
+
+	sj_base = ioremap(cs_reg_base + sj_offset, SZ_8);
+	if (!sj_base) {
+		pr_err("%s: Failed ioremap sj-offset.\n", __func__);
+		return -ENOMEM;
+	}
+
+	val = __raw_readl(sj_base + SJTAG_STATUS);
+	iounmap(sj_base);
+
+	if (val & SJTAG_SOFT_LOCK)
+		return -EIO;
 
 	while ((np = of_find_node_by_type(np, "cs"))) {
-		offset = of_get_property(np, "dbg-offset", &len);
-		if (!offset)
+		ret = of_property_read_u32(np, "dbg-offset", &offset);
+		if (ret)
 			return -EINVAL;
 
-		cs_offset = be32_to_cpup(offset);
-		dbg.cpu[i].base = ioremap(cs_reg_base + cs_offset, SZ_4K);
-		if (!dbg.cpu[i].base) {
-			pr_err("%s: cannot ioremap cs base.\n", __func__);
+		cpu = logical_to_phy_cpu(i);
+		dbg.cpu[cpu].base = ioremap(cs_reg_base + offset, SZ_4K);
+		if (!dbg.cpu[cpu].base) {
+			pr_err("%s: Failed ioremap (%d).\n", __func__, i);
 			return -ENOMEM;
 		}
 
@@ -549,15 +553,19 @@ static int __init exynos_cs_init(void)
 	int ret = 0;
 
 	ret = exynos_cs_init_dt();
-	if (ret < 0)
+	if (ret < 0) {
+		pr_info("[Exynos Coresight] Failed get DT(%d).\n", ret);
 		goto err;
+	}
 
 	get_arm_arch_version();
 
 #ifdef CONFIG_EXYNOS_CORESIGHT_PC_INFO
-	ret = exynos_cs_sjtag_init();
-	if (ret < 0)
-		goto err;
+	atomic_notifier_chain_register(&hardlockup_notifier_list,
+			&exynos_cs_lockup_nb);
+	atomic_notifier_chain_register(&panic_notifier_list,
+			&exynos_cs_panic_nb);
+	pr_info("[Exynos Coresight] Success Init.\n");
 #endif
 #ifdef CONFIG_EXYNOS_CORESIGHT_MAINTAIN_DBG_REG
 	ret = exynos_cs_debug_init();
