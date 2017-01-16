@@ -158,6 +158,17 @@ void vb2_ion_set_cached(void *ctx, bool cached)
 }
 EXPORT_SYMBOL(vb2_ion_set_cached);
 
+void vb2_ion_set_noncoherent_dma_read(void *ctx, bool noncoherent)
+{
+	struct vb2_ion_context *vb2ctx = ctx;
+
+	if (noncoherent)
+		vb2ctx->flags |= VB2ION_CTX_UNCACHED_READ_DMA;
+	else
+		vb2ctx->flags &= ~VB2ION_CTX_UNCACHED_READ_DMA;
+}
+EXPORT_SYMBOL(vb2_ion_set_noncoherent_dma_read);
+
 int vb2_ion_set_alignment(void *ctx, size_t alignment)
 {
 	struct vb2_ion_context *vb2ctx = ctx;

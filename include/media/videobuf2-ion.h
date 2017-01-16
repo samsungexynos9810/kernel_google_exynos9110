@@ -85,6 +85,8 @@ struct vb2_buffer;
  * - vb2_ion_set_cached(): Changes cached attribute of the buffer which will be
  *   allocated after calling this function. Cached attribute of a buffer is
  *   effected when it is mapped to user with mmap() function call.
+ * - vb2_ion_set_noncoherent_dma_read(): Forces the DMA to read from system
+ *   memory even though it is capable of snooping CPU caches.
  * - vb2_ion_set_alignment(): Changes alignment requirement of the buffer which
  *   will be allocated after calling this function.
  *
@@ -109,6 +111,7 @@ void *vb2_ion_create_context(struct device *dev, size_t alignment, long flags);
 void vb2_ion_destroy_context(void *ctx);
 
 void vb2_ion_set_cached(void *ctx, bool cached);
+void vb2_ion_set_noncoherent_dma_read(void *ctx, bool noncoherent);
 int vb2_ion_set_alignment(void *ctx, size_t alignment);
 
 /* Data type of the cookie returned by vb2_plane_cookie() function call.
