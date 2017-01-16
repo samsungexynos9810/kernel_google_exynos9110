@@ -380,8 +380,8 @@ static void __init exynos_init_irq(void)
 #include <linux/pstore_ram.h>
 #include <linux/memblock.h>
 
-#define RAMOOPS_MEM_ADDR	0x41f00000
-#define RAMOOPS_MEM_SIZE	0x100000
+#define RAMOOPS_MEM_ADDR	0x41f80000
+#define RAMOOPS_MEM_SIZE	0x80000
 #define RAMOOPS_REC_SIZE	0x20000
 /* TODO: move to FDT */
 static struct ramoops_platform_data koi_ramoops_data = {
