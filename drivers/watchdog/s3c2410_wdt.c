@@ -133,6 +133,7 @@ struct s3c2410_wdt {
 	spinlock_t		lock;
 	unsigned long		wtcon_save;
 	unsigned long		wtdat_save;
+	unsigned long		freq;
 	struct watchdog_device	wdt_device;
 	struct notifier_block	freq_transition;
 	struct notifier_block	restart_handler;
@@ -352,7 +353,7 @@ static inline int s3c2410wdt_is_running(struct s3c2410_wdt *wdt)
 
 static int s3c2410wdt_set_min_max_timeout(struct s3c2410_wdt *wdt)
 {
-	unsigned long freq = clk_get_rate(wdt->rate_clock);
+	unsigned long freq = wdt->freq;
 
 	wdt->wdt_device.min_timeout = 1;
 	wdt->wdt_device.max_timeout = S3C2410_WTCNT_MAX *
@@ -364,7 +365,7 @@ static int s3c2410wdt_set_min_max_timeout(struct s3c2410_wdt *wdt)
 static int s3c2410wdt_set_heartbeat(struct watchdog_device *wdd, unsigned timeout)
 {
 	struct s3c2410_wdt *wdt = watchdog_get_drvdata(wdd);
-	unsigned long freq = clk_get_rate(wdt->rate_clock);
+	unsigned long freq = wdt->freq;
 	unsigned int count;
 	unsigned int divisor = 1;
 	unsigned long wtcon;
@@ -695,12 +696,13 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 
 	DBG("probe: mapped reg_base=%p\n", wdt->reg_base);
 
-		wdt->rate_clock = devm_clk_get(dev, "rate_watchdog");
+	wdt->rate_clock = devm_clk_get(dev, "rate_watchdog");
 	if (IS_ERR(wdt->rate_clock)) {
 		dev_err(dev, "failed to find watchdog rate clock source\n");
 		ret = PTR_ERR(wdt->rate_clock);
 		goto err;
 	}
+	wdt->freq = clk_get_rate(wdt->rate_clock);
 
 	wdt->gate_clock = devm_clk_get(dev, "gate_watchdog");
 	if (IS_ERR(wdt->gate_clock)) {
