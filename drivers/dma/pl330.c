@@ -1970,6 +1970,7 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 {
 	int chans = pl330->pcfg.num_chan;
 	int ret;
+#ifdef CONFIG_ARM64
 	dma_addr_t addr;
 
 	if (pl330->ddma.dev->of_node) {
@@ -1982,6 +1983,7 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 		if (pl330->wrapper)
 			pl330->inst_wrapper = of_dma_get_instwrapper_address(pl330->ddma.dev->of_node);
 	}
+#endif
 
 	/*
 	 * Alloc MicroCode buffer for 'chans' Channel threads.
@@ -2292,7 +2294,6 @@ static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned 
 			desc->status = FREE;
 			dma_cookie_complete(&desc->txd);
 		}
-
 		list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
 		list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
 		list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
