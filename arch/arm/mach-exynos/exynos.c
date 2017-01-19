@@ -98,6 +98,7 @@ static struct map_desc exynos3_iodesc[] __initdata = {
 	},
 };
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static struct map_desc exynos4_iodesc[] __initdata = {
 	{
 		.virtual	= (unsigned long)S3C_VA_SYS,
@@ -200,6 +201,7 @@ static struct map_desc exynos5_iodesc[] __initdata = {
 		.type		= MT_DEVICE,
 	},
 };
+#endif
 
 #if defined(CONFIG_SOC_EXYNOS3250)
 #define EXYNOS_RECOVERY_MODE	0xf
@@ -319,12 +321,13 @@ static int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
  */
 static void __init exynos_map_io(void)
 {
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	if (soc_is_exynos4())
 		iotable_init(exynos4_iodesc, ARRAY_SIZE(exynos4_iodesc));
 
 	if (soc_is_exynos5())
 		iotable_init(exynos5_iodesc, ARRAY_SIZE(exynos5_iodesc));
-
+#endif
 	if (soc_is_exynos3250())
 		iotable_init(exynos3_iodesc, ARRAY_SIZE(exynos3_iodesc));
 }
@@ -412,15 +415,16 @@ void espresso3250_power_off(void)
 
 static void __init exynos_dt_machine_init(void)
 {
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	struct device_node *i2c_np;
 	const char *i2c_compat = "samsung,s3c2440-i2c";
 	unsigned int tmp;
 	int id;
-
+#endif
 #if defined(CONFIG_SOC_EXYNOS3250)
 	pm_power_off = espresso3250_power_off;
 	platform_device_register(&koi_ramoops_device);
-#endif
+#else
 	/*
 	 * Exynos5's legacy i2c controller and new high speed i2c
 	 * controller have muxed interrupt sources. By default the
@@ -441,7 +445,7 @@ static void __init exynos_dt_machine_init(void)
 			}
 		}
 	}
-
+#endif
 	/*
 	 * This is called from smp_prepare_cpus if we've built for SMP, but
 	 * we still need to set it up for PM and firmware ops if not.

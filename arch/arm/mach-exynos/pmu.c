@@ -142,6 +142,7 @@ unsigned int exynos3250_list_feed[] = {
 	EXYNOS3_ISP_OPTION,
 };
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static const struct exynos_pmu_conf exynos4210_pmu_config[] = {
 	/* { .offset = offset, .val = { AFTR, LPA, SLEEP } */
 	{ S5P_ARM_CORE0_LOWPWR,			{ 0x0, 0x0, 0x2 } },
@@ -459,6 +460,7 @@ static unsigned int const exynos5_list_diable_wfi_wfe[] = {
 	EXYNOS5_FSYS_ARM_OPTION,
 	EXYNOS5_ISP_ARM_OPTION,
 };
+#endif
 
 static void exynos3250_init_pmu(void)
 {
@@ -474,6 +476,7 @@ static void exynos3250_init_pmu(void)
 	}
 }
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static void exynos5_init_pmu(void)
 {
 	unsigned int i;
@@ -506,6 +509,7 @@ static void exynos5_init_pmu(void)
 		pmu_raw_writel(tmp, exynos5_list_diable_wfi_wfe[i]);
 	}
 }
+#endif
 
 void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 {
@@ -538,26 +542,30 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 		}
 	}
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	if (soc_is_exynos5250())
 		exynos5_init_pmu();
+#endif
 
 	if (!soc_is_exynos3250())
 		for (i = 0; (exynos_pmu_config[i].offset != PMU_TABLE_END) ; i++)
 			pmu_raw_writel(exynos_pmu_config[i].val[mode],
 					exynos_pmu_config[i].offset);
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	if (soc_is_exynos4412()) {
 		for (i = 0; exynos4412_pmu_config[i].offset != PMU_TABLE_END ; i++)
 			pmu_raw_writel(exynos4412_pmu_config[i].val[mode],
 					exynos4412_pmu_config[i].offset);
 	}
-
+#endif
 }
 
 static int __init exynos_pmu_init(void)
 {
 	unsigned int value;
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	exynos_pmu_config = exynos4210_pmu_config;
 
 	if (soc_is_exynos4210()) {
@@ -582,6 +590,7 @@ static int __init exynos_pmu_init(void)
 		exynos_pmu_config = exynos5250_pmu_config;
 		pr_info("EXYNOS5250 PMU Initialize\n");
 	} else if (soc_is_exynos3250()) {
+#endif
 		/*
 		* To prevent form issuing new bus request form L2 memory system
 		* If core status is power down, should be set '1' to L2  power down
@@ -610,10 +619,11 @@ static int __init exynos_pmu_init(void)
 		exynos_pmu_config = exynos3250_pmu_config;
 		pr_info("EXYNOS3250 PMU Initialize\n");
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	} else {
 		pr_info("EXYNOS: PMU not supported\n");
 	}
-
+#endif
 	return 0;
 }
 arch_initcall(exynos_pmu_init);

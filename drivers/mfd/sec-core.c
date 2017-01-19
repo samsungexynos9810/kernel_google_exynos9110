@@ -50,6 +50,7 @@ unsigned int apm_status = 0;
 static DEFINE_MUTEX(sec_lock);
 #endif
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static struct mfd_cell s5m8751_devs[] = {
 	{
 		.name = "s5m8751-pmic",
@@ -93,6 +94,7 @@ static struct mfd_cell s2mps13_devs[] = {
 		.name = "s2m-rtc",
 	},
 };
+#endif
 
 static struct mfd_cell s2mps14_devs[] = {
 	{
@@ -102,6 +104,7 @@ static struct mfd_cell s2mps14_devs[] = {
 	},
 };
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static struct mfd_cell s2mps15_devs[] = {
 	{
 		.name = "s2mps15-pmic",
@@ -125,9 +128,10 @@ static struct mfd_cell s2mps16_devs[] = {
 		.name = "s2m-rtc",
 	},
 };
-
+#endif
 #ifdef CONFIG_OF
 static struct of_device_id sec_dt_match[] = {
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	{	.compatible = "samsung,s5m8767-pmic",
 		.data = (void *)S5M8767X,
 	},
@@ -137,9 +141,11 @@ static struct of_device_id sec_dt_match[] = {
 	{	.compatible = "samsung,s2mps11-pmic",
 		.data = (void *)S2MPS11X,
 	},
+#endif
 	{	.compatible = "samsung,s2mps14-pmic",
 		.data = (void *)S2MPS14X,
 	},
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	{	.compatible = "samsung,s2mps15-pmic",
 		.data = (void *)S2MPS15X,
 	},
@@ -149,6 +155,7 @@ static struct of_device_id sec_dt_match[] = {
 	{	.compatible = "samsung,s2mps16-pmic",
 		.data = (void *)S2MPS16X,
 	},
+#endif
 	{},
 };
 #endif
@@ -636,6 +643,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 	pm_runtime_set_active(sec_pmic->dev);
 
 	switch (sec_pmic->device_type) {
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	case S5M8751X:
 		ret = mfd_add_devices(sec_pmic->dev, -1, s5m8751_devs,
 				      ARRAY_SIZE(s5m8751_devs), NULL, 0, NULL);
@@ -656,10 +664,12 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps13_devs,
 				      ARRAY_SIZE(s2mps13_devs), NULL, 0, NULL);
 		break;
+#endif
 	case S2MPS14X:
 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps14_devs,
 				      ARRAY_SIZE(s2mps14_devs), NULL, 0, NULL);
 		break;
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	case S2MPS15X:
 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps15_devs,
 				      ARRAY_SIZE(s2mps15_devs), NULL, 0, NULL);
@@ -672,6 +682,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps16_devs,
 				      ARRAY_SIZE(s2mps16_devs), NULL, 0, NULL);
 		break;
+#endif
 	default:
 		/* If this happens the probe function is problem */
 		BUG();

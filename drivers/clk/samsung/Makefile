@@ -15,12 +15,16 @@ ifeq ($(CONFIG_SOC_EXYNOS8890), y)
 else
 	obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-pll.o
 endif
-obj-$(CONFIG_ARCH_EXYNOS)	+= clk-exynos-audss.o
-obj-$(CONFIG_ARCH_EXYNOS)	+= clk-exynos-clkout.o
+ifneq ($(CONFIG_SOC_EXYNOS3250),y)
+	obj-$(CONFIG_ARCH_EXYNOS)	+= clk-exynos-audss.o
+	obj-$(CONFIG_ARCH_EXYNOS)	+= clk-exynos-clkout.o
+endif
 obj-$(CONFIG_S3C2410_COMMON_CLK)+= clk-s3c2410.o
 obj-$(CONFIG_S3C2410_COMMON_DCLK)+= clk-s3c2410-dclk.o
 obj-$(CONFIG_S3C2412_COMMON_CLK)+= clk-s3c2412.o
 obj-$(CONFIG_S3C2443_COMMON_CLK)+= clk-s3c2443.o
 obj-$(CONFIG_ARCH_S3C64XX)	+= clk-s3c64xx.o
 obj-$(CONFIG_ARCH_S5PV210)	+= clk-s5pv210.o clk-s5pv210-audss.o
-obj-$(CONFIG_PWM_SAMSUNG)	+= clk-exynos-pwm.o
+ifneq ($(CONFIG_SOC_EXYNOS3250),y)
+	obj-$(CONFIG_PWM_SAMSUNG)	+= clk-exynos-pwm.o
+endif

@@ -102,6 +102,7 @@ static struct regmap_irq s2mps14_irqs[] = {
 	},
 };
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static struct regmap_irq s2mps15_irqs[] = {
 	[S2MPS15_IRQ_PWRONF] = {
 		.reg_offset = 0,
@@ -664,6 +665,7 @@ static struct regmap_irq s5m8763_irqs[] = {
 	},
 };
 #endif
+#endif
 
 #ifdef CONFIG_EXYNOS_MBOX
 
@@ -907,6 +909,7 @@ void sec_irq_exit(struct sec_pmic_dev *sec_pmic)
 
 #else /* CONFIG_EXYNOS_MBOX */
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static struct regmap_irq_chip s2mps16_irq_chip = {
 	.name = "s2mps16",
 	.irqs = s2mps16_irqs,
@@ -936,6 +939,7 @@ static struct regmap_irq_chip s2mps15_irq_chip = {
 	.mask_base = S2MPS15_REG_INT1M,
 	.ack_base = S2MPS15_REG_INT1,
 };
+#endif
 
 static struct regmap_irq_chip s2mps14_irq_chip = {
 	.name = "s2mps14",
@@ -947,6 +951,7 @@ static struct regmap_irq_chip s2mps14_irq_chip = {
 	.ack_base = S2MPS14_REG_INT1,
 };
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static struct regmap_irq_chip s2mps13_irq_chip = {
 	.name = "s2mps13",
 	.irqs = s2mps13_irqs,
@@ -986,6 +991,7 @@ static struct regmap_irq_chip s5m8763_irq_chip = {
 	.mask_base = S5M8763_REG_IRQM1,
 	.ack_base = S5M8763_REG_IRQ1,
 };
+#endif
 
 int sec_irq_init(struct sec_pmic_dev *sec_pmic)
 {
@@ -1000,6 +1006,7 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
 	}
 
 	switch (type) {
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	case S5M8763X:
 		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
 				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
@@ -1024,12 +1031,14 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
 				  sec_pmic->irq_base, &s2mps13_irq_chip,
 				  &sec_pmic->irq_data);
 		break;
+#endif
 	case S2MPS14X:
 		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
 				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
 				  sec_pmic->irq_base, &s2mps14_irq_chip,
 				  &sec_pmic->irq_data);
 		break;
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	case S2MPS15X:
 		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
 				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
@@ -1048,6 +1057,7 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
 				  sec_pmic->irq_base, &s2mps16_irq_chip,
 				  &sec_pmic->irq_data);
 		break;
+#endif
 	default:
 		dev_err(sec_pmic->dev, "Unknown device type %d\n",
 			sec_pmic->device_type);
