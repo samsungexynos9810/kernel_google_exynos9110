@@ -2294,9 +2294,12 @@ static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned 
 			desc->status = FREE;
 			dma_cookie_complete(&desc->txd);
 		}
+
+		spin_lock(&pl330->pool_lock);
 		list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
 		list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
 		list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
+		spin_unlock(&pl330->pool_lock);
 		spin_unlock_irqrestore(&pch->lock, flags);
 		break;
 	case DMA_SLAVE_CONFIG:
