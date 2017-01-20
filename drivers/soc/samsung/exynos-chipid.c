@@ -83,7 +83,7 @@ static const struct exynos_chipid_variant drv_data_exynos8895 = {
 	.sub_rev_bit	= 16,
 };
 
-static const struct of_device_id of_exynos_chipid_ids[] __initconst = {
+static const struct of_device_id of_exynos_chipid_ids[] = {
 	{
 		.compatible	= "samsung,exynos8890-chipid",
 		.data		= &drv_data_exynos8890,
