@@ -125,7 +125,7 @@ struct itmon_traceinfo {
 	unsigned int errcode;
 	bool read;
 	bool path_dirty;
-	bool trans_dirty;
+	bool snode_dirty;
 	bool dirty;
 	unsigned long from;
 	char buf[SZ_32];
@@ -775,22 +775,20 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
 	struct itmon_nodegroup *group = NULL;
 
-	if (!traceinfo->dirty || traceinfo->trans_dirty)
+	if (!traceinfo->dirty)
 		return;
-	else
-		traceinfo->trans_dirty = true;
 
 	pr_info("--------------------------------------------------------------------------\n"
 		"      Transaction Information\n\n"
 		"      > Master         : %s %s\n"
 		"      > Target         : %s\n"
-		"      > Target Address : 0x%zx %s\n"
+		"      > Target Address : 0x%lX %s\n"
 		"      > Type           : %s\n"
 		"      > Error code     : %s\n",
 		traceinfo->port, traceinfo->master ? traceinfo->master : "",
 		traceinfo->dest ? traceinfo->dest : "Unknown",
 		traceinfo->target_addr,
-		traceinfo->target_addr == INVALID_REMAPPING ?
+		(unsigned int)traceinfo->target_addr == INVALID_REMAPPING ?
 		"(Violation Access by CP maybe)" : "",
 		trans_type == TRANS_TYPE_READ ? "READ" : "WRITE",
 		itmon_errcode[traceinfo->errcode]);
@@ -895,8 +893,8 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 					traceinfo->master = NULL;
 			}
 			traceinfo->target_addr =
-				(unsigned long)(node->tracedata.ext_info_1
-				& GENMASK(3, 0) << 32ULL);
+				(((unsigned long)node->tracedata.ext_info_1
+				& GENMASK(3, 0)) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 			traceinfo->read = tracedata->read;
 			traceinfo->errcode = errcode;
@@ -951,27 +949,44 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 			else if (test_bit(FROM_CP_PERI, &traceinfo->from) && (!traceinfo->port))
 				traceinfo->port = CP_PERI_STR;
 
-			if (!traceinfo->port) {
+			/* In DREX Path, it should parsed again to find the master */
+			if (!strncmp(node->name, "DREX", strlen(node->name))) {
 				port = (struct itmon_rpathinfo *)
 					itmon_get_rpathinfo(itmon, axid, node->name);
-				if (port)
+				/* If it couldn't find port, keep previous information */
+				if (port) {
 					traceinfo->port = port->port_name;
-			}
-			if (!traceinfo->master && traceinfo->port) {
-				master = (struct itmon_masterinfo *)
-					 itmon_get_masterinfo(itmon, traceinfo->port,
-						userbit & GENMASK(2, 0));
-				if (master)
-					traceinfo->master = master->master_name;
+					master = (struct itmon_masterinfo *)
+						itmon_get_masterinfo(itmon, traceinfo->port,
+							userbit & GENMASK(2, 0));
+					if (master)
+						traceinfo->master = master->master_name;
+				}
+			} else {
+				/* If it has traceinfo->port, keep previous information */
+				if (!traceinfo->port) {
+					port = (struct itmon_rpathinfo *)
+						itmon_get_rpathinfo(itmon, axid, node->name);
+					if (port)
+						traceinfo->port = port->port_name;
+				}
+				if (!traceinfo->master && traceinfo->port) {
+					master = (struct itmon_masterinfo *)
+					itmon_get_masterinfo(itmon, traceinfo->port,
+								userbit & GENMASK(2, 0));
+					if (master)
+						traceinfo->master = master->master_name;
+				}
 			}
 		}
 		traceinfo->target_addr =
-			(unsigned long)(node->tracedata.ext_info_1
-			& GENMASK(3, 0) << 32ULL);
+			(((unsigned long)node->tracedata.ext_info_1
+			& GENMASK(3, 0)) << 32ULL);
 		traceinfo->target_addr |= node->tracedata.ext_info_0;
 		traceinfo->errcode = errcode;
 		traceinfo->dest = node->name;
 		traceinfo->dirty = true;
+		traceinfo->snode_dirty = true;
 		itmon_report_pathinfo(itmon, node, trans_type);
 		itmon_report_traceinfo(itmon, node, trans_type);
 		break;
@@ -1012,6 +1027,7 @@ static void itmon_report_rawdata(struct itmon_dev *itmon,
 static void itmon_route_tracedata(struct itmon_dev *itmon)
 {
 	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_traceinfo *traceinfo;
 	struct itmon_nodeinfo *node, *next_node;
 	unsigned int trans_type;
 	int i;
@@ -1024,8 +1040,10 @@ static void itmon_route_tracedata(struct itmon_dev *itmon)
 					itmon_report_tracedata(itmon, node, trans_type);
 			}
 		}
-		/* If there is no S_NODE and T_S_NODE and T_M_NODE, check one more */
-		itmon_report_traceinfo(itmon, NULL, trans_type);
+		/* If there is no S_NODE information, check one more */
+		traceinfo = &pdata->traceinfo[trans_type];
+		if (!traceinfo->snode_dirty)
+			itmon_report_traceinfo(itmon, NULL, trans_type);
 	}
 
 	if (pdata->traceinfo[TRANS_TYPE_READ].dirty ||
