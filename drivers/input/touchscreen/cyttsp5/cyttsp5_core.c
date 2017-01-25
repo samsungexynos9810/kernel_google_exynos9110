@@ -3484,25 +3484,25 @@ static void call_atten_cb(struct cyttsp5_core_data *cd,
 
 static void cyttsp5_start_wd_timer(struct cyttsp5_core_data *cd)
 {
-	if (!CY_WATCHDOG_TIMEOUT)
-		return;
-
+#if (CY_WATCHDOG_TIMEOUT > 0)
 	mod_timer(&cd->watchdog_timer, jiffies +
 			msecs_to_jiffies(CY_WATCHDOG_TIMEOUT));
+#endif
 }
 
 static void cyttsp5_stop_wd_timer(struct cyttsp5_core_data *cd)
 {
-	if (!CY_WATCHDOG_TIMEOUT)
-		return;
-
 	/*
 	 * Ensure we wait until the watchdog timer
 	 * running on a different CPU finishes
 	 */
+#if (CY_WATCHDOG_TIMEOUT > 0)
 	del_timer_sync(&cd->watchdog_timer);
+#endif
 	cancel_work_sync(&cd->watchdog_work);
+#if (CY_WATCHDOG_TIMEOUT > 0)
 	del_timer_sync(&cd->watchdog_timer);
+#endif
 }
 
 static int start_fw_upgrade(void *data)
@@ -3549,8 +3549,9 @@ queue_startup:
 
 		return;
 	}
-
+#if (CY_WATCHDOG_TIMEOUT > 0)
 	cyttsp5_start_wd_timer(cd);
+#endif
 }
 
 static void cyttsp5_watchdog_timer(unsigned long handle)
@@ -3888,9 +3889,10 @@ static int cyttsp5_parse_input(struct cyttsp5_core_data *cd)
 //	}
 
 	/* update watchdog expire time */
+#if (CY_WATCHDOG_TIMEOUT > 0)
 	mod_timer_pending(&cd->watchdog_timer, jiffies +
 			msecs_to_jiffies(CY_WATCHDOG_TIMEOUT));
-
+#endif
 	if (report_id != cd->sysinfo.desc.tch_report_id
 			&& report_id != cd->sysinfo.desc.btn_report_id
 			&& report_id != HID_SENSOR_DATA_REPORT_ID
@@ -4648,9 +4650,11 @@ static int cyttsp5_core_resume(struct device *dev)
 	} else {
 		dev_dbg(dev, "%s Device MAY NOT wakeup\n", __func__);
 	}
-
+#if (CY_WATCHDOG_TIMEOUT > 0)
 	cyttsp5_start_wd_timer(cd);
-
+#else
+	cyttsp5_watchdog_timer((unsigned long)cd);
+#endif
 	return 0;
 }
 #endif
@@ -5594,9 +5598,10 @@ int cyttsp5_probe(const struct cyttsp5_bus_ops *ops, struct device *dev,
 	}
 
 	/* Setup watchdog timer */
+#if (CY_WATCHDOG_TIMEOUT > 0)
 	setup_timer(&cd->watchdog_timer, cyttsp5_watchdog_timer,
 			(unsigned long)cd);
-
+#endif
 	cd->irq = irq;
 	rc = cyttsp5_setup_irq_gpio(cd);
 	if (rc < 0) {
@@ -5688,7 +5693,9 @@ error_startup:
 	remove_sysfs_interfaces(dev);
 error_attr_create:
 	free_irq(cd->irq, cd);
+#if (CY_WATCHDOG_TIMEOUT > 0)
 	del_timer(&cd->watchdog_timer);
+#endif
 error_setup_irq:
 error_detect:
 	if (cd->cpdata->init)
