@@ -2341,8 +2341,11 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
 	pl330_release_channel(pch->thread);
 	pch->thread = NULL;
 
-	if (pch->cyclic)
+	if (pch->cyclic) {
+		spin_lock(&pch->dmac->pool_lock);
 		list_splice_tail_init(&pch->work_list, &pch->dmac->desc_pool);
+		spin_unlock(&pch->dmac->pool_lock);
+	}
 
 	spin_unlock_irqrestore(&pch->lock, flags);
 
