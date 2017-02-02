@@ -281,8 +281,8 @@ unlock_child:
 	return err;
 }
 
-static int hash_sendmsg_nokey(struct socket *sock, struct msghdr *msg,
-			      size_t size)
+static int hash_sendmsg_nokey(struct kiocb *unused, struct socket *sock,
+			      struct msghdr *msg, size_t size)
 {
 	int err;
 
@@ -305,8 +305,8 @@ static ssize_t hash_sendpage_nokey(struct socket *sock, struct page *page,
 	return hash_sendpage(sock, page, offset, size, flags);
 }
 
-static int hash_recvmsg_nokey(struct socket *sock, struct msghdr *msg,
-			      size_t ignored, int flags)
+static int hash_recvmsg_nokey(struct kiocb *unused, struct socket *sock,
+			      struct msghdr *msg, size_t ignored, int flags)
 {
 	int err;
 
