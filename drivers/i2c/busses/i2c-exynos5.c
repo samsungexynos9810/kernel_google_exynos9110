@@ -1820,6 +1820,7 @@ static int exynos5_i2c_runtime_suspend(struct device *dev)
 
 	clk_disable(i2c->clk);
 	exynos_update_ip_idle_status(i2c->idle_ip_index, 1);
+	i2c->runtime_resumed = 0;
 
 	return 0;
 }
@@ -1832,6 +1833,7 @@ static int exynos5_i2c_runtime_resume(struct device *dev)
 
 	exynos_update_ip_idle_status(i2c->idle_ip_index, 0);
 	ret = clk_enable(i2c->clk);
+	i2c->runtime_resumed = 1;
 	if (ret) {
 		exynos_update_ip_idle_status(i2c->idle_ip_index, 1);
 		return ret;
