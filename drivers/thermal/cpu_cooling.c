@@ -405,6 +405,7 @@ static int lookup_static_power(struct cpufreq_cooling_device *cpufreq_device,
 		unsigned long voltage, int temperature, u32 *power)
 {
 	int volt_index = 0, temp_index = 0;
+	int index = 0;
 	int num_cpus;
 	int max_cpus;
 	struct cpumask *cpumask = &cpufreq_device->allowed_cpus;
@@ -442,7 +443,8 @@ static int lookup_static_power(struct cpufreq_cooling_device *cpufreq_device,
 	if (temp_index > cpufreq_device->var_temp_size)
 		temp_index = cpufreq_device->var_temp_size;
 
-	*power = (unsigned int)cpufreq_device->var_table[volt_index * (cpufreq_device->var_temp_size + 1) + temp_index] * num_cpus / max_cpus;
+	index = (int)(volt_index * (cpufreq_device->var_temp_size + 1) + temp_index);
+	*power = (unsigned int)cpufreq_device->var_table[index] * num_cpus / max_cpus;
 
 	return 0;
 }
