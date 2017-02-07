@@ -375,7 +375,7 @@ exit:
 	return fn ? fn(regs, instr) : 1;
 }
 
-asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
+asmlinkage void __exception do_undefinstr(struct pt_regs *regs, unsigned int esr)
 {
 	siginfo_t info;
 	void __user *pc = (void __user *)instruction_pointer(regs);
@@ -387,18 +387,17 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 	if (call_undef_hook(regs) == 0)
 		return;
 
-	if (unhandled_signal(current, SIGILL) && show_unhandled_signals_ratelimited()) {
-		pr_info("%s[%d]: undefined instruction: pc=%p\n",
-			current->comm, task_pid_nr(current), pc);
-		dump_instr(KERN_INFO, regs);
-	}
+	if (unhandled_signal(current, SIGILL) && show_unhandled_signals_ratelimited())
+		pr_info("%s[%d]: undefined instruction: pc=%p (0x%x)\n",
+			current->comm, task_pid_nr(current), pc, esr);
+	dump_instr(KERN_INFO, regs);
 
 	info.si_signo = SIGILL;
 	info.si_errno = 0;
 	info.si_code  = ILL_ILLOPC;
 	info.si_addr  = pc;
 
-	arm64_notify_die("Oops - undefined instruction", regs, &info, 0);
+	arm64_notify_die("Oops - undefined instruction", regs, &info, esr);
 }
 
 long compat_arm_syscall(struct pt_regs *regs);
