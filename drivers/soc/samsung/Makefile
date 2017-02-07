@@ -5,12 +5,10 @@
 #obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-pm.o
 #obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-pmu.o
 #obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-powermode.o
-ifdef CONFIG_SOC_EXYNOS3250
-obj-$(CONFIG_ARCH_EXYNOS)	+= dm_cpu_hotplug_exynos3250.o
-obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-psmw.o
-else
-obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-cpu_hotplug.o
-endif
+#ifdef CONFIG_HOTPLUG_EXYNOS3250
+#obj-$(CONFIG_ARCH_EXYNOS)	+= dm_cpu_hotplug_exynos3250.o
+#obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-psmw.o
+#endif
 
 # CAL
 obj-$(CONFIG_PWRCAL)            += pwrcal/
