@@ -492,6 +492,9 @@ static struct exynos_ss_item ess_items[] = {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_PSTORE
 	{"log_pstore",	{SZ_2M,		0, 0, true, true, true}, NULL ,NULL, 0},
 #endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_CACHEDUMP
+	{"log_cachedump", {SZ_4M,	0, 0, true, true, true}, NULL, NULL, 0},
+#endif
 #ifdef CONFIG_EXYNOS_CORESIGHT_ETR
 	{"log_etm",	{SZ_8M,		0, 0, true, true, true}, NULL ,NULL, 0},
 #endif
