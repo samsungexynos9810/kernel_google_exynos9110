@@ -1781,10 +1781,10 @@ void read_ecd_rc(void)
 				param->count_break = val;
 			break;
 		case 1:
-			strncpy(rc->setup[rc->setup_idx++], data, SZ_64);
+			strncpy(rc->setup[rc->setup_idx++], data, SZ_64 - 1);
 			break;
 		case 2:
-			strncpy(rc->action[rc->action_idx++], data, SZ_64);
+			strncpy(rc->action[rc->action_idx++], data, SZ_64 - 1);
 			break;
 		}
 		memset(data, 0, SZ_64);
@@ -1830,13 +1830,17 @@ int ecd_sysfs_init(struct device *dev)
 {
 	int ret = 0;
 	char path[SZ_256];
+	char *kobj_path;
 
 	ret = sysfs_create_groups(&dev->kobj, ecd_sysfs_groups);
-	if (ret)
+	if (ret) {
 		dev_err(dev, "fail to register debugger sysfs.\n");
+		return ret;
+	}
 
-	snprintf(path, SZ_256, "/sys%s/",
-			kobject_get_path(&dev->kobj, GFP_KERNEL));
+	kobj_path = kobject_get_path(&dev->kobj, GFP_KERNEL);
+	snprintf(path, SZ_256, "/sys%s/", kobj_path);
+	kfree(kobj_path);
 
 	if (!proc_symlink("ecd", NULL, path))
 		dev_warn(dev, "Can't create symbolic link\n");
@@ -1863,7 +1867,7 @@ static int ecd_probe(struct platform_device *pdev)
 	if (!initial_ecd_enable)
 		return -EINVAL;
 
-	inf = kzalloc(sizeof(*inf), GFP_KERNEL);
+	inf = devm_kzalloc(&pdev->dev, sizeof(*inf), GFP_KERNEL);
 	if (!inf) {
 		dev_err(&pdev->dev, "failed to allocate memory for driver");
 		return -ENOMEM;
@@ -1892,7 +1896,7 @@ static int ecd_probe(struct platform_device *pdev)
 	}
 	inf->pdev = pdev;
 	inf->pdata = pdata;
-	inf->output_buf = kzalloc(SZ_1K, GFP_KERNEL);
+	inf->output_buf = devm_kzalloc(&pdev->dev, SZ_1K, GFP_KERNEL);
 	inf->uart_irq = uart_irq;
 	inf->unhandled_irq = false;
 	interface = inf;
@@ -1908,7 +1912,7 @@ static int ecd_probe(struct platform_device *pdev)
 			goto err_uart_init;
 	}
 
-	ret = request_irq(uart_irq, ecd_uart_irq,
+	ret = devm_request_irq(&pdev->dev, uart_irq, ecd_uart_irq,
 			IRQF_NO_SUSPEND, "ecd_uart", inf);
 	if (ret) {
 		pr_err("%s: could not install irq handler\n", __func__);

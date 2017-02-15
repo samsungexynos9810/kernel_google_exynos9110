@@ -166,7 +166,7 @@ static int ecd_dev_probe(struct platform_device *pdev)
 	struct ecd_dev *dbg = NULL;
 	struct resource *res;
 
-	dbg = kzalloc(sizeof(struct ecd_dev), GFP_KERNEL);
+	dbg = devm_kzalloc(&pdev->dev, sizeof(struct ecd_dev), GFP_KERNEL);
 	if (!dbg) {
 		dev_err(&pdev->dev, "Failed to allocate dbg structure\n");
 		return -ENOMEM;
