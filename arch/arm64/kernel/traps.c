@@ -51,8 +51,10 @@ static const char *handler[]= {
 };
 
 int show_unhandled_signals = 1;
-static int do_dump_flag1;
-static int do_dump_flag2;
+#ifdef CONFIG_EXYNOS_SNAPSHOT_CACHEDUMP
+static unsigned long do_dump_flag1;
+static unsigned long do_dump_flag2;
+#endif
 
 /*
  * Dump out the contents of some memory nicely...
@@ -402,10 +404,13 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs, unsigned int esr
 	arm64_notify_die("Oops - undefined instruction in el0", regs, &info, esr);
 }
 
-asmlinkage void __exception do_undefinstr_el1(struct pt_regs *regs, unsigned int esr, unsigned int far)
+asmlinkage void __exception do_undefinstr_el1(struct pt_regs *regs, unsigned int esr, unsigned long elr)
 {
 	siginfo_t info;
 	void __user *pc = (void __user *)instruction_pointer(regs);
+#ifdef CONFIG_EXYNOS_SNAPSHOT_CACHEDUMP
+	u32 cpu = raw_smp_processor_id();
+#endif
 
 	/* check for AArch32 breakpoint instructions */
 	if (!aarch32_break_handler(regs))
@@ -414,10 +419,14 @@ asmlinkage void __exception do_undefinstr_el1(struct pt_regs *regs, unsigned int
 	if (call_undef_hook(regs) == 0)
 		return;
 
-	s3c2410wdt_set_emergency_reset(1);
-	do_dump_flag1 = esr;
-	do_dump_flag2 = far;
-	asm ("b .");
+#ifdef CONFIG_EXYNOS_SNAPSHOT_CACHEDUMP
+	if (cpu >= 4 && cpu <= 7) {
+		s3c2410wdt_set_emergency_reset(1);
+		do_dump_flag1 = esr;
+		do_dump_flag2 = elr;
+		asm ("b .");
+	}
+#endif
 
 	if (unhandled_signal(current, SIGILL) && show_unhandled_signals_ratelimited())
 		pr_info("%s[%d]: undefined instruction: pc=%p (0x%x)\n",
@@ -501,7 +510,8 @@ const char *esr_get_class_string(u32 esr)
 	return esr_class_str[ESR_ELx_EC(esr)];
 }
 
-asmlinkage void __exception do_iabt(struct pt_regs *regs, unsigned int esr, unsigned int far)
+#ifdef CONFIG_EXYNOS_SNAPSHOT_CACHEDUMP
+asmlinkage void __exception do_iabt(struct pt_regs *regs, unsigned int esr, unsigned long far)
 {
 	s3c2410wdt_set_emergency_reset(1);
 
@@ -509,6 +519,7 @@ asmlinkage void __exception do_iabt(struct pt_regs *regs, unsigned int esr, unsi
 	do_dump_flag2 = far;
 	asm("b .");
 }
+#endif
 
 /*
  * bad_mode handles the impossible case in the exception vector. This is always
