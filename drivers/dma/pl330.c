@@ -30,8 +30,6 @@
 #include <linux/err.h>
 
 #include "dmaengine.h"
-#include <soc/samsung/exynos-pm.h>
-
 #define PL330_MAX_CHAN		8
 #define PL330_MAX_IRQS		32
 #define PL330_MAX_PERI		32
@@ -327,8 +325,8 @@ struct pl330_reqcfg {
  * There may be more than one xfer in a request.
  */
 struct pl330_xfer {
-	dma_addr_t src_addr;
-	dma_addr_t dst_addr;
+	u32 src_addr;
+	u32 dst_addr;
 	/* Size to xfer */
 	u32 bytes;
 };
@@ -389,8 +387,6 @@ struct pl330_thread {
 	unsigned lstenq;
 	/* Index of the last submitted request or -1 if the DMA is stopped */
 	int req_running;
-	void __iomem *ar_wrapper;
-	void __iomem *aw_wrapper;
 };
 
 enum pl330_dmac_state {
@@ -475,12 +471,6 @@ struct pl330_dmac {
 	unsigned mcbufsz;
 	/* ioremap'ed address of PL330 registers. */
 	void __iomem	*base;
-	/* Used the DMA wrapper */
-	bool wrapper;
-	/* Notifier block for powermode */
-	struct notifier_block lpa_nb;
-	void __iomem *inst_wrapper;
-	int 			usage_count;
 	/* Populated by the PL330 core driver during pl330_add */
 	struct pl330_config	pcfg;
 
@@ -1496,9 +1486,6 @@ static int pl330_submit_req(struct pl330_thread *thrd,
 	unsigned idx;
 	u32 ccr;
 	int ret = 0;
-#ifdef CONFIG_ARM64
-	struct device_node *np = thrd->dmac->ddma.dev->of_node;
-#endif
 
 	if (pl330->state == DYING
 		|| pl330->dmac_tbd.reset_chan & (1 << thrd->id)) {
@@ -1553,13 +1540,6 @@ static int pl330_submit_req(struct pl330_thread *thrd,
 	thrd->req[idx].desc = desc;
 	_setup_req(0, thrd, idx, &xs);
 
-#ifdef CONFIG_ARM64
-	if (np && pl330->wrapper) {
-		__raw_writel((xs.desc->px.src_addr >> 32) & 0xf, thrd->ar_wrapper);
-		__raw_writel((xs.desc->px.dst_addr >> 32) & 0xf, thrd->aw_wrapper);
-	}
-#endif
-
 	ret = 0;
 
 xfer_exit:
@@ -1603,12 +1583,6 @@ static void pl330_dotask(unsigned long data)
 	int i;
 
 	spin_lock_irqsave(&pl330->lock, flags);
-
-	if (!pl330->usage_count) {
-		pr_info("[%s] Channel is already free!\n",__func__);
-		spin_unlock_irqrestore(&pl330->lock, flags);
-		return;
-	}
 
 	/* The DMAC itself gone nuts */
 	if (pl330->dmac_tbd.reset_dmac) {
@@ -1672,12 +1646,6 @@ static int pl330_update(struct pl330_dmac *pl330)
 	regs = pl330->base;
 
 	spin_lock_irqsave(&pl330->lock, flags);
-
-	if (!pl330->usage_count) {
-		dev_err(pl330->ddma.dev, "%s:%d event is not exist!\n", __func__, __LINE__);
-		spin_unlock_irqrestore(&pl330->lock, flags);
-		return 0;
-	}
 
 	val = readl(regs + FSM) & 0x1;
 	if (val)
@@ -1818,7 +1786,6 @@ static struct pl330_thread *pl330_request_channel(struct pl330_dmac *pl330)
 				thrd->req[0].desc = NULL;
 				thrd->req[1].desc = NULL;
 				thrd->req_running = -1;
-				pl330->usage_count++;
 				break;
 			}
 		}
@@ -1837,10 +1804,8 @@ static inline void _free_event(struct pl330_thread *thrd, int ev)
 
 	/* If the event is valid and was held by the thread */
 	if (ev >= 0 && ev < pl330->pcfg.num_events
-			&& pl330->events[ev] == thrd->id) {
+			&& pl330->events[ev] == thrd->id)
 		pl330->events[ev] = -1;
-		pl330->usage_count--;
-	}
 }
 
 static void pl330_release_channel(struct pl330_thread *thrd)
@@ -1947,13 +1912,6 @@ static int dmac_alloc_threads(struct pl330_dmac *pl330)
 		thrd->dmac = pl330;
 		_reset_thread(thrd);
 		thrd->free = true;
-
-		if (pl330->ddma.dev->of_node && pl330->wrapper) {
-			thrd->ar_wrapper = of_dma_get_arwrapper_address(
-					pl330->ddma.dev->of_node, i);
-			thrd->aw_wrapper = of_dma_get_awwrapper_address(
-					pl330->ddma.dev->of_node, i);
-		}
 	}
 
 	/* MANAGER is indexed at the end */
@@ -1970,20 +1928,6 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 {
 	int chans = pl330->pcfg.num_chan;
 	int ret;
-#ifdef CONFIG_ARM64
-	dma_addr_t addr;
-
-	if (pl330->ddma.dev->of_node) {
-		addr = of_dma_get_mcode_addr(pl330->ddma.dev->of_node);
-		if (addr) {
-			set_dma_ops(pl330->ddma.dev, &arm_exynos_dma_mcode_ops);
-			pl330->mcode_bus = addr;
-		}
-
-		if (pl330->wrapper)
-			pl330->inst_wrapper = of_dma_get_instwrapper_address(pl330->ddma.dev->of_node);
-	}
-#endif
 
 	/*
 	 * Alloc MicroCode buffer for 'chans' Channel threads.
@@ -1992,12 +1936,6 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 	pl330->mcode_cpu = dma_alloc_coherent(pl330->ddma.dev,
 				chans * pl330->mcbufsz,
 				&pl330->mcode_bus, GFP_KERNEL);
-
-#ifdef CONFIG_ARM64
-	if (pl330->inst_wrapper)
-		__raw_writel((pl330->mcode_bus >> 32) & 0xf, pl330->inst_wrapper);
-#endif
-
 	if (!pl330->mcode_cpu) {
 		dev_err(pl330->ddma.dev, "%s:%d Can't allocate memory!\n",
 			__func__, __LINE__);
@@ -2062,7 +2000,6 @@ static int pl330_add(struct pl330_dmac *pl330)
 	tasklet_init(&pl330->tasks, pl330_dotask, (unsigned long) pl330);
 
 	pl330->state = INIT;
-	pl330->usage_count = 0;
 
 	return 0;
 }
@@ -2824,52 +2761,6 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
 	return 0;
 }
 
-#ifdef CONFIG_CPU_IDLE
-static int pl330_notifier(struct notifier_block *nb,
-			unsigned long event, void *data)
-{
-#ifdef CONFIG_ARM64
-	struct pl330_dmac *pl330 =
-		container_of(nb, struct pl330_dmac, lpa_nb);
-
-	switch (event) {
-	case LPA_EXIT:
-		if (pl330->inst_wrapper)
-			__raw_writel((pl330->mcode_bus >> 32) & 0xf, pl330->inst_wrapper);
-		break;
-	}
-#endif
-	return NOTIFY_OK;
-}
-#endif /* CONFIG_CPU_IDLE */
-
-#ifdef CONFIG_PM
-static int pl330_resume(struct device *dev)
-{
-#ifdef CONFIG_ARM64
-	struct pl330_dmac *pl330;
-
-	pl330 = (struct pl330_dmac *)dev_get_drvdata(dev);
-
-	if (pl330->inst_wrapper)
-		__raw_writel((pl330->mcode_bus >> 32) & 0xf, pl330->inst_wrapper);
-#endif
-
-	return 0;
-}
-
-static const struct dev_pm_ops pl330_pm_ops = {
-	.resume		= pl330_resume,
-};
-
-#define PL330_PM (&pl330_pm_ops)
-
-#else /* CONFIG_PM */
-
-#define PL330_PM NULL
-
-#endif /* !CONFIG_PM */
-
 static int
 pl330_probe(struct amba_device *adev, const struct amba_id *id)
 {
@@ -2895,7 +2786,6 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
 		return -ENOMEM;
 	}
 
-	pl330->ddma.dev = &adev->dev;
 	pl330->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
 
 	res = &adev->res;
@@ -2916,14 +2806,6 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
 		} else {
 			break;
 		}
-	}
-
-	if (adev->dev.of_node){
-		*adev->dev.dma_mask = of_dma_get_mask(adev->dev.of_node,
-				"dma-mask-bit");
-		adev->dev.coherent_dma_mask = of_dma_get_mask(adev->dev.of_node,
-				"coherent-mask-bit");
-		pl330->wrapper = of_dma_get_wrapper_available(adev->dev.of_node);
 	}
 
 	pcfg = &pl330->pcfg;
@@ -3032,18 +2914,6 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
 		pcfg->data_buf_dep, pcfg->data_bus_width / 8, pcfg->num_chan,
 		pcfg->num_peri, pcfg->num_events);
 
-#ifdef CONFIG_CPU_IDLE
-	pl330->lpa_nb.notifier_call = pl330_notifier;
-	pl330->lpa_nb.next = NULL;
-	pl330->lpa_nb.priority = 0;
-
-	ret = exynos_pm_register_notifier(&pl330->lpa_nb);
-	if (ret) {
-		dev_err(&adev->dev, "failed to register pm notifier\n");
-		goto probe_err3;
-	}
-#endif
-
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&adev->dev);
 #endif
@@ -3111,7 +2981,6 @@ MODULE_DEVICE_TABLE(amba, pl330_ids);
 static struct amba_driver pl330_driver = {
 	.drv = {
 		.owner = THIS_MODULE,
-		.pm = PL330_PM,
 		.name = "dma-pl330",
 	},
 	.id_table = pl330_ids,
