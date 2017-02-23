@@ -761,6 +761,8 @@ dhd_pno_stop_for_ssid(dhd_pub_t *dhd)
 		goto exit;
 	}
 	DHD_PNO(("%s enter\n", __FUNCTION__));
+	_params = &(_pno_state->pno_params_arr[INDEX_OF_LEGACY_PARAMS]);
+	_dhd_pno_reinitialize_prof(dhd, _params, DHD_PNO_LEGACY_MODE);
 	_pno_state->pno_mode &= ~DHD_PNO_LEGACY_MODE;
 	/* restart Batch mode  if the batch mode is on */
 	if (_pno_state->pno_mode & (DHD_PNO_BATCH_MODE | DHD_PNO_HOTLIST_MODE)) {
