@@ -629,14 +629,14 @@ static struct samsung_gate_clock gate_clks[] __initdata = {
 		GATE_SCLK_PERIL, 7, CLK_SET_RATE_PARENT, 0),
 	GATE(CLK_SCLK_SPI0, "sclk_spi0", "div_spi0_pre",
 		GATE_SCLK_PERIL, 6, CLK_SET_RATE_PARENT, 0),
-	GATE_A(CLK_SCLK_UART3, "sclk_uart3", "div_uart3",
-		GATE_SCLK_PERIL, 3, CLK_SET_RATE_PARENT, 0, "console-sclk3"),
-	GATE_A(CLK_SCLK_UART2, "sclk_uart2", "div_uart2",
-		GATE_SCLK_PERIL, 2, CLK_SET_RATE_PARENT, 0, "console-sclk2"),
-	GATE_A(CLK_SCLK_UART1, "sclk_uart1", "div_uart1",
-		GATE_SCLK_PERIL, 1, CLK_SET_RATE_PARENT, 0, "console-sclk1"),
-	GATE_A(CLK_SCLK_UART0, "sclk_uart0", "div_uart0",
-		GATE_SCLK_PERIL, 0, CLK_SET_RATE_PARENT, 0, "console-sclk0"),
+	GATE(CLK_SCLK_UART3, "sclk_uart3", "div_uart3",
+		GATE_SCLK_PERIL, 3, CLK_SET_RATE_PARENT, 0),
+	GATE(CLK_SCLK_UART2, "sclk_uart2", "div_uart2",
+		GATE_SCLK_PERIL, 2, CLK_SET_RATE_PARENT, 0),
+	GATE(CLK_SCLK_UART1, "sclk_uart1", "div_uart1",
+		GATE_SCLK_PERIL, 1, CLK_SET_RATE_PARENT, 0),
+	GATE(CLK_SCLK_UART0, "sclk_uart0", "div_uart0",
+		GATE_SCLK_PERIL, 0, CLK_SET_RATE_PARENT, 0),
 
 	/* GATE_IP_CAM */
 	GATE(CLK_QEJPEG, "qejpeg", "div_cam_blk_320", GATE_IP_CAM, 19,
@@ -730,10 +730,10 @@ static struct samsung_gate_clock gate_clks[] __initdata = {
 	GATE(CLK_I2C2, "i2c2", "div_aclk_100", GATE_IP_PERIL, 8, 0, 0),
 	GATE(CLK_I2C1, "i2c1", "div_aclk_100", GATE_IP_PERIL, 7, 0, 0),
 	GATE(CLK_I2C0, "i2c0", "div_aclk_100", GATE_IP_PERIL, 6, 0, 0),
-	GATE_A(CLK_UART3, "uart3", "div_aclk_100", GATE_IP_PERIL, 3, 0, 0, "console-pclk3"),
-	GATE_A(CLK_UART2, "uart2", "div_aclk_100", GATE_IP_PERIL, 2, 0, 0, "console-pclk2"),
-	GATE_A(CLK_UART1, "uart1", "div_aclk_100", GATE_IP_PERIL, 1, 0, 0, "console-pclk1"),
-	GATE_A(CLK_UART0, "uart0", "div_aclk_100", GATE_IP_PERIL, 0, 0, 0, "console-pclk0"),
+	GATE(CLK_UART3, "uart3", "div_uart3", GATE_IP_PERIL, 3, 0, 0),
+	GATE(CLK_UART2, "uart2", "div_uart2", GATE_IP_PERIL, 2, 0, 0),
+	GATE(CLK_UART1, "uart1", "div_uart1", GATE_IP_PERIL, 1, 0, 0),
+	GATE(CLK_UART0, "uart0", "div_uart0", GATE_IP_PERIL, 0, 0, 0),
 };
 
 /* APLL & MPLL & BPLL & UPLL */

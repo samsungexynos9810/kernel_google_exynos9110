@@ -213,16 +213,12 @@ static struct uart_driver s3c24xx_uart_drv;
 
 static inline void uart_clock_enable(struct s3c24xx_uart_port *ourport)
 {
-	if (ourport->check_separated_clk)
-		clk_prepare_enable(ourport->separated_clk);
 	clk_prepare_enable(ourport->clk);
 }
 
 static inline void uart_clock_disable(struct s3c24xx_uart_port *ourport)
 {
 	clk_disable_unprepare(ourport->clk);
-	if (ourport->check_separated_clk)
-		clk_disable_unprepare(ourport->separated_clk);
 }
 
 #define MAX_AUD_UART_PIN_STATE	3
@@ -1154,30 +1150,6 @@ static struct console s3c24xx_serial_console;
 
 static int __init s3c24xx_serial_console_init(void)
 {
-	struct clk *console_clk;
-	char pclk_name[16], sclk_name[16];
-
-	snprintf(pclk_name, sizeof(pclk_name), "console-pclk%d",
-					CONFIG_S3C_LOWLEVEL_UART_PORT);
-	snprintf(sclk_name, sizeof(sclk_name), "console-sclk%d",
-					CONFIG_S3C_LOWLEVEL_UART_PORT);
-
-	pr_info("Enable console clock to add reference count\n");
-
-	console_clk = clk_get(NULL, pclk_name);
-	if (IS_ERR(console_clk)) {
-		pr_err("Can't get %s!(it's not err)\n", pclk_name);
-	} else {
-		clk_prepare_enable(console_clk);
-	}
-
-	console_clk = clk_get(NULL, sclk_name);
-	if (IS_ERR(console_clk)) {
-		pr_err("Can't get %s!(it's not err)\n", sclk_name);
-	} else {
-		clk_prepare_enable(console_clk);
-	}
-
 	register_console(&s3c24xx_serial_console);
 	return 0;
 }
@@ -1439,11 +1411,11 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 	if (ourport->domain == DOMAIN_AUD)
 		lpass_register_subip(&platdev->dev, "aud-uart");
 #endif
-	if (of_get_property(platdev->dev.of_node,
-			"samsung,separate-uart-clk", NULL))
-		ourport->check_separated_clk = 1;
-	else
-		ourport->check_separated_clk = 0;
+
+	snprintf(clkname, sizeof(clkname), "sclk_uart%d", ourport->port.line);
+	baud_clk = clk_get(&platdev->dev, clkname);
+	clk_prepare_enable(baud_clk);
+	clk_set_rate(baud_clk, 100000000);
 
 	snprintf(clkname, sizeof(clkname), "gate_uart%d", ourport->port.line);
 	ourport->clk = clk_get(&platdev->dev, clkname);
@@ -1453,33 +1425,12 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		return PTR_ERR(ourport->clk);
 	}
 
-	if (ourport->check_separated_clk) {
-		snprintf(clkname, sizeof(clkname), "gate_pclk%d", ourport->port.line);
-		ourport->separated_clk = clk_get(&platdev->dev, clkname);
-		if (IS_ERR(ourport->separated_clk)) {
-			pr_err("%s: Controller clock not found\n",
-					dev_name(&platdev->dev));
-			return PTR_ERR(ourport->separated_clk);
-		}
-
-		ret = clk_prepare_enable(ourport->separated_clk);
-		if (ret) {
-			pr_err("uart: clock failed to prepare+enable: %d\n", ret);
-			clk_put(ourport->separated_clk);
-			return ret;
-		}
-	}
-
 	ret = clk_prepare_enable(ourport->clk);
 	if (ret) {
 		pr_err("uart: clock failed to prepare+enable: %d\n", ret);
 		clk_put(ourport->clk);
 		return ret;
 	}
-
-	snprintf(clkname, sizeof(clkname), "sclk_uart%d", ourport->port.line);
-	baud_clk = clk_get(&platdev->dev, clkname);
-	clk_set_rate(baud_clk, 100000000);
 
 	/* Keep all interrupts masked and cleared */
 	if (s3c24xx_serial_has_interrupt_mask(port)) {
