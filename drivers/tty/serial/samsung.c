@@ -386,8 +386,10 @@ static void enable_tx_dma(struct s3c24xx_uart_port *ourport)
 	/* Enable tx dma mode */
 	ucon = rd_regl(port, S3C2410_UCON);
 	ucon &= ~(S3C64XX_UCON_TXBURST_MASK | S3C64XX_UCON_TXMODE_MASK);
+#ifndef CONFIG_KOI_BLUETOOTH
 	ucon |= (dma_get_cache_alignment() >= 16) ?
 		S3C64XX_UCON_TXBURST_16 : S3C64XX_UCON_TXBURST_1;
+#endif
 	ucon |= S3C64XX_UCON_TXMODE_DMA;
 	wr_regl(port,  S3C2410_UCON, ucon);
 
@@ -1044,14 +1046,19 @@ static int s3c24xx_serial_request_dma(struct s3c24xx_uart_port *p)
 	dma->rx_conf.direction		= DMA_DEV_TO_MEM;
 	dma->rx_conf.src_addr_width	= DMA_SLAVE_BUSWIDTH_1_BYTE;
 	dma->rx_conf.src_addr		= p->port.mapbase + S3C2410_URXH;
+#ifndef CONFIG_KOI_BLUETOOTH
 	dma->rx_conf.src_maxburst	= 16;
-
+#else
+	dma->rx_conf.src_maxburst	= 1;
+#endif
 	dma->tx_conf.direction		= DMA_MEM_TO_DEV;
 	dma->tx_conf.dst_addr_width	= DMA_SLAVE_BUSWIDTH_1_BYTE;
 	dma->tx_conf.dst_addr		= p->port.mapbase + S3C2410_UTXH;
+#ifndef CONFIG_KOI_BLUETOOTH
 	if (dma_get_cache_alignment() >= 16)
 		dma->tx_conf.dst_maxburst = 16;
 	else
+#endif
 		dma->tx_conf.dst_maxburst = 1;
 
 	dma_cap_zero(mask);
