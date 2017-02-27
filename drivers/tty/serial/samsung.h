@@ -52,6 +52,8 @@ struct s3c24xx_serial_drv_data {
 	unsigned int			fifosize[CONFIG_SERIAL_SAMSUNG_UARTS];
 };
 
+#define RX_BUFFER_NUM	4	/* must be power of 2 */
+
 struct s3c24xx_uart_dma {
 	dma_filter_fn			fn;
 	void				*rx_param;
@@ -66,13 +68,15 @@ struct s3c24xx_uart_dma {
 	struct dma_chan			*rx_chan;
 	struct dma_chan			*tx_chan;
 
-	dma_addr_t			rx_addr;
+	int				rx_used_cnt;
+	int				rx_idx;
+	dma_addr_t			rx_addr[RX_BUFFER_NUM];
 	dma_addr_t			tx_addr;
 
 	dma_cookie_t			rx_cookie;
 	dma_cookie_t			tx_cookie;
 
-	char				*rx_buf;
+	struct tty_buffer		rx_buf[RX_BUFFER_NUM];
 
 	dma_addr_t			tx_transfer_addr;
 
@@ -119,6 +123,8 @@ struct s3c24xx_uart_port {
 	struct s3c2410_uartcfg		*cfg;
 
 	struct s3c24xx_uart_dma		*dma;
+	wait_queue_head_t		wait_ttybuf;
+	struct work_struct		tb_work;
 
 	struct platform_device		*pdev;
 

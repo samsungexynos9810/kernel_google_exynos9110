@@ -37,5 +37,6 @@ static inline int tty_insert_flip_string(struct tty_port *port,
 
 extern void tty_buffer_lock_exclusive(struct tty_port *port);
 extern void tty_buffer_unlock_exclusive(struct tty_port *port);
+void tty_insert_flip_external(struct tty_port *port, struct tty_buffer *tb);
 
 #endif /* _LINUX_TTY_FLIP_H */

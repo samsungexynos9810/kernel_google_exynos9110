@@ -103,6 +103,7 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
 	p->commit = 0;
 	p->read = 0;
 	p->flags = 0;
+	p->external = 0;
 }
 
 /**
@@ -121,7 +122,9 @@ void tty_buffer_free_all(struct tty_port *port)
 
 	while ((p = buf->head) != NULL) {
 		buf->head = p->next;
-		if (p->size > 0)
+		if (p->external)
+			buf->complete(p->external, p->private);
+		else if (p->size > 0)
 			kfree(p);
 	}
 	llist = llist_del_all(&buf->free);
@@ -190,6 +193,10 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
 {
 	struct tty_bufhead *buf = &port->buf;
 
+	if (b->external) {
+		buf->complete(b->external, b->private);
+		return;
+	}
 	/* Dumb strategy for now - should keep some stats */
 	WARN_ON(atomic_sub_return(b->size, &buf->mem_used) < 0);
 
@@ -314,6 +321,18 @@ int tty_insert_flip_string_fixed_flag(struct tty_port *port,
 	return copied;
 }
 EXPORT_SYMBOL(tty_insert_flip_string_fixed_flag);
+
+void tty_insert_flip_external(struct tty_port *port, struct tty_buffer *tb)
+{
+	struct tty_bufhead *buf = &port->buf;
+	struct tty_buffer *tail;
+
+	tail = buf->tail;
+	buf->tail = tb;
+	tail->commit = tail->used;
+	smp_wmb();
+	tail->next = tb;
+}
 
 /**
  *	tty_insert_flip_string_flags	-	Add characters to the tty buffer

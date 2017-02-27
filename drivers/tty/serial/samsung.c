@@ -516,12 +516,11 @@ static void s3c24xx_uart_copy_rx_to_tty(struct s3c24xx_uart_port *ourport,
 		struct tty_port *tty, int count)
 {
 	struct s3c24xx_uart_dma *dma = ourport->dma;
-	int copied;
 
 	if (!count)
 		return;
 
-	dma_sync_single_for_cpu(ourport->port.dev, dma->rx_addr,
+	dma_sync_single_for_cpu(ourport->port.dev, dma->rx_addr[dma->rx_idx],
 				dma->rx_size, DMA_FROM_DEVICE);
 
 	ourport->port.icount.rx += count;
@@ -529,12 +528,8 @@ static void s3c24xx_uart_copy_rx_to_tty(struct s3c24xx_uart_port *ourport,
 		dev_err(ourport->port.dev, "No tty port\n");
 		return;
 	}
-	copied = tty_insert_flip_string(tty,
-			((unsigned char *)(ourport->dma->rx_buf)), count);
-	if (copied != count) {
-		WARN_ON(1);
-		dev_err(ourport->port.dev, "RxData copy to tty layer failed\n");
-	}
+	ourport->dma->rx_buf[dma->rx_idx].used = count;
+	tty_insert_flip_external(tty, &ourport->dma->rx_buf[dma->rx_idx]);
 }
 
 static void s3c24xx_serial_stop_rx(struct uart_port *port)
@@ -639,16 +634,24 @@ static void s3c24xx_serial_rx_dma_complete(void *args)
 	spin_unlock_irqrestore(&port->lock, flags);
 }
 
+static void enable_rx_dma(struct s3c24xx_uart_port *ourport);
 static void s3c64xx_start_rx_dma(struct s3c24xx_uart_port *ourport)
 {
 	struct s3c24xx_uart_dma *dma = ourport->dma;
 
-	dma_sync_single_for_device(ourport->port.dev, dma->rx_addr,
+	if (dma->rx_used_cnt >= RX_BUFFER_NUM) {
+		schedule_work(&ourport->tb_work);
+		return;
+	}
+	dma->rx_used_cnt++;
+	dma->rx_idx++;
+	dma->rx_idx &= (RX_BUFFER_NUM - 1);
+	dma_sync_single_for_device(ourport->port.dev, dma->rx_addr[dma->rx_idx],
 				dma->rx_size, DMA_FROM_DEVICE);
 
 	dma->rx_desc = dmaengine_prep_slave_single(dma->rx_chan,
-				dma->rx_addr, dma->rx_size, DMA_DEV_TO_MEM,
-				DMA_PREP_INTERRUPT);
+				dma->rx_addr[dma->rx_idx], dma->rx_size,
+				DMA_DEV_TO_MEM, DMA_PREP_INTERRUPT);
 	if (!dma->rx_desc) {
 		dev_err(ourport->port.dev, "Unable to get desc for Rx\n");
 		return;
@@ -660,6 +663,21 @@ static void s3c64xx_start_rx_dma(struct s3c24xx_uart_port *ourport)
 
 	dma->rx_cookie = dmaengine_submit(dma->rx_desc);
 	dma_async_issue_pending(dma->rx_chan);
+}
+
+static void wait_tty_buffer(struct work_struct *work)
+{
+	struct s3c24xx_uart_port *ourport = container_of(work, struct s3c24xx_uart_port, tb_work);
+	struct s3c24xx_uart_dma *dma = ourport->dma;
+	struct uart_port *port = &ourport->port;
+	unsigned long flags;
+
+	printk(KERN_DEBUG "%s: %d\n", __func__, ourport->rx_mode);
+	wait_event(ourport->wait_ttybuf, dma->rx_used_cnt < RX_BUFFER_NUM);
+	spin_lock_irqsave(&port->lock, flags);
+	if (rx_enabled(port))
+		s3c64xx_start_rx_dma(ourport);
+	spin_unlock_irqrestore(&port->lock, flags);
 }
 
 /* ? - where has parity gone?? */
@@ -926,6 +944,32 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 	return IRQ_HANDLED;
 }
 
+static void reset_tty_buffer(struct tty_buffer *p, int idx, struct uart_port *port)
+{
+	p->used = 0;
+	p->size = PAGE_SIZE;
+	p->next = NULL;
+	p->commit = 0;
+	p->read = 0;
+	p->flags = TTYB_NORMAL;
+	p->external = idx + 1;
+	p->private = (void *)port;
+}
+
+static void tty_buffer_complete(int num, struct uart_port *port)
+{
+	struct s3c24xx_uart_port *ourport = to_ourport(port);
+	struct s3c24xx_uart_dma *dma = ourport->dma;
+	unsigned long flags;
+
+	num--;
+	reset_tty_buffer(&dma->rx_buf[num], num, port);
+	spin_lock_irqsave(&port->lock, flags);
+	dma->rx_used_cnt--;
+	spin_unlock_irqrestore(&port->lock, flags);
+	wake_up(&ourport->wait_ttybuf);
+}
+
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ
 static void s3c64xx_serial_qos_func(struct work_struct *work)
 {
@@ -1041,6 +1085,7 @@ static int s3c24xx_serial_request_dma(struct s3c24xx_uart_port *p)
 	struct s3c24xx_uart_dma	*dma = p->dma;
 	dma_cap_mask_t mask;
 	unsigned long flags;
+	int i;
 
 	/* Default slave configuration parameters */
 	dma->rx_conf.direction		= DMA_DEV_TO_MEM;
@@ -1081,19 +1126,11 @@ static int s3c24xx_serial_request_dma(struct s3c24xx_uart_port *p)
 	dmaengine_slave_config(dma->tx_chan, &dma->tx_conf);
 
 	/* RX buffer */
-	dma->rx_size = PAGE_SIZE;
-
-	dma->rx_buf = kmalloc(dma->rx_size, GFP_KERNEL);
-
-	if (!dma->rx_buf) {
-		dma_release_channel(dma->rx_chan);
-		dma_release_channel(dma->tx_chan);
-		return -ENOMEM;
+	for (i = 0; i < RX_BUFFER_NUM; i++) {
+		dma->rx_addr[i] = dma_map_single(dma->rx_chan->device->dev,
+					(void *)dma->rx_buf[i].data[0],
+					PAGE_SIZE, DMA_FROM_DEVICE);
 	}
-
-	dma->rx_addr = dma_map_single(dma->rx_chan->device->dev, dma->rx_buf,
-				dma->rx_size, DMA_FROM_DEVICE);
-
 	spin_lock_irqsave(&p->port.lock, flags);
 
 	/* TX buffer */
@@ -1109,12 +1146,15 @@ static int s3c24xx_serial_request_dma(struct s3c24xx_uart_port *p)
 static void s3c24xx_serial_release_dma(struct s3c24xx_uart_port *p)
 {
 	struct s3c24xx_uart_dma	*dma = p->dma;
+	int i;
 
 	if (dma->rx_chan) {
 		dmaengine_terminate_all(dma->rx_chan);
-		dma_unmap_single(dma->rx_chan->device->dev, dma->rx_addr,
-				dma->rx_size, DMA_FROM_DEVICE);
-		kfree(dma->rx_buf);
+		for (i = 0; i < RX_BUFFER_NUM; i++) {
+			dma_unmap_single(dma->rx_chan->device->dev,
+					dma->rx_addr[i], PAGE_SIZE,
+					DMA_FROM_DEVICE);
+		}
 		dma_release_channel(dma->rx_chan);
 		dma->rx_chan = NULL;
 	}
@@ -1215,10 +1255,15 @@ static int s3c64xx_serial_startup(struct uart_port *port)
 	struct s3c24xx_uart_port *ourport = to_ourport(port);
 	unsigned long flags;
 	unsigned int ufcon;
-	int ret;
+	int ret, i;
 
 	dbg("s3c64xx_serial_startup: port=%p (%08llx,%p)\n",
 	    port, (unsigned long long)port->mapbase, port->membase);
+
+	port->state->port.buf.complete = 
+		(void (*)(int,void *))tty_buffer_complete;
+	for (i = 0; i < RX_BUFFER_NUM; i++)
+		reset_tty_buffer(&ourport->dma->rx_buf[i], i, port);
 
 	ourport->cfg->wake_peer[port->line] =
 				s3c2410_serial_wake_peer[port->line];
@@ -1871,6 +1916,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 	char clkname[MAX_CLK_NAME_LENGTH];
 	int ret;
 	struct clk* baud_clk;
+	int i;
 
 	dbg("s3c24xx_serial_init_port: port=%p, platdev=%p\n", port, platdev);
 
@@ -1879,6 +1925,9 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 
 	if (port->mapbase != 0)
 		return 0;
+
+	INIT_WORK(&ourport->tb_work, wait_tty_buffer);
+	init_waitqueue_head(&ourport->wait_ttybuf);
 
 	/* setup info for port */
 	port->dev	= &platdev->dev;
@@ -1938,6 +1987,16 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 					    GFP_KERNEL);
 		if (!ourport->dma)
 			return -ENOMEM;
+		ourport->dma->rx_size = PAGE_SIZE;
+		for (i = 0; i < RX_BUFFER_NUM; i++) {
+			ourport->dma->rx_buf[i].data[0] =
+				(unsigned long)devm_kmalloc(port->dev,
+						PAGE_SIZE, GFP_KERNEL);
+			if (!ourport->dma->rx_buf[i].data[0]) {
+				pr_err("%s: no memory\r\n", __func__);
+				return -ENOMEM;
+			}
+		}
 	}
 
 #if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_SND_SAMSUNG_AUDSS)

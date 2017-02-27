@@ -40,8 +40,10 @@ struct tty_buffer {
 	int commit;
 	int read;
 	int flags;
+	int external;	/* 1 >= : externally allocated buffer number */
+	void *private;	/* pass to callback */
 	/* Data points here */
-	unsigned long data[0];
+	unsigned long data[1];	/* store external buffer ptr */
 };
 
 /* Values for .flags field of tty_buffer */
@@ -49,6 +51,8 @@ struct tty_buffer {
 
 static inline unsigned char *char_buf_ptr(struct tty_buffer *b, int ofs)
 {
+	if (b->external)
+		return ((unsigned char *)b->data[0]) + ofs;
 	return ((unsigned char *)b->data) + ofs;
 }
 
@@ -67,6 +71,7 @@ struct tty_bufhead {
 	atomic_t	   mem_used;    /* In-use buffers excluding free list */
 	int		   mem_limit;
 	struct tty_buffer *tail;	/* Active buffer */
+	void (*complete)(int external, void *private);
 };
 /*
  * When a break, frame error, or parity error happens, these codes are
