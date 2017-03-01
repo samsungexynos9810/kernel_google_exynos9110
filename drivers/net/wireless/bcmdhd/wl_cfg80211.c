@@ -7149,7 +7149,6 @@ static void wl_free_wdev(struct bcm_cfg80211 *cfg)
 		/* Reset wowlan & wowlan_config before Unregister to avoid  Kernel Panic */
 		WL_DBG(("wl_free_wdev Clearing wowlan Config \n"));
 		wdev->wiphy->wowlan = NULL;
-		wdev->wiphy->wowlan_config = NULL;
 #endif
 
 	wiphy_unregister(wdev->wiphy);
