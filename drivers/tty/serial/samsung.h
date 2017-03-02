@@ -44,32 +44,6 @@ struct s3c24xx_uart_info {
 	int (*reset_port)(struct uart_port *, struct s3c2410_uartcfg *);
 };
 
-#ifdef CONFIG_SERIAL_SAMSUNG_DMA
-struct uart_dma_data {
-	unsigned ch;
-	unsigned int busy;
-	unsigned int req_size;
-	unsigned long fifo_base;
-	enum dma_ch req_ch;
-	enum dma_transfer_direction direction;
-};
-
-struct exynos_uart_dma {
-	unsigned int use_dma;
-
-	dma_addr_t tx_src_addr;
-	dma_addr_t rx_dst_addr;
-
-	struct uart_dma_data tx;
-	struct uart_dma_data rx;
-
-	struct samsung_dma_ops *ops;
-	struct platform_device *pdev;
-
-	char *rx_buff;
-};
-#endif
-
 struct s3c24xx_serial_drv_data {
 	struct s3c24xx_uart_info	*info;
 	struct s3c2410_uartcfg		*def_cfg;
@@ -85,19 +59,12 @@ struct s3c24xx_uart_port {
 	unsigned int			rx_irq;
 	unsigned int			tx_irq;
 
-#ifdef CONFIG_SERIAL_SAMSUNG_DMA
-	unsigned int                    err_irq;
-	unsigned int                    err_occurred;
-#endif
 	int				check_separated_clk;
 	struct s3c24xx_uart_info	*info;
 	struct clk			*clk;
 	struct clk			*separated_clk;
 	struct clk			*baudclk;
 	struct uart_port		port;
-#ifdef CONFIG_SERIAL_SAMSUNG_DMA
-	struct exynos_uart_dma          uart_dma;
-#endif
 	struct s3c24xx_serial_drv_data	*drv_data;
 
 	u32				uart_irq_affinity;
