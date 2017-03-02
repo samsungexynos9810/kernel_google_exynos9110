@@ -544,10 +544,6 @@ static void s3c64xx_serial_qos_func(struct work_struct *work)
 		pm_qos_update_request_timeout(&ourport->s3c24xx_uart_cpu_qos,
 				ourport->cpu_qos_val, ourport->qos_timeout);
 
-	if (ourport->int_qos_val)
-		pm_qos_update_request_timeout(&ourport->s3c24xx_uart_int_qos,
-				ourport->int_qos_val, ourport->qos_timeout);
-
 	if (ourport->uart_irq_affinity)
 		irq_set_affinity(port->irq, cpumask_of(ourport->uart_irq_affinity));
 }
@@ -562,8 +558,8 @@ static irqreturn_t s3c64xx_serial_handle_irq(int irq, void *id)
 	irqreturn_t ret = IRQ_HANDLED;
 
 #ifdef CONFIG_PM_DEVFREQ
-	if ((ourport->baudclk_rate >= 1000000) && (ourport->mif_qos_val || ourport->cpu_qos_val
-			|| ourport->int_qos_val) && ourport->qos_timeout)
+	if ((ourport->mif_qos_val || ourport->cpu_qos_val)
+					&& ourport->qos_timeout)
 		schedule_delayed_work(&ourport->qos_work,
 						msecs_to_jiffies(100));
 #endif
@@ -1692,10 +1688,6 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 						&ourport->cpu_qos_val))
 		ourport->cpu_qos_val = 0;
 
-	if (of_property_read_u32(pdev->dev.of_node, "int_qos_val",
-						&ourport->int_qos_val))
-		ourport->int_qos_val = 0;
-
 	if (of_property_read_u32(pdev->dev.of_node, "irq_affinity",
 						&ourport->uart_irq_affinity))
 		ourport->uart_irq_affinity = 0;
@@ -1704,7 +1696,7 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 					(u32 *)&ourport->qos_timeout))
 		ourport->qos_timeout = 0;
 
-	if ((ourport->mif_qos_val || ourport->cpu_qos_val || ourport->int_qos_val)
+	if ((ourport->mif_qos_val || ourport->cpu_qos_val)
 					&& ourport->qos_timeout) {
 		INIT_DELAYED_WORK(&ourport->qos_work,
 						s3c64xx_serial_qos_func);
@@ -1716,10 +1708,6 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 		if (ourport->cpu_qos_val)
 			pm_qos_add_request(&ourport->s3c24xx_uart_cpu_qos,
 						PM_QOS_CLUSTER1_FREQ_MIN, 0);
-
-		if (ourport->int_qos_val)
-			pm_qos_add_request(&ourport->s3c24xx_uart_int_qos,
-						PM_QOS_DEVICE_THROUGHPUT, 0);
 	}
 #endif
 	if (of_find_property(pdev->dev.of_node, "samsung,lpass-subip", NULL))
@@ -1802,9 +1790,6 @@ static int s3c24xx_serial_remove(struct platform_device *dev)
 
 	if (ourport->cpu_qos_val && ourport->qos_timeout)
 		pm_qos_remove_request(&ourport->s3c24xx_uart_cpu_qos);
-
-	if (ourport->int_qos_val && ourport->qos_timeout)
-		pm_qos_remove_request(&ourport->s3c24xx_uart_int_qos);
 #endif
 
 	if (port) {

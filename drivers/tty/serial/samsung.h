@@ -69,7 +69,6 @@ struct s3c24xx_uart_port {
 
 	u32				uart_irq_affinity;
 	s32				mif_qos_val;
-	s32				int_qos_val;
 	s32				cpu_qos_val;
 	u32				use_default_irq;
 	unsigned long			qos_timeout;
@@ -85,7 +84,6 @@ struct s3c24xx_uart_port {
 
 	struct pm_qos_request		s3c24xx_uart_mif_qos;
 	struct pm_qos_request		s3c24xx_uart_cpu_qos;
-	struct pm_qos_request		s3c24xx_uart_int_qos;
 	struct delayed_work		qos_work;
 
 	unsigned int dbg_mode;
