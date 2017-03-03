@@ -615,6 +615,9 @@ static void s3c24xx_serial_rx_dma_complete(void *args)
 	unsigned long flags;
 	int received;
 
+	if (ourport->rx_mode != S3C24XX_RX_DMA)
+		return;
+
 	dmaengine_tx_status(dma->rx_chan,  dma->rx_cookie, &state);
 	received  = dma->rx_bytes_requested - state.residue;
 	async_tx_ack(dma->rx_desc);
@@ -752,13 +755,13 @@ static irqreturn_t s3c24xx_serial_rx_chars_dma(void *dev_id)
 	}
 
 	if (ourport->rx_mode == S3C24XX_RX_DMA) {
+		enable_rx_pio(ourport);
+
 		dmaengine_pause(dma->rx_chan);
 		dmaengine_tx_status(dma->rx_chan, dma->rx_cookie, &state);
 		dmaengine_terminate_all(dma->rx_chan);
 		received = dma->rx_bytes_requested - state.residue;
 		s3c24xx_uart_copy_rx_to_tty(ourport, t, received);
-
-		enable_rx_pio(ourport);
 	}
 
 	s3c24xx_serial_rx_drain_fifo(ourport);
@@ -1597,6 +1600,9 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 		umcon |= S3C2410_UMCOM_AFC;
 		/* Disable RTS when RX FIFO contains 63 bytes */
 		umcon &= ~S3C2412_UMCON_AFC_8;
+#ifdef CONFIG_KOI_BLUETOOTH
+		umcon |= S3C2412_UMCON_AFC_56;
+#endif
 	} else {
 		umcon &= ~S3C2410_UMCOM_AFC;
 	}
