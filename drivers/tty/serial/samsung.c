@@ -730,7 +730,6 @@ static void enable_rx_pio(struct s3c24xx_uart_port *ourport)
 }
 
 static void s3c24xx_serial_rx_drain_fifo(struct s3c24xx_uart_port *ourport);
-
 static irqreturn_t s3c24xx_serial_rx_chars_dma(void *dev_id)
 {
 	unsigned int utrstat, ufstat, received;
@@ -756,7 +755,11 @@ static irqreturn_t s3c24xx_serial_rx_chars_dma(void *dev_id)
 
 	if (ourport->rx_mode == S3C24XX_RX_DMA) {
 		enable_rx_pio(ourport);
-
+		while (1) {
+			utrstat = rd_regl(port, S3C2410_UTRSTAT);
+			if ((utrstat & S3C2410_UTRSTAT_RXDMAFSM) == 0)
+				break;
+		}
 		dmaengine_pause(dma->rx_chan);
 		dmaengine_tx_status(dma->rx_chan, dma->rx_cookie, &state);
 		dmaengine_terminate_all(dma->rx_chan);
