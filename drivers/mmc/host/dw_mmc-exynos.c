@@ -409,6 +409,8 @@ static void dw_mci_exynos_adjust_clock(struct dw_mci *host, unsigned int wanted)
 	u32 actual;
 	u8 div;
 	int ret;
+	u32 clock;
+
 	/*
 	 * Don't care if wanted clock is zero or
 	 * ciu clock is unavailable
@@ -420,10 +422,14 @@ static void dw_mci_exynos_adjust_clock(struct dw_mci *host, unsigned int wanted)
 	if (wanted < EXYNOS_CCLKIN_MIN)
 		wanted = EXYNOS_CCLKIN_MIN;
 
-	if (wanted == priv->cur_speed)
-		return;
-
 	div = dw_mci_exynos_get_ciu_div(host);
+
+	if (wanted == priv->cur_speed) {
+		clock = clk_get_rate(host->ciu_clk);
+		if (clock == priv->cur_speed * div)
+			return;
+	}
+
 	ret = clk_set_rate(host->ciu_clk, wanted * div);
 	if (ret)
 		dev_warn(host->dev,
