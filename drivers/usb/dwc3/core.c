@@ -220,7 +220,8 @@ reset_check:
 	reg |= DWC3_GCTL_PWRDNSCALE(dwc->suspend_clk_freq/(16*1000));
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
 
-	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
+	reg = (dwc3_readl(dwc->regs, DWC3_GCTL) &&
+			dwc3_readl(dwc->regs, DWC3_DCTL));
 	if (reg)
 		return 0;
 
@@ -539,6 +540,8 @@ void dwc3_link_status_check(struct dwc3 *dwc)
 	dev_info(dwc->dev, "%s: GSTS 0x%08x\n", __func__, reg);
 	reg = dwc3_readl(dwc->regs, DWC3_DCTL);
 	dev_info(dwc->dev, "%s: DCTL 0x%08x\n", __func__, reg);
+	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
+	dev_info(dwc->dev, "%s: GCTL 0x%08x\n", __func__, reg);
 	reg = dwc3_readl(dwc->regs, DWC3_DSTS);
 	dev_info(dwc->dev, "%s: DSTS 0x%08x\n", __func__, reg);
 }
