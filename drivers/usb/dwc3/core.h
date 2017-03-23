@@ -460,6 +460,9 @@
 #define DWC3_DEPCMDx_CmdTyp_MASK		(0xf << 0)
 #define DWC3_DEPEVT_EventStatus_BusTimeExp	(2 << 12)
 
+/* magic key for CSR timeout */
+#define DWC3_MAGIC_LO		0x1234
+#define MAX_RETRY_CNT		2
 /* Structures */
 
 struct dwc3_trb;
