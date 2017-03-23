@@ -512,6 +512,8 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, struct mmc_ios *ios)
 			dw_mci_card_int_hwacg_ctrl(host, HWACG_Q_ACTIVE_DIS);
 	}
 
+	host->cclk_in = wanted;
+
 	/* Set clock timing for the requested speed mode*/
 	dw_mci_exynos_set_clksel_timing(host, clksel);
 
