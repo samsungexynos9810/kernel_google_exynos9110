@@ -44,6 +44,7 @@
 #include <linux/clk.h>
 #include <linux/suspend.h>
 #include <linux/of.h>
+#include <soc/samsung/exynos-pmu.h>
 
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
 #include <sound/exynos.h>
@@ -108,6 +109,10 @@ EXPORT_SYMBOL_GPL(s3c2410_serial_wake_peer);
 
 #define UART_LOOPBACK_MODE	(0x1 << 0)
 #define UART_DBG_MODE		(0x1 << 1)
+
+#define BLUETOOTH_UART_PORT_LINE	(1)
+
+#define PAD_RETENTION_UART_BT_OPTION   (0x3188)
 
 static void print_uart_mode(struct uart_port *port,
 		struct ktermios *termios, unsigned int baud)
@@ -1831,6 +1836,10 @@ static int s3c24xx_serial_resume(struct device *dev)
 		uart_clock_disable(ourport);
 
 		uart_resume_port(&s3c24xx_uart_drv, port);
+
+		if (ourport->port.line == BLUETOOTH_UART_PORT_LINE)
+			exynos_pmu_update(PAD_RETENTION_UART_BT_OPTION, 0x10000000, 0x10000000);
+
 		if (ourport->dbg_mode & UART_DBG_MODE)
 			dev_err(dev, "UART resume notification for tty framework.\n");
 	}
