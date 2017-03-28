@@ -97,6 +97,8 @@ static void dbg(const char *fmt, ...)
 #define MAX_BAUD	3000000
 #define MIN_BAUD	0
 
+#define TX_DMA_THRESH	128
+
 #define S3C24XX_TX_PIO			1
 #define S3C24XX_TX_DMA			2
 #define S3C24XX_RX_PIO			1
@@ -435,7 +437,6 @@ static int s3c24xx_serial_start_tx_dma(struct s3c24xx_uart_port *ourport,
 	struct circ_buf *xmit = &port->state->xmit;
 	struct s3c24xx_uart_dma *dma = ourport->dma;
 
-
 	if (ourport->tx_mode != S3C24XX_TX_DMA)
 		enable_tx_dma(ourport);
 
@@ -486,7 +487,7 @@ static void s3c24xx_serial_start_next_tx(struct s3c24xx_uart_port *ourport)
 		return;
 	}
 
-	if (!ourport->dma || !ourport->dma->tx_chan || count < port->fifosize)
+	if (!ourport->dma || !ourport->dma->tx_chan || count < TX_DMA_THRESH)
 		s3c24xx_serial_start_tx_pio(ourport);
 	else
 		s3c24xx_serial_start_tx_dma(ourport, count);
@@ -903,7 +904,7 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 
 	count = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
 
-	if (ourport->dma && ourport->dma->tx_chan && count >= port->fifosize) {
+	if (ourport->dma && ourport->dma->tx_chan && count >= TX_DMA_THRESH) {
 		s3c24xx_serial_start_tx_dma(ourport, count);
 		goto out;
 	}
