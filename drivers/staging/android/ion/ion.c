@@ -637,7 +637,7 @@ static void ion_handle_get(struct ion_handle *handle)
 
 static int ion_handle_put_nolock(struct ion_handle *handle)
 {
-	int ret;
+	int ret = 0;
 
 	ret = kref_put(&handle->ref, ion_handle_destroy);
 
