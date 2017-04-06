@@ -1188,7 +1188,8 @@ static chanspec_t wl_cfg80211_get_shared_freq(struct wiphy *wiphy)
 	struct net_device *dev = bcmcfg_to_prmry_ndev(cfg);
 	struct ether_addr bssid;
 	struct wl_bss_info *bss = NULL;
-
+	char *buf;
+	memset(&bssid, 0, sizeof(bssid));
 	if ((err = wldev_ioctl(dev, WLC_GET_BSSID, &bssid, sizeof(bssid), false))) {
 		/* STA interface is not associated. So start the new interface on a temp
 		 * channel . Later proper channel will be applied by the above framework
@@ -1198,19 +1199,24 @@ static chanspec_t wl_cfg80211_get_shared_freq(struct wiphy *wiphy)
 		return wl_ch_host_to_driver(WL_P2P_TEMP_CHAN);
 	}
 
-
-	*(u32 *) cfg->extra_buf = htod32(WL_EXTRA_BUF_MAX);
-	if ((err = wldev_ioctl(dev, WLC_GET_BSS_INFO, cfg->extra_buf,
-		WL_EXTRA_BUF_MAX, false))) {
-			WL_ERR(("Failed to get associated bss info, use temp channel \n"));
-			chspec = wl_ch_host_to_driver(WL_P2P_TEMP_CHAN);
+	buf = kzalloc(WL_EXTRA_BUF_MAX, GFP_KERNEL);
+	if (!buf) {
+		WL_ERR(("buf alloc failed. use temp channel\n"));
+		return wl_ch_host_to_driver(WL_P2P_TEMP_CHAN);
+	}
+	*(u32 *)buf = htod32(WL_EXTRA_BUF_MAX);
+	err = wldev_ioctl(dev, WLC_GET_BSS_INFO, buf, WL_EXTRA_BUF_MAX, false);
+	if (err) {
+		WL_ERR(("Failed to get bss info, use temp channel\n"));
+		chspec = wl_ch_host_to_driver(WL_P2P_TEMP_CHAN);
 	}
 	else {
-			bss = (struct wl_bss_info *) (cfg->extra_buf + 4);
-			chspec =  bss->chanspec;
+		bss = (struct wl_bss_info *)(buf + 4);
+		chspec = bss->chanspec;
 
-			WL_DBG(("Valid BSS Found. chanspec:%d \n", chspec));
+		WL_DBG(("Valid BSS Found. chanspec:%d\n", chspec));
 	}
+	kfree(buf);
 	return chspec;
 }
 
