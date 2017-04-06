@@ -52,8 +52,6 @@ static const char *handler[]= {
 };
 
 int show_unhandled_signals = 1;
-static int do_dump_flag1;
-static int do_dump_flag2;
 
 /*
  * Dump out the contents of some memory nicely...
@@ -400,37 +398,7 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs, unsigned int esr
 	info.si_code  = ILL_ILLOPC;
 	info.si_addr  = pc;
 
-	arm64_notify_die("Oops - undefined instruction in el0", regs, &info, esr);
-}
-
-asmlinkage void __exception do_undefinstr_el1(struct pt_regs *regs, unsigned int esr, unsigned int far)
-{
-	siginfo_t info;
-	void __user *pc = (void __user *)instruction_pointer(regs);
-
-	/* check for AArch32 breakpoint instructions */
-	if (!aarch32_break_handler(regs))
-		return;
-
-	if (call_undef_hook(regs) == 0)
-		return;
-
-	s3c2410wdt_set_emergency_reset(1);
-	do_dump_flag1 = esr;
-	do_dump_flag2 = far;
-	asm ("b .");
-
-	if (unhandled_signal(current, SIGILL) && show_unhandled_signals_ratelimited())
-		pr_info("%s[%d]: undefined instruction: pc=%p (0x%x)\n",
-			current->comm, task_pid_nr(current), pc, esr);
-	dump_instr(KERN_INFO, regs);
-
-	info.si_signo = SIGILL;
-	info.si_errno = 0;
-	info.si_code  = ILL_ILLOPC;
-	info.si_addr  = pc;
-
-	arm64_notify_die("Oops - undefined instruction in el1", regs, &info, esr);
+	arm64_notify_die("Oops - undefined instruction", regs, &info, esr);
 }
 
 long compat_arm_syscall(struct pt_regs *regs);
@@ -500,15 +468,6 @@ static const char *esr_class_str[] = {
 const char *esr_get_class_string(u32 esr)
 {
 	return esr_class_str[ESR_ELx_EC(esr)];
-}
-
-asmlinkage void __exception do_iabt(struct pt_regs *regs, unsigned int esr, unsigned int far)
-{
-	s3c2410wdt_set_emergency_reset(1);
-
-	do_dump_flag1 = esr;
-	do_dump_flag2 = far;
-	asm("b .");
 }
 
 /*
