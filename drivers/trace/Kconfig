@@ -129,15 +129,6 @@ config EXYNOS_SNAPSHOT_SFRDUMP
 	bool "Support dump of sfr region for debugging"
 	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	default y
-        help
-          Dump sfr region for debugging.
-
-config EXYNOS_SNAPSHOT_CACHEDUMP
-	bool "Support dump of cache for debugging"
-	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
-	default y
-        help
-          Dump cache data for debugging.
 
 config EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	bool "Support minimized feature configuration"
