@@ -437,17 +437,17 @@ static int s3c24xx_serial_start_tx_dma(struct s3c24xx_uart_port *ourport,
 	struct circ_buf *xmit = &port->state->xmit;
 	struct s3c24xx_uart_dma *dma = ourport->dma;
 
-	if (ourport->tx_mode != S3C24XX_TX_DMA)
-		enable_tx_dma(ourport);
-
 	while (xmit->tail & (dma_get_cache_alignment() - 1)) {
 		if (rd_regl(port, S3C2410_UFSTAT) & ourport->info->tx_fifofull)
-			return 0;
+			return 1;
 		wr_regb(port, S3C2410_UTXH, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		port->icount.tx++;
 		count--;
 	}
+
+	if (ourport->tx_mode != S3C24XX_TX_DMA)
+		enable_tx_dma(ourport);
 
 	dma->tx_size = count & ~(dma_get_cache_alignment() - 1);
 	dma->tx_transfer_addr = dma->tx_addr + xmit->tail;
@@ -490,7 +490,8 @@ static void s3c24xx_serial_start_next_tx(struct s3c24xx_uart_port *ourport)
 	if (!ourport->dma || !ourport->dma->tx_chan || count < TX_DMA_THRESH)
 		s3c24xx_serial_start_tx_pio(ourport);
 	else
-		s3c24xx_serial_start_tx_dma(ourport, count);
+		if (s3c24xx_serial_start_tx_dma(ourport, count))
+			s3c24xx_serial_start_tx_pio(ourport);
 }
 
 void s3c24xx_serial_start_tx(struct uart_port *port)
@@ -552,7 +553,7 @@ static void s3c24xx_serial_stop_rx(struct uart_port *port)
 		rx_enabled(port) = 0;
 	}
 	if (dma && dma->rx_chan) {
-		dmaengine_pause(dma->tx_chan);
+		dmaengine_pause(dma->rx_chan);
 		dma_status = dmaengine_tx_status(dma->rx_chan,
 				dma->rx_cookie, &state);
 		if (dma_status == DMA_IN_PROGRESS ||
