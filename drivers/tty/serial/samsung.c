@@ -893,6 +893,7 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 	struct circ_buf *xmit = &port->state->xmit;
 	unsigned long flags;
 	int count, dma_count = 0;
+	int fifoleft;
 
 	spin_lock_irqsave(&port->lock, flags);
 
@@ -925,15 +926,18 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 
 	/* try and drain the buffer... */
 
-	if (count > port->fifosize) {
-		count = port->fifosize;
+	fifoleft = port->fifosize - s3c24xx_serial_tx_fifocnt(ourport,
+				rd_regl(port, S3C2410_UFSTAT));
+
+	if (fifoleft)
+		fifoleft--;
+
+	if (count > fifoleft) {
+		count = fifoleft;
 		dma_count = 0;
 	}
 
 	while (!uart_circ_empty(xmit) && count > 0) {
-		if (rd_regl(port, S3C2410_UFSTAT) & ourport->info->tx_fifofull)
-			break;
-
 		wr_regb(port, S3C2410_UTXH, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		port->icount.tx++;
