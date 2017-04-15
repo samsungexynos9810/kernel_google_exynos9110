@@ -1207,6 +1207,8 @@ static struct pmucal_seq enter_lpd[] = {
 	PMUCAL_SEQ_DESC(PMUCAL_WRITE, "QCH_CTRL_UID_ASYNCM_LH_WFBT_MIF_D_CP", 0x10460000, 0x201C, (0x1 << 0), (0x0 << 0), 0, 0, 0xffffffff, 0),
 	PMUCAL_SEQ_DESC(PMUCAL_WRITE, "QCH_CTRL_UID_ASYNCM_LH_GNSS_MIF_D_CP", 0x10460000, 0x202C, (0x1 << 0), (0x0 << 0), 0, 0, 0xffffffff, 0),
 	PMUCAL_SEQ_DESC(PMUCAL_WRITE, "QCH_CTRL_UID_ASYNCM_LH_CP_MIF_D_CP", 0x10460000, 0x2028, (0x1 << 0), (0x0 << 0), 0, 0, 0xffffffff, 0),
+	PMUCAL_SEQ_DESC(PMUCAL_WRITE, "CLK_ENABLE_CLK_FSYS_BUS", 0x13730000, 0x0804, (0x1 << 10), (0x1 << 10), 0, 0, 0xffffffff, 0),
+	PMUCAL_SEQ_DESC(PMUCAL_WRITE, "CLK_ENABLE_CLK_FSYS_MMC_CARD", 0x13730000, 0x081C, (0x1 << 0), (0x1 << 0), 0, 0, 0xffffffff, 0),
 };
 
 static struct pmucal_seq save_lpd[] = {
