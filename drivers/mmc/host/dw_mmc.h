@@ -287,6 +287,7 @@ enum dw_mci_misc_control {
 #define SDMMC_DATA_TMOUT_EXT_SHIFT	8
 #define SDMMC_DATA_TMOUT_MAX_CNT	0x1FFFFF
 #define SDMMC_DATA_TMOUT_MAX_EXT_CNT	0xFFFFFF
+#define SDMMC_HTO_TMOUT_SHIFT		8
 
 
 extern u32 dw_mci_calc_timeout(struct dw_mci *host);
