@@ -32,7 +32,7 @@ extern int exynos_ss_save_reg(void *regs);
 extern int exynos_ss_dump_panic(char *str, size_t len);
 extern int exynos_ss_prepare_panic(void);
 extern int exynos_ss_post_panic(void);
-extern int exynos_ss_post_reboot(void);
+extern int exynos_ss_post_reboot(char *cmd);
 extern int exynos_ss_set_hardlockup(int);
 extern int exynos_ss_get_hardlockup(void);
 extern unsigned int exynos_ss_get_item_size(char *);
@@ -196,7 +196,7 @@ void exynos_ss_dump_sfr(void);
 #define exynos_ss_dump_sfr()		do { } while(0)
 #define exynos_ss_prepare_panic()	do { } while(0)
 #define exynos_ss_post_panic()		do { } while(0)
-#define exynos_ss_post_reboot()		do { } while(0)
+#define exynos_ss_post_reboot(a)	do { } while(0)
 #define exynos_ss_set_hardlockup(a)	do { } while(0)
 #define exynos_ss_get_hardlockup()	do { } while(0)
 #define exynos_ss_get_item_size(a)	do { } while(0)

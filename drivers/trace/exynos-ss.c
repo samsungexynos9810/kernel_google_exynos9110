@@ -944,7 +944,7 @@ int exynos_ss_dump_panic(char *str, size_t len)
 }
 EXPORT_SYMBOL(exynos_ss_dump_panic);
 
-int exynos_ss_post_reboot(void)
+int exynos_ss_post_reboot(char *cmd)
 {
 	int cpu, core, mpidr;
 
@@ -958,7 +958,8 @@ int exynos_ss_post_reboot(void)
 		exynos_ss_set_core_panic_stat(ESS_SIGN_RESET, core);
 	}
 	exynos_ss_report_reason(ESS_SIGN_NORMAL_REBOOT);
-	exynos_ss_scratch_reg(ESS_SIGN_RESET);
+	if (!cmd || strcmp((char *)cmd, "ramdump"))
+		exynos_ss_scratch_reg(ESS_SIGN_RESET);
 
 	pr_emerg("exynos-snapshot: normal reboot done\n");
 
@@ -1087,9 +1088,9 @@ int exynos_ss_save_context(void *v_regs)
 
 	if (unlikely(!ess_base.enabled))
 		return 0;
-
-	//exynos_trace_stop();
-
+#ifdef CONFIG_EXYNOS_CORESIGHT_ETR
+	exynos_trace_stop();
+#endif
 	local_irq_save(flags);
 
 	/* If it was already saved the context information, it should be skipped */

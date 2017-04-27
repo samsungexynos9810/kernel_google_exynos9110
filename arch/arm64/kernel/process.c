@@ -157,7 +157,7 @@ void machine_restart(char *cmd)
 	if (efi_enabled(EFI_RUNTIME_SERVICES))
 		efi_reboot(reboot_mode, NULL);
 
-	exynos_ss_post_reboot();
+	exynos_ss_post_reboot(cmd);
 
 	/* Now call the architecture specific reboot code. */
 	if (arm_pm_restart)
