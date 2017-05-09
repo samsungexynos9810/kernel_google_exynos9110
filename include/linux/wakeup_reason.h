@@ -21,8 +21,13 @@
 #define MAX_SUSPEND_ABORT_LEN 256
 
 void log_wakeup_reason(int irq);
-void log_suspend_abort_reason(const char *fmt, ...);
 int check_wakeup_reason(int irq);
+
+#ifdef CONFIG_SUSPEND
+void log_suspend_abort_reason(const char *fmt, ...);
+#else
+static inline void log_suspend_abort_reason(const char *fmt, ...) { }
+#endif
 
 #ifdef CONFIG_ARCH_EXYNOS
 void update_wakeup_reason_stats(int irq, int eint);
