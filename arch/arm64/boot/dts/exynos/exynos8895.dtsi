@@ -1203,7 +1203,7 @@
 	spi_0: spi@109D0000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x109D0000 0x100>;
-		samsung,spi-fifosize = <64>;
+		samsung,spi-fifosize = <256>;
 		interrupts = <0 435 0>;
 /*
 		To use DMA in SPI CAM_0, do not use DMA in SPI USI_13.
@@ -1227,7 +1227,7 @@
 	spi_1: spi@109E0000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x109E0000 0x100>;
-		samsung,spi-fifosize = <64>;
+		samsung,spi-fifosize = <256>;
 		interrupts = <0 436 0>;
 		dma-names = "tx", "rx";
 		swap-mode;
