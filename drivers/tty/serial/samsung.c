@@ -33,6 +33,7 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/init.h>
+#include <linux/slab.h>
 #include <linux/sysrq.h>
 #include <linux/console.h>
 #include <linux/tty.h>
@@ -109,6 +110,9 @@ EXPORT_SYMBOL_GPL(s3c2410_serial_wake_peer);
 
 #define UART_LOOPBACK_MODE	(0x1 << 0)
 #define UART_DBG_MODE		(0x1 << 1)
+
+/* Allocate 800KB of buffer for UART logging */
+#define LOG_BUFFER_SIZE		(0xC8000)
 
 #define BLUETOOTH_UART_PORT_LINE	(1)
 
@@ -209,6 +213,42 @@ uart_dbg_store(struct device *dev, struct device_attribute *attr,
 }
 
 static DEVICE_ATTR(uart_dbg, 0640, uart_dbg_show, uart_dbg_store);
+
+static void uart_copy_to_local_buf(int dir, struct uart_local_buf *local_buf,
+		unsigned char *trace_buf, int len)
+{
+	unsigned long long time;
+	unsigned long rem_nsec;
+	int i;
+	int cpu = raw_smp_processor_id();
+
+	time = cpu_clock(cpu);
+	rem_nsec = do_div(time, NSEC_PER_SEC);
+
+	if (local_buf->index + (len * 2 + 30) >= local_buf->size)
+		local_buf->index = 0;
+
+	local_buf->index += snprintf(local_buf->buffer + local_buf->index,
+			local_buf->size - local_buf->index,
+			"[%5lu.%06lu] ",
+			(unsigned long)time, rem_nsec / NSEC_PER_USEC);
+
+	if (dir == 1)
+		local_buf->index += snprintf(local_buf->buffer + local_buf->index,
+				local_buf->size - local_buf->index, "[RX] ");
+	else
+		local_buf->index += snprintf(local_buf->buffer + local_buf->index,
+				local_buf->size - local_buf->index, "[TX] ");
+
+	for (i = 0; i < len; i++) {
+		local_buf->index += snprintf(local_buf->buffer + local_buf->index,
+				local_buf->size - local_buf->index,
+				"%02X ", trace_buf[i]);
+	}
+
+	local_buf->index += snprintf(local_buf->buffer + local_buf->index,
+			local_buf->size - local_buf->index, "\n");
+}
 
 static void s3c24xx_serial_resetport(struct uart_port *port,
 				   struct s3c2410_uartcfg *cfg);
@@ -400,6 +440,8 @@ s3c24xx_serial_rx_chars(int irq, void *dev_id)
 	unsigned long flags;
 	int fifocnt = 0;
 	int max_count = 64;
+	unsigned char trace_buf[256] = {0, };
+	int trace_cnt = 0;
 
 	spin_lock_irqsave(&port->lock, flags);
 
@@ -477,12 +519,18 @@ s3c24xx_serial_rx_chars(int irq, void *dev_id)
 		if (uart_handle_sysrq_char(port, ch))
 			goto ignore_char;
 
+		if (ourport->uart_logging)
+			trace_buf[trace_cnt++] = ch;
+
 		uart_insert_char(port, uerstat, S3C2410_UERSTAT_OVERRUN,
 				 ch, flag);
 
  ignore_char:
 		continue;
 	}
+
+	if (ourport->uart_logging && trace_cnt)
+		uart_copy_to_local_buf(1, &ourport->uart_local_buf, trace_buf, trace_cnt);
 
 	spin_unlock_irqrestore(&port->lock, flags);
 	tty_flip_buffer_push(&port->state->port);
@@ -498,13 +546,18 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 	struct circ_buf *xmit = &port->state->xmit;
 	unsigned long flags;
 	int count = 256;
+	unsigned char trace_buf[256] = {0, };
+	int trace_cnt = 0;
 
 	spin_lock_irqsave(&port->lock, flags);
 
 	if (port->x_char) {
 		wr_regb(port, S3C2410_UTXH, port->x_char);
+		if (ourport->uart_logging)
+			trace_buf[trace_cnt++] = port->x_char;
 		port->icount.tx++;
 		port->x_char = 0;
+
 		goto out;
 	}
 
@@ -524,8 +577,11 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 			break;
 
 		wr_regb(port, S3C2410_UTXH, xmit->buf[xmit->tail]);
+		if (ourport->uart_logging)
+			trace_buf[trace_cnt++] = (unsigned char)xmit->buf[xmit->tail];
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		port->icount.tx++;
+
 	}
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
@@ -538,6 +594,8 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 		s3c24xx_serial_stop_tx(port);
 
 out:
+	if (ourport->uart_logging && trace_cnt)
+		uart_copy_to_local_buf(0, &ourport->uart_local_buf, trace_buf, trace_cnt);
 	spin_unlock_irqrestore(&port->lock, flags);
 	return IRQ_HANDLED;
 }
@@ -1701,6 +1759,11 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 	else
 		ourport->in_band_wakeup = 0;
 
+	if (of_get_property(pdev->dev.of_node, "samsung,uart-logging", NULL))
+		ourport->uart_logging = 1;
+	else
+		ourport->uart_logging = 0;
+
 	if (of_find_property(pdev->dev.of_node, "samsung,lpass-subip", NULL))
 		ourport->domain = DOMAIN_AUD;
 	else
@@ -1766,6 +1829,17 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 
 	ourport->dbg_mode = 0;
 
+	if (ourport->uart_logging == 1) {
+		/* Allocate memory for UART logging */
+		ourport->uart_local_buf.buffer = kzalloc(LOG_BUFFER_SIZE, GFP_KERNEL);
+
+		if (!ourport->uart_local_buf.buffer)
+			dev_err(&pdev->dev, "could not allocate buffer for UART logging\n");
+
+		ourport->uart_local_buf.size = LOG_BUFFER_SIZE;
+		ourport->uart_local_buf.index = 0;
+	}
+
 	return 0;
 }
 
@@ -1787,6 +1861,9 @@ static int s3c24xx_serial_remove(struct platform_device *dev)
 #ifdef CONFIG_SAMSUNG_CLOCK
 		device_remove_file(&dev->dev, &dev_attr_clock_source);
 #endif
+		if (ourport->uart_logging == 1)
+			kfree(ourport->uart_local_buf.buffer);
+
 		uart_remove_one_port(&s3c24xx_uart_drv, port);
 	}
 

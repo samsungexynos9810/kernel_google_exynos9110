@@ -44,6 +44,12 @@ struct s3c24xx_uart_info {
 	int (*reset_port)(struct uart_port *, struct s3c2410_uartcfg *);
 };
 
+struct uart_local_buf {
+	unsigned char *buffer;
+	unsigned int size;
+	unsigned int index;
+};
+
 struct s3c24xx_serial_drv_data {
 	struct s3c24xx_uart_info	*info;
 	struct s3c2410_uartcfg		*def_cfg;
@@ -88,6 +94,10 @@ struct s3c24xx_uart_port {
 
 	unsigned int			in_band_wakeup;
 	unsigned int dbg_mode;
+
+	unsigned int			uart_logging;
+	struct uart_local_buf		uart_local_buf;
+
 };
 
 /* conversion functions */
