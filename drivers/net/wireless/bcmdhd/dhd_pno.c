@@ -1919,8 +1919,10 @@ dhd_pno_get_gscan(dhd_pub_t *dhd, dhd_pno_gscan_cmd_cfg_t type,
 			ptr->max_ap_cache_per_scan = GSCAN_MAX_AP_CACHE_PER_SCAN;
 			ptr->max_rssi_sample_size = PFN_SWC_RSSI_WINDOW_MAX;
 			ptr->max_scan_reporting_threshold = 100;
-			ptr->max_hotlist_aps = PFN_HOTLIST_MAX_NUM_APS;
-			ptr->max_significant_wifi_change_aps = PFN_SWC_MAX_NUM_APS;
+			ptr->max_hotlist_bssids = PFN_HOTLIST_MAX_NUM_APS;
+			ptr->max_hotlist_ssids = 0;
+			ptr->max_significant_wifi_change_aps = 0;
+			ptr->max_bssid_history_entries = 0;
 			ptr->max_epno_ssid_crc32 = MAX_EPNO_SSID_NUM;
 			ptr->max_epno_hidden_ssid = MAX_EPNO_HIDDEN_SSID;
 			ptr->max_white_list_ssid = MAX_WHITELIST_SSID;
@@ -2061,10 +2063,10 @@ dhd_pno_set_cfg_gscan(dhd_pub_t *dhd, dhd_pno_gscan_cmd_cfg_t type,
 				INIT_LIST_HEAD(&_params->params_gscan.hotlist_bssid_list);
 			}
 			if ((_params->params_gscan.nbssid_hotlist +
-			          ptr->nbssid) > PFN_SWC_MAX_NUM_APS) {
+				ptr->nbssid) > PFN_SWC_MAX_NUM_APS) {
 				DHD_ERROR(("Excessive number of hotlist APs programmed %d\n",
-				     (_params->params_gscan.nbssid_hotlist +
-				      ptr->nbssid)));
+					(_params->params_gscan.nbssid_hotlist +
+					ptr->nbssid)));
 				err = BCME_RANGE;
 				goto exit;
 			}
@@ -2088,62 +2090,6 @@ dhd_pno_set_cfg_gscan(dhd_pub_t *dhd, dhd_pno_gscan_cmd_cfg_t type,
 
 			_params->params_gscan.nbssid_hotlist += ptr->nbssid;
 			_params->params_gscan.lost_ap_window = ptr->lost_ap_window;
-		}
-		break;
-		case DHD_PNO_SIGNIFICANT_SCAN_CFG_ID:
-		{
-			gscan_swc_params_t *ptr = (gscan_swc_params_t *)buf;
-			dhd_pno_significant_bssid_t *_pno_significant_change_bssid;
-			wl_pfn_significant_bssid_t *significant_bssid_ptr;
-
-			if (flush) {
-				dhd_pno_reset_cfg_gscan(_params, _pno_state,
-				   GSCAN_FLUSH_SIGNIFICANT_CFG);
-			}
-
-			if (!ptr->nbssid) {
-				break;
-			}
-
-			if (!_params->params_gscan.nbssid_significant_change) {
-				INIT_LIST_HEAD(&_params->params_gscan.significant_bssid_list);
-			}
-			if ((_params->params_gscan.nbssid_significant_change +
-			          ptr->nbssid) > PFN_SWC_MAX_NUM_APS) {
-				DHD_ERROR(("Excessive number of SWC APs programmed %d\n",
-				     (_params->params_gscan.nbssid_significant_change +
-				      ptr->nbssid)));
-				err = BCME_RANGE;
-				goto exit;
-			}
-
-			for (i = 0, significant_bssid_ptr = ptr->bssid_elem_list;
-			     i < ptr->nbssid; i++, significant_bssid_ptr++) {
-				_pno_significant_change_bssid =
-				      kzalloc(sizeof(dhd_pno_significant_bssid_t),
-				      GFP_KERNEL);
-
-				if (!_pno_significant_change_bssid) {
-					DHD_ERROR(("SWC bssidptr is NULL, cannot kalloc %zd bytes",
-					sizeof(dhd_pno_significant_bssid_t)));
-					err = BCME_NOMEM;
-					goto exit;
-				}
-				memcpy(&_pno_significant_change_bssid->BSSID,
-				    &significant_bssid_ptr->macaddr, ETHER_ADDR_LEN);
-				_pno_significant_change_bssid->rssi_low_threshold =
-				    significant_bssid_ptr->rssi_low_threshold;
-				_pno_significant_change_bssid->rssi_high_threshold =
-				    significant_bssid_ptr->rssi_high_threshold;
-				list_add_tail(&_pno_significant_change_bssid->list,
-				    &_params->params_gscan.significant_bssid_list);
-			}
-
-			_params->params_gscan.swc_nbssid_threshold = ptr->swc_threshold;
-			_params->params_gscan.swc_rssi_window_size = ptr->rssi_window;
-			_params->params_gscan.lost_ap_window = ptr->lost_ap_window;
-			_params->params_gscan.nbssid_significant_change += ptr->nbssid;
-
 		}
 		break;
 	case DHD_PNO_SCAN_CFG_ID:
@@ -2268,7 +2214,6 @@ dhd_pno_set_for_gscan(dhd_pub_t *dhd, struct dhd_pno_gscan_params *gscan_params)
 	dhd_pno_status_info_t *_pno_state = PNO_GET_PNOSTATE(dhd);
 	wl_pfn_gscan_ch_bucket_cfg_t *ch_bucket = NULL;
 	wl_pfn_gscan_cfg_t *pfn_gscan_cfg_t = NULL;
-	wl_pfn_significant_bssid_t *p_pfn_significant_bssid = NULL;
 	wl_pfn_bssid_t *p_pfn_bssid = NULL;
 	dhd_pno_params_t	*_params;
 	bool fw_flushed = FALSE;
@@ -2341,7 +2286,8 @@ dhd_pno_set_for_gscan(dhd_pub_t *dhd, struct dhd_pno_gscan_params *gscan_params)
 
 	gscan_param_size = sizeof(wl_pfn_gscan_cfg_t) +
 	          (num_buckets_to_fw - 1) * sizeof(wl_pfn_gscan_ch_bucket_cfg_t);
-	pfn_gscan_cfg_t = (wl_pfn_gscan_cfg_t *) MALLOC(dhd->osh, gscan_param_size);
+	pfn_gscan_cfg_t = (wl_pfn_gscan_cfg_t *)
+			MALLOCZ(dhd->osh, gscan_param_size);
 
 	if (!pfn_gscan_cfg_t) {
 		DHD_ERROR(("%s: failed to malloc memory of size %d\n",
@@ -2356,15 +2302,6 @@ dhd_pno_set_for_gscan(dhd_pub_t *dhd, struct dhd_pno_gscan_params *gscan_params)
 	else
 		pfn_gscan_cfg_t->buffer_threshold = GSCAN_BATCH_NO_THR_SET;
 
-	if (gscan_params->nbssid_significant_change) {
-		pfn_gscan_cfg_t->swc_nbssid_threshold = gscan_params->swc_nbssid_threshold;
-		pfn_gscan_cfg_t->swc_rssi_window_size = gscan_params->swc_rssi_window_size;
-		pfn_gscan_cfg_t->lost_ap_window	= gscan_params->lost_ap_window;
-	} else {
-		pfn_gscan_cfg_t->swc_nbssid_threshold = 0;
-		pfn_gscan_cfg_t->swc_rssi_window_size = 0;
-		pfn_gscan_cfg_t->lost_ap_window	= 0;
-	}
 	pfn_gscan_cfg_t->flags =
 	         (gscan_params->send_all_results_flag & GSCAN_SEND_ALL_RESULTS_MASK);
 	pfn_gscan_cfg_t->flags |= FORCE_ALL_CHANNEL_BUCKETS_IN_FIRST_SCAN;
@@ -2399,7 +2336,6 @@ dhd_pno_set_for_gscan(dhd_pub_t *dhd, struct dhd_pno_gscan_params *gscan_params)
 			__FUNCTION__, err));
 		goto exit;
 	}
-	if (gscan_params->nbssid_significant_change) {
 		dhd_pno_significant_bssid_t *iter, *next;
 
 		p_pfn_significant_bssid = kzalloc(sizeof(wl_pfn_significant_bssid_t) *
@@ -2500,7 +2436,6 @@ exit:
 			_pno_state->pno_mode &= ~DHD_PNO_GSCAN_MODE;
 		}
 	}
-	kfree(p_pfn_significant_bssid);
 	kfree(p_pfn_bssid);
 	if (pfn_gscan_cfg_t) {
 		MFREE(dhd->osh, pfn_gscan_cfg_t, gscan_param_size);
@@ -3754,96 +3689,6 @@ dhd_retreive_batch_scan_results(dhd_pub_t *dhd)
 	}
 
 	return err;
-}
-
-/* Handle Significant WiFi Change (SWC) event from FW
- * Send event to HAL when all results arrive from FW
- */
-void *
-dhd_handle_swc_evt(dhd_pub_t *dhd, const void *event_data, int *send_evt_bytes)
-{
-	void *ptr = NULL;
-	dhd_pno_status_info_t *_pno_state = PNO_GET_PNOSTATE(dhd);
-	struct dhd_pno_gscan_params *gscan_params;
-	struct dhd_pno_swc_evt_param *params;
-#if defined(STRICT_GCC_WARNINGS) && defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#endif
-	wl_pfn_swc_results_t *results = (wl_pfn_swc_results_t *)event_data;
-#if defined(STRICT_GCC_WARNINGS) && defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-	wl_pfn_significant_net_t *change_array;
-	int i;
-
-	gscan_params = &(_pno_state->pno_params_arr[INDEX_OF_GSCAN_PARAMS].params_gscan);
-	params = &(gscan_params->param_significant);
-
-	if (!results->total_count) {
-		*send_evt_bytes = 0;
-		return ptr;
-	}
-
-	if (!params->results_rxed_so_far) {
-		if (!params->change_array) {
-			params->change_array = (wl_pfn_significant_net_t *)
-			kmalloc(sizeof(wl_pfn_significant_net_t) * results->total_count,
-			GFP_KERNEL);
-
-			if (!params->change_array) {
-				DHD_ERROR(("%s Cannot Malloc %zd bytes!!\n", __FUNCTION__,
-				sizeof(wl_pfn_significant_net_t) * results->total_count));
-				*send_evt_bytes = 0;
-				return ptr;
-			}
-		} else {
-			DHD_ERROR(("RX'ed WLC_E_PFN_SWC evt from FW, previous evt not complete!!"));
-			*send_evt_bytes = 0;
-			return ptr;
-		}
-
-	}
-
-	DHD_PNO(("%s: pkt_count %d total_count %d\n", __FUNCTION__,
-	results->pkt_count, results->total_count));
-
-	for (i = 0; i < results->pkt_count; i++) {
-		DHD_PNO(("\t %02x:%02x:%02x:%02x:%02x:%02x\n",
-		results->list[i].BSSID.octet[0],
-		results->list[i].BSSID.octet[1],
-		results->list[i].BSSID.octet[2],
-		results->list[i].BSSID.octet[3],
-		results->list[i].BSSID.octet[4],
-		results->list[i].BSSID.octet[5]));
-	}
-
-	change_array = &params->change_array[params->results_rxed_so_far];
-	if ((params->results_rxed_so_far + results->pkt_count) <= results->total_count) {
-		memcpy(change_array, results->list,
-		sizeof(wl_pfn_significant_net_t) * results->pkt_count);
-		params->results_rxed_so_far += results->pkt_count;
-	} else {
-		/* In case of spurious event or invalid data send hang event */
-		dhd->hang_reason = HANG_REASON_INVALID_EVENT_OR_DATA;
-		dhd_os_send_hang_message(dhd);
-	}
-
-	if (params->results_rxed_so_far == results->total_count) {
-		params->results_rxed_so_far = 0;
-		*send_evt_bytes = sizeof(wl_pfn_significant_net_t) * results->total_count;
-		/* Pack up change buffer to send up and reset
-		 * results_rxed_so_far, after its done.
-		 */
-		ptr = (void *) params->change_array;
-		/* expecting the callee to free this mem chunk */
-		params->change_array = NULL;
-	}
-	else {
-		*send_evt_bytes = 0;
-	}
-
-	return ptr;
 }
 
 void

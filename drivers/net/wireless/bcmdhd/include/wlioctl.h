@@ -4199,13 +4199,6 @@ typedef struct wl_pfn_bssid {
 	/* Bit4: suppress_lost, Bit3: suppress_found */
 	uint16             flags;
 } wl_pfn_bssid_t;
-#ifndef LINUX_POSTMOGRIFY_REMOVAL
-typedef struct wl_pfn_significant_bssid {
-	struct ether_addr	macaddr;
-	int8    rssi_low_threshold;
-	int8    rssi_high_threshold;
-} wl_pfn_significant_bssid_t;
-#endif /* LINUX_POSTMOGRIFY_REMOVAL */
 #define WL_PFN_SUPPRESSFOUND_MASK	0x08
 #define WL_PFN_SUPPRESSLOST_MASK	0x10
 #define WL_PFN_SSID_IMPRECISE_MATCH	0x80
