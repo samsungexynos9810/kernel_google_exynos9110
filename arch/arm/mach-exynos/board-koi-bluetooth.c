@@ -66,6 +66,10 @@
 
 static struct rfkill *bt_rfkill;
 
+void bcm_powerlock_init(void);
+int bcm_power_lock(int cookie);
+void bcm_power_unlock(int cookie);
+
 struct bcm_bt_lpm {
 	int wake;
 	int host_wake;
@@ -226,6 +230,7 @@ regs_fail:
 static int bcm4330_bt_rfkill_set_power(void *data, bool blocked)
 {
 	int val_power = 0;
+	int lock_cookie_bt = 'B' | 'T'<<8 | '_'<<16 | '_'<<24; /* cookie "BT__" */
 
 	val_power = gpio_get_value(BT_RESET_GPIO);
 	if( blocked == 0 && val_power != 0) {
@@ -237,6 +242,8 @@ static int bcm4330_bt_rfkill_set_power(void *data, bool blocked)
 
 	PR_INFO("bcm4330_bt_rfkill_set_power() blocked=%d\n",blocked);
 
+	bcm_power_lock(lock_cookie_bt);
+
 	// rfkill_ops callback. Turn transmitter on when blocked is false
 	if (!blocked) {
 		bluetooth_power(BT_PWR_ON);
@@ -245,6 +252,7 @@ static int bcm4330_bt_rfkill_set_power(void *data, bool blocked)
 		gpio_set_value(BT_WAKE_GPIO, 0);
 		bluetooth_power(BT_PWR_OFF);
 	}
+	bcm_power_unlock(lock_cookie_bt);
 	PR_INFO("bcm4330_bt_rfkill_set_power() blocked=%d end\n",blocked);
 	return 0;
 
@@ -403,6 +411,8 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 	if (unlikely(rc)) {
 		return rc;
 	}
+
+	bcm_powerlock_init();
 
 	gpio_direction_output(BT_RESET_GPIO, 0);
 	bt_rfkill = rfkill_alloc("bcm4330 Bluetooth", &pdev->dev,

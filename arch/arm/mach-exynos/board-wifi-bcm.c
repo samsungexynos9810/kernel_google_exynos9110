@@ -183,6 +183,8 @@ void __init bcm_bt_devs_init(void);
 int bcm_bt_lock(int cookie);
 void bcm_bt_unlock(int cookie);
 #endif /* CONFIG_BCM4335BT */
+int bcm_power_lock(int cookie);
+void bcm_power_unlock(int cookie);
 
 extern int wcf_status_register(void (*cb)(struct platform_device *dev, int state))
 {
@@ -292,6 +294,8 @@ int bcm_wifi_set_power(int enable)
 	struct regulator_dev *rdev;
 	u32 pre_use_count;
 
+	int lock_cookie_wifi = 'W' | 'i'<<8 | 'F'<<16 | 'i'<<24;    /* cookie "WiFi" */
+
 	mdelay(100);
 	regulator = regulator_get(NULL, "vdd_bt_dual_1v8");
 	if(regulator == NULL) {
@@ -315,6 +319,7 @@ int bcm_wifi_set_power(int enable)
 		pr_err("%s: btlock acquired\n",__FUNCTION__);
 #endif /* CONFIG_BCM4335BT */
 
+		bcm_power_lock(lock_cookie_wifi);
 		bcm_wifi_set_pincntl(enable);
 
 		ret = gpio_direction_output(gpio_power, 1);
@@ -327,9 +332,9 @@ int bcm_wifi_set_power(int enable)
 					__func__, ret);
 			return ret;
 		}
-
 		/* WLAN chip to reset */
 		mdelay(150);
+		bcm_power_unlock(lock_cookie_wifi);
 		pr_info("%s: wifi power successed to pull up\n", __func__);
 	} else { // OFF
 		ret = regulator_disable(regulator);
@@ -343,7 +348,7 @@ int bcm_wifi_set_power(int enable)
 			printk("** WiFi: timeout in acquiring bt lock**\n");
 		pr_err("%s: btlock acquired\n",__FUNCTION__);
 #endif /* CONFIG_BCM4335BT */
-
+		bcm_power_lock(lock_cookie_wifi);
 		bcm_wifi_set_pincntl(enable);
 
 		ret = gpio_direction_output(gpio_power, 0);
@@ -359,6 +364,7 @@ int bcm_wifi_set_power(int enable)
 
 		/* WLAN chip down */
 		mdelay(100);
+		bcm_power_unlock(lock_cookie_wifi);
 		pr_info("%s: wifi power successed to pull down\n", __func__);
 	}
 
