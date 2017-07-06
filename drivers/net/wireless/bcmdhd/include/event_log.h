@@ -230,6 +230,7 @@ typedef struct {
 #define _EVENT_LOGE(tag, fmt_num, ...) event_logn(14, tag, fmt_num, __VA_ARGS__)
 #define _EVENT_LOGF(tag, fmt_num, ...) event_logn(15, tag, fmt_num, __VA_ARGS__)
 
+#define EVENT_LOG_BLOCK_HDRLEN		8
 
 /* Casting  low level macros */
 #define _EVENT_LOG_CAST0(tag, fmt_num)			\
