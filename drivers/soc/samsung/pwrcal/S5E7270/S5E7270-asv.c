@@ -7,6 +7,7 @@
 #include "S5E7270-sysreg.h"
 #include "S5E7270-vclk.h"
 #include "S5E7270-vclk-internal.h"
+#include <soc/samsung/ect_parser.h>
 
 #define S5P_VA_APM_SRAM			((void *)0x11200000)
 #define EXYNOS_MAILBOX_RCC_MIN_MAX(x)	(S5P_VA_APM_SRAM + (0x3700) + (x * 0x4))

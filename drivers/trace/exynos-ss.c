@@ -2724,10 +2724,10 @@ void exynos_ss_clk(void *clock, const char *func_name, int mode)
 {
 	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
-	if (unlikely(!ess_base.enabled || !item->entry.enabled || !item->entry.enabled_init))
+	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
 	{
-		int cpu = get_current_cpunum();
+		int cpu = raw_smp_processor_id();
 		unsigned long i = atomic_inc_return(&ess_idx.clk_log_idx) &
 				(ARRAY_SIZE(ess_log->clk) - 1);
 

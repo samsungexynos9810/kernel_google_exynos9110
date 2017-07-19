@@ -6,6 +6,7 @@
 #include "S5E7270-cmusfr.h"
 #include "S5E7270-pmusfr.h"
 #include "S5E7270-cmu.h"
+#include <soc/samsung/ect_parser.h>
 
 struct pwrcal_clk *fixed_rate_type_list[NUM_OF_FIXED_RATE_TYPE];
 struct pwrcal_clk *fixed_factor_type_list[NUM_OF_FIXED_FACTOR_TYPE];

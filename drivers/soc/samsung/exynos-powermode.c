@@ -16,11 +16,9 @@
 #include <linux/sysfs.h>
 #include <linux/slab.h>
 #include <linux/cpu.h>
-#include <linux/psci.h>
 #include <linux/cpuidle_profiler.h>
-#include <linux/exynos-ss.h>
-#include <linux/cpufreq.h>
-#include <linux/delay.h>
+#include <linux/irq.h>
+#include <linux/irqchip/arm-gic.h>
 
 #include <asm/smp_plat.h>
 
@@ -28,7 +26,9 @@
 #include <soc/samsung/exynos-pmu.h>
 #include <soc/samsung/exynos-powermode.h>
 
-extern void mngs_reset_control(int en);
+#include "pwrcal/pwrcal.h"
+
+#define NUM_WAKEUP_MASK		3
 
 struct exynos_powermode_info {
 	unsigned int	cpd_residency;		/* target residency of cpd */
@@ -36,63 +36,39 @@ struct exynos_powermode_info {
 
 	struct cpumask	c2_mask;		/* per cpu c2 status */
 
-	int		cpd_enabled;		/* CPD activation */
-	int		cpd_blocking;		/* blocking CPD */
-
-	int		sicd_enabled;		/* SICD activation */
-	bool		sicd_entered;
+	/*
+	 * cpd_blocked prevents to power down the cluster. It used by cpufreq
+	 * driver using block_cpd() and release_cpd() or usespace using sysfs
+	 * interface.
+	 */
+	int		cpd_blocked;
 
 	/*
-	 * While system boot, wakeup_mask and idle_ip_mask is intialized with
-	 * device tree. These are used by system power mode.
+	 * sicd_enabled is changed by sysfs interface. It is just for
+	 * development convenience because console does not work during
+	 * SICD mode.
 	 */
-	unsigned int	num_wakeup_mask;
-	unsigned int	*wakeup_mask_offset;
-	unsigned int	*wakeup_mask[NUM_SYS_POWERDOWN];
+	int		sicd_enabled;
+	int		sicd_entered;
+	int		sicd_factory;
+
+	/*
+	 * During intializing time, wakeup_mask and idle_ip_mask is intialized
+	 * with device tree data. These are used when system enter system
+	 * power down mode.
+	 */
+	unsigned int	wakeup_mask[NUM_SYS_POWERDOWN][NUM_WAKEUP_MASK];
 	int		idle_ip_mask[NUM_SYS_POWERDOWN][NUM_IDLE_IP];
 };
 
-static struct exynos_powermode_info *pm_info;
+static struct exynos_powermode_info *powermode_info;
 
-/******************************************************************************
- *                                CAL interfaces                              *
- ******************************************************************************/
-#define linear_phycpu(mpidr)			\
-	((MPIDR_AFFINITY_LEVEL(mpidr, 1) << 2)	\
-	 | MPIDR_AFFINITY_LEVEL(mpidr, 0))
-
-static void cpu_enable(unsigned int cpu)
+int is_sicd_factory(void)
 {
-	unsigned int mpidr = cpu_logical_map(cpu);
-	unsigned int phycpu = linear_phycpu(mpidr);
-
-	cal_cpu_enable(phycpu);
-}
-
-static void cpu_disable(unsigned int cpu)
-{
-	unsigned int mpidr = cpu_logical_map(cpu);
-	unsigned int phycpu = linear_phycpu(mpidr);
-
-	cal_cpu_disable(phycpu);
-}
-
-static void cluster_enable(unsigned int cpu)
-{
-	unsigned int mpidr = cpu_logical_map(cpu);
-	unsigned int phycluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-
-	cal_cluster_enable(phycluster);
-	mngs_reset_control(1);
-}
-
-static void cluster_disable(unsigned int cpu)
-{
-	unsigned int mpidr = cpu_logical_map(cpu);
-	unsigned int phycluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-
-	mngs_reset_control(0);
-	cal_cluster_disable(phycluster);
+	if (powermode_info->sicd_factory)
+		return true;
+	else
+		return false;
 }
 
 #ifdef CONFIG_ARM64_EXYNOS_CPUIDLE
@@ -111,7 +87,7 @@ static int exynos_check_idle_ip_stat(int mode, int reg_index)
 	int ret;
 
 	exynos_pmu_read(PMU_IDLE_IP(reg_index), &val);
-	mask = pm_info->idle_ip_mask[mode][reg_index];
+	mask = powermode_info->idle_ip_mask[mode][reg_index];
 
 	ret = (val & ~mask) == ~mask ? 0 : -EBUSY;
 
@@ -148,17 +124,6 @@ static int exynos_check_idle_ip_stat(int mode, int reg_index)
 	return ret;
 }
 
-static int syspwr_mode_available(unsigned int mode)
-{
-	int index;
-
-	for_each_idle_ip(index)
-		if (exynos_check_idle_ip_stat(mode, index))
-			return false;
-
-	return true;
-}
-
 static DEFINE_SPINLOCK(idle_ip_mask_lock);
 static void exynos_set_idle_ip_mask(enum sys_powerdown mode)
 {
@@ -168,7 +133,7 @@ static void exynos_set_idle_ip_mask(enum sys_powerdown mode)
 	spin_lock_irqsave(&idle_ip_mask_lock, flags);
 	for_each_idle_ip(i)
 		exynos_pmu_write(PMU_IDLE_IP_MASK(i),
-				pm_info->idle_ip_mask[mode][i]);
+				powermode_info->idle_ip_mask[mode][i]);
 	spin_unlock_irqrestore(&idle_ip_mask_lock, flags);
 }
 
@@ -195,7 +160,7 @@ static void idle_ip_unmask(int mode, int ip_index)
 	unsigned long flags;
 
 	spin_lock_irqsave(&idle_ip_mask_lock, flags);
-	pm_info->idle_ip_mask[mode][reg_index] &= ~(0x1 << ip_index);
+	powermode_info->idle_ip_mask[mode][reg_index] &= ~(0x1 << ip_index);
 	spin_unlock_irqrestore(&idle_ip_mask_lock, flags);
 }
 
@@ -239,7 +204,20 @@ static void exynos_create_idle_ip_mask(int ip_index)
 int exynos_get_idle_ip_index(const char *ip_name)
 {
 	struct device_node *np = of_find_node_by_name(NULL, "exynos-powermode");
-	int ip_index;
+	int ip_index, fix_idle_ip;
+	int ret;
+
+	fix_idle_ip = of_property_match_string(np, "fix-idle-ip", ip_name);
+	if (fix_idle_ip >= 0) {
+		ret = of_property_read_u32_index(np, "fix-idle-ip-index",
+						fix_idle_ip, &ip_index);
+		if (ret) {
+			pr_err("%s: Cannot get fix-idle-ip-index property\n", __func__);
+			return ret;
+		}
+
+		goto create_idle_ip;
+	}
 
 	ip_index = of_property_match_string(np, "idle-ip", ip_name);
 	if (ip_index < 0) {
@@ -251,9 +229,10 @@ int exynos_get_idle_ip_index(const char *ip_name)
 	if (ip_index > IDLE_IP_MAX_CONFIGURABLE_INDEX) {
 		pr_err("%s: %s index %d is out of range\n",
 					__func__, ip_name, ip_index);
-		return -EINVAL;
+		return ip_index;
 	}
 
+create_idle_ip:
 	/**
 	 * If it successes to find IP in idle_ip list, we set
 	 * corresponding bit in idle_ip mask.
@@ -293,20 +272,23 @@ void exynos_get_idle_ip_list(char *(*idle_ip_list)[IDLE_IP_REG_SIZE])
 	int i, bit, reg_index;
 
 	size = of_property_count_strings(np, "idle-ip");
-	if (size < 0)
+	if (of_property_read_string_array(np, "idle-ip", list, size) < 0) {
+		pr_err("%s: Cannot find idle-ip property\n", __func__);
 		return;
+	}
 
-	of_property_read_string_array(np, "idle-ip", list, size);
 	for (i = 0, bit = 0; i < size; i++, bit = i) {
 		reg_index = convert_idle_ip_index(&bit);
 		idle_ip_list[reg_index][bit] = (char *)list[i];
 	}
 
+	/* IDLE_IP3[31:30] is for the exclusive use of pcie wifi */
 	size = of_property_count_strings(np, "fix-idle-ip");
-	if (size < 0)
+	if (of_property_read_string_array(np, "fix-idle-ip", list, size) < 0) {
+		pr_err("%s: Cannot find fix-idle-ip property\n", __func__);
 		return;
+	}
 
-	of_property_read_string_array(np, "fix-idle-ip", list, size);
 	for (i = 0; i < size; i++) {
 		if (!of_property_read_u32_index(np, "fix-idle-ip-index", i, &bit)) {
 			reg_index = convert_idle_ip_index(&bit);
@@ -315,37 +297,8 @@ void exynos_get_idle_ip_list(char *(*idle_ip_list)[IDLE_IP_REG_SIZE])
 	}
 }
 
-static void __init init_idle_ip(void)
-{
-	struct device_node *np = of_find_node_by_name(NULL, "exynos-powermode");
-	int mode, index, size, i;
-
-	for_each_syspwr_mode(mode)
-		for_each_idle_ip(index)
-			pm_info->idle_ip_mask[mode][index] = 0xFFFFFFFF;
-
-	/*
-	 * To unmask fixed idle-ip, fix-idle-ip and fix-idle-ip-index,
-	 * both properties must be existed and size must be same.
-	 */
-	if (!of_find_property(np, "fix-idle-ip", NULL)
-			|| !of_find_property(np, "fix-idle-ip-index", NULL))
-		return;
-
-	size = of_property_count_strings(np, "fix-idle-ip");
-	if (size != of_property_count_u32_elems(np, "fix-idle-ip-index")) {
-		pr_err("Mismatch between fih-idle-ip and fix-idle-ip-index\n");
-		return;
-	}
-
-	for (i = 0; i < size; i++) {
-		of_property_read_u32_index(np, "fix-idle-ip-index", i, &index);
-		exynos_create_idle_ip_mask(index);
-	}
-}
-
 /******************************************************************************
- *                           CPU power management                             *
+ *                          Local power gating (C2)                           *
  ******************************************************************************/
 /**
  * If cpu is powered down, c2_mask in struct exynos_powermode_info is set. On
@@ -358,8 +311,8 @@ static void __init init_idle_ip(void)
  * time which is longer than cpd_residency, cluster can be powered off.
  *
  * SICD (System Idle Clock Down) : All cpus are set c2_mask and these cpus
- * have enough idle time which is longer than sicd_residency, and besides no
- * device is operated, AP can be put into SICD.
+ * have enough idle time which is longer than sicd_residency, AP can be put
+ * into SICD. During SICD, no one access to DRAM.
  */
 
 static DEFINE_SPINLOCK(c2_lock);
@@ -367,14 +320,16 @@ static DEFINE_SPINLOCK(c2_lock);
 static void update_c2_state(bool down, unsigned int cpu)
 {
 	if (down)
-		cpumask_set_cpu(cpu, &pm_info->c2_mask);
+		cpumask_set_cpu(cpu, &powermode_info->c2_mask);
 	else
-		cpumask_clear_cpu(cpu, &pm_info->c2_mask);
+		cpumask_clear_cpu(cpu, &powermode_info->c2_mask);
 }
 
 static s64 get_next_event_time_us(unsigned int cpu)
 {
-	return ktime_to_us(tick_nohz_get_sleep_length());
+	struct clock_event_device *dev = per_cpu(tick_cpu_device, cpu).evtdev;
+
+	return ktime_to_us(ktime_sub(dev->next_event, ktime_get()));
 }
 
 static int is_cpus_busy(unsigned int target_residency,
@@ -387,7 +342,7 @@ static int is_cpus_busy(unsigned int target_residency,
 	 * than "target_residency", it returns -EBUSY.
 	 */
 	for_each_cpu_and(cpu, cpu_online_mask, mask) {
-		if (!cpumask_test_cpu(cpu, &pm_info->c2_mask))
+		if (!cpumask_test_cpu(cpu, &powermode_info->c2_mask))
 			return -EBUSY;
 
 		/*
@@ -399,6 +354,22 @@ static int is_cpus_busy(unsigned int target_residency,
 	}
 
 	return 0;
+}
+
+/**
+ * powermode_info->cpd_blocked prevents to power down the cluster while cpu
+ * frequency is changed. Before frequency changing, cpufreq driver call
+ * block_cpd() to block cluster power down. After finishing changing
+ * frequency, call release_cpd() to allow cluster power down again.
+ */
+void block_cpd(void)
+{
+	powermode_info->cpd_blocked = true;
+}
+
+void release_cpd(void)
+{
+	powermode_info->cpd_blocked = false;
 }
 
 static unsigned int get_cluster_id(unsigned int cpu)
@@ -418,11 +389,7 @@ static int is_cpd_available(unsigned int cpu)
 {
 	struct cpumask mask;
 
-	if (!pm_info->cpd_enabled)
-		return false;
-
-	/* If other driver blocks cpd, cpd_blocking is true */
-	if (pm_info->cpd_blocking)
+	if (powermode_info->cpd_blocked)
 		return false;
 
 	/*
@@ -433,32 +400,10 @@ static int is_cpd_available(unsigned int cpu)
 		return false;
 
 	cpumask_and(&mask, cpu_coregroup_mask(cpu), cpu_online_mask);
-	if (is_cpus_busy(pm_info->cpd_residency, &mask))
+	if (is_cpus_busy(powermode_info->cpd_residency, &mask))
 		return false;
 
 	return true;
-}
-
-static int is_sicd_available(unsigned int cpu)
-{
-	if (!pm_info->sicd_enabled)
-		return false;
-
-	/*
-	 * When the cpu in non-boot cluster enters SICD, interrupts of
-	 * boot cluster is not blocked. For stability, SICD entry by
-	 * non-boot cluster is not supported.
-	 */
-	if (!is_cpu_boot_cluster(cpu))
-		return false;
-
-	if (is_cpus_busy(pm_info->sicd_residency, cpu_online_mask))
-		return false;
-
-	if (syspwr_mode_available(SYS_SICD))
-		return true;
-
-	return false;
 }
 
 /**
@@ -468,9 +413,10 @@ static int is_sicd_available(unsigned int cpu)
  * 		If it returns true, cluster is in idle state.
  * update_cluster_idle_state() : Update cluster idle state.
  */
-static int cluster_idle_state[MAX_CLUSTER];
+#define CLUSTER_TYPE_MAX	2
+static int cluster_idle_state[CLUSTER_TYPE_MAX];
 
-static int check_cluster_idle_state(unsigned int cpu)
+int check_cluster_idle_state(unsigned int cpu)
 {
 	return cluster_idle_state[get_cluster_id(cpu)];
 }
@@ -481,12 +427,56 @@ static void update_cluster_idle_state(int idle, unsigned int cpu)
 }
 
 /**
- * Exynos cpuidle driver call exynos_cpu_pm_enter() and exynos_cpu_pm_exit() to
- * handle platform specific configuration to power off the cpu power domain.
+ * If AP put into SICD, console cannot work normally. For development,
+ * support sysfs to enable or disable SICD.
+ * And It is possible to use console by SICD factory mode.
+ * Refer below :
+ *
+ * echo 0/1 > /sys/power/sicd (0:disable, 1:enable)
+ * or
+ * echo 0/1 > /sys/power/sicd_factory_mode (0:disable, 1:enable)
  */
-int exynos_cpu_pm_enter(unsigned int cpu, int index)
+static int is_sicd_available(unsigned int cpu)
 {
-	cpu_disable(cpu);
+	int index;
+
+	if (!powermode_info->sicd_enabled)
+		return false;
+
+	/*
+	 * When the cpu in non-boot cluster enters SICD, interrupts of
+	 * boot cluster is not blocked. For stability, SICD entry by
+	 * non-boot cluster is not supported.
+	 */
+	if (!is_cpu_boot_cluster(cpu))
+		return false;
+
+	if (is_cpus_busy(powermode_info->sicd_residency, cpu_online_mask))
+		return false;
+
+	if (!exynos_check_cp_status())
+		return false;
+
+	for_each_idle_ip(index)
+		if (exynos_check_idle_ip_stat(SYS_SICD, index))
+			return false;
+
+	return true;
+}
+
+/**
+ * Exynos cpuidle driver call enter_c2() and wakeup_from_c2() to handle platform
+ * specific configuration to power off the cpu power domain. It handles not only
+ * cpu power control, but also power mode subordinate to C2.
+ */
+int enter_c2(unsigned int cpu, int index)
+{
+	unsigned int cluster = get_cluster_id(cpu);
+#ifdef CONFIG_PMUCAL_MOD
+	cal_cpu_disable(cpu);
+#else
+	exynos_cpu.power_down(cpu);
+#endif
 
 	spin_lock(&c2_lock);
 	update_c2_state(true, cpu);
@@ -496,26 +486,35 @@ int exynos_cpu_pm_enter(unsigned int cpu, int index)
 	 * or not. If idle time of cpu is not enough, go out of this function.
 	 */
 	if (get_next_event_time_us(cpu) <
-			min(pm_info->cpd_residency, pm_info->sicd_residency))
+			min(powermode_info->cpd_residency, powermode_info->sicd_residency))
 		goto out;
 
 	if (is_cpd_available(cpu)) {
-		cluster_disable(cpu);
+#ifdef CONFIG_PMUCAL_MOD
+		cal_cluster_disable(cluster);
+#else
+		exynos_cpu.cluster_down(cluster);
+#endif
 		update_cluster_idle_state(true, cpu);
 
 		index = PSCI_CLUSTER_SLEEP;
 	}
 
 	if (is_sicd_available(cpu)) {
-		if (exynos_prepare_sys_powerdown(SYS_SICD))
-			goto out;
+		if (check_cluster_idle_state(cpu)) {
+#if defined(CONFIG_SOC_EXYNOS8890)
+			exynos_prepare_sys_powerdown(SYS_SICD_CPD, false);
+			index = PSCI_SYSTEM_IDLE_CLUSTER_SLEEP;
+#endif
+		} else {
+			exynos_prepare_sys_powerdown(SYS_SICD, false);
+			index = PSCI_SYSTEM_IDLE;
+		}
 
 		s3c24xx_serial_fifo_wait();
-		exynos_ss_cpuidle(get_sys_powerdown_str(SYS_SICD),
-						0, 0, ESS_FLAG_IN);
+		powermode_info->sicd_entered = SYS_SICD;
 
-		pm_info->sicd_entered = true;
-		index = PSCI_SYSTEM_IDLE;
+		exynos_ss_cpuidle(EXYNOS_SS_SICD_INDEX, 0, 0, ESS_FLAG_IN);
 	}
 out:
 	spin_unlock(&c2_lock);
@@ -523,24 +522,31 @@ out:
 	return index;
 }
 
-void exynos_cpu_pm_exit(unsigned int cpu, int enter_failed)
+void wakeup_from_c2(unsigned int cpu, int early_wakeup)
 {
-	if (enter_failed)
-		cpu_enable(cpu);
+	if (early_wakeup)
+#ifdef CONFIG_PMUCAL_MOD
+		cal_cpu_enable(cpu);
+#else
+		exynos_cpu.power_up(cpu);
+#endif
 
 	spin_lock(&c2_lock);
 
 	if (check_cluster_idle_state(cpu)) {
-		cluster_enable(cpu);
+#ifdef CONFIG_PMUCAL_MOD
+		cal_cluster_enable(get_cluster_id(cpu));
+#else
+		exynos_cpu.cluster_up(get_cluster_id(cpu));
+#endif
 		update_cluster_idle_state(false, cpu);
 	}
 
-	if (pm_info->sicd_entered) {
-		exynos_wakeup_sys_powerdown(SYS_SICD, enter_failed);
-		exynos_ss_cpuidle(get_sys_powerdown_str(SYS_SICD),
-						0, 0, ESS_FLAG_OUT);
+	if (powermode_info->sicd_entered != -1) {
+		exynos_wakeup_sys_powerdown(powermode_info->sicd_entered, early_wakeup);
+		powermode_info->sicd_entered = -1;
 
-		pm_info->sicd_entered = false;
+		exynos_ss_cpuidle(EXYNOS_SS_SICD_INDEX, 0, 0, ESS_FLAG_OUT);
 	}
 
 	update_c2_state(false, cpu);
@@ -560,7 +566,7 @@ static ssize_t show_##file_name(struct kobject *kobj,	\
 	struct kobj_attribute *attr, char *buf)		\
 {							\
 	return snprintf(buf, 3, "%d\n",			\
-				pm_info->object);	\
+				powermode_info->object);	\
 }
 
 #define store_one(file_name, object)			\
@@ -573,7 +579,7 @@ static ssize_t store_##file_name(struct kobject *kobj,	\
 	if (!sscanf(buf, "%1d", &input))		\
 		return -EINVAL;				\
 							\
-	pm_info->object = !!input;				\
+	powermode_info->object = !!input;				\
 							\
 	return count;					\
 }
@@ -582,117 +588,63 @@ static ssize_t store_##file_name(struct kobject *kobj,	\
 static struct kobj_attribute _name =			\
 __ATTR(_name, 0644, show_##_name, store_##_name)
 
-show_one(cpd, cpd_enabled);
+show_one(blocking_cpd, cpd_blocked);
 show_one(sicd, sicd_enabled);
-store_one(cpd, cpd_enabled);
+show_one(sicd_factory_mode, sicd_factory);
+store_one(blocking_cpd, cpd_blocked);
 store_one(sicd, sicd_enabled);
+store_one(sicd_factory_mode, sicd_factory);
 
-attr_rw(cpd);
+attr_rw(blocking_cpd);
 attr_rw(sicd);
+attr_rw(sicd_factory_mode);
 
-#endif /* __CONFIG_ARM64_EXYNOS_CPUIDLE__ */
-
-/******************************************************************************
- *                              System power mode                             *
- ******************************************************************************/
-#define PMU_EINT_WAKEUP_MASK	0x60C
-static void exynos_set_wakeupmask(enum sys_powerdown mode)
+/**
+ * To determine which power mode system enter, check clock or power
+ * registers and other devices by notifier.
+ */
+int determine_lpm(void)
 {
-	int i;
-	u64 eintmask = exynos_get_eint_wake_mask();
-
-	/* Set external interrupt mask */
-	exynos_pmu_write(PMU_EINT_WAKEUP_MASK, (u32)eintmask);
-
-	for (i = 0; i < pm_info->num_wakeup_mask; i++)
-		exynos_pmu_write(pm_info->wakeup_mask_offset[i],
-				pm_info->wakeup_mask[mode][i]);
-}
-
-int exynos_prepare_sys_powerdown(enum sys_powerdown mode)
-{
-	int ret;
-
-#ifdef CONFIG_ARM64_EXYNOS_CPUIDLE
-	exynos_set_idle_ip_mask(mode);
+#if !defined(CONFIG_SOC_EXYNOS7870) && !defined(CONFIG_SOC_EXYNOS7570)
+	int index;
 #endif
-	exynos_set_wakeupmask(mode);
 
-	ret = cal_pm_enter(mode);
-	if (ret) {
-		pr_err("CAL Fail to set powermode\n");
-		goto out;
+	if (!exynos_check_cp_status())
+		return SYS_AFTR;
+
+#if !defined(CONFIG_SOC_EXYNOS7870) && !defined(CONFIG_SOC_EXYNOS7570)
+	for_each_idle_ip(index) {
+		if (exynos_check_idle_ip_stat(SYS_ALPA, index))
+			return SYS_AFTR;
 	}
-
-	switch (mode) {
-	case SYS_SICD:
-		exynos_pm_notify(SICD_ENTER);
-		break;
-	default:
-		break;
-	}
-
-out:
-	return ret;
+	return SYS_ALPA;
+#else
+	return SYS_AFTR;
+#endif
 }
 
-void exynos_wakeup_sys_powerdown(enum sys_powerdown mode, bool early_wakeup)
-{
-	if (early_wakeup)
-		cal_pm_earlywakeup(mode);
-	else
-		cal_pm_exit(mode);
-
-	switch (mode) {
-	case SYS_SICD:
-		exynos_pm_notify(SICD_EXIT);
-		break;
-	default:
-		break;
-	}
-}
-
-/******************************************************************************
- *                                  Notifier                                  *
- ******************************************************************************/
+/*
+ * In case of non-boot cluster, CPU sequencer should be disabled
+ * even each cpu wake up through hotplug in.
+ */
 static int exynos_cpuidle_hotcpu_callback(struct notifier_block *nfb,
                                        unsigned long action, void *hcpu)
 {
-	unsigned int cpu = (unsigned long)hcpu;
-	struct cpumask mask;
+       unsigned int cpu = (unsigned long)hcpu;
+       int ret = NOTIFY_OK;
 
-	/*
-	 * CPU_STARTING and CPU_DYING event are executed by incomming or
-	 * outgoing cpu itself.
-	 */
-	switch (action) {
-	case CPU_STARTING:
-	case CPU_STARTING_FROZEN:
-		cpumask_and(&mask, cpu_coregroup_mask(cpu), cpu_online_mask);
-		if (cpumask_weight(&mask) == 0)
-			cluster_enable(cpu);
+       switch (action) {
+       case CPU_STARTING:
+               spin_lock(&c2_lock);
 
-		cpu_enable(cpu);
-		break;
-	case CPU_DYING:
-	case CPU_DYING_FROZEN:
-		cpu_disable(cpu);
+               if (!is_cpu_boot_cluster(cpu))
+                       exynos_cpu.cluster_up(get_cluster_id(cpu));
 
-		cpumask_and(&mask, cpu_coregroup_mask(cpu), cpu_online_mask);
-		if (cpumask_weight(&mask) == 0)
-			cluster_disable(cpu);
-		break;
-	case CPU_DEAD:
-	case CPU_DEAD_FROZEN:
-		cpumask_and(&mask, cpu_coregroup_mask(cpu), cpu_online_mask);
-		if (cpumask_weight(&mask) == 0) {
-			/* Wait power down cluster */
-			while (exynos_cpu.cluster_state(cpu))
-				udelay(1);
-		}
-	}
+               spin_unlock(&c2_lock);
+               break;
+       }
 
-	return NOTIFY_OK;
+       return ret;
 }
 
 static struct notifier_block __refdata cpuidle_hotcpu_notifier = {
@@ -700,131 +652,145 @@ static struct notifier_block __refdata cpuidle_hotcpu_notifier = {
        .priority = INT_MAX,
 };
 
-/**
- * powermode_cpufreq_transition() blocks to power down the cluster
- * before frequency changing. And it release the blocking after
- * completion of frequency changing.
- */
-#ifdef CONFIG_ARM64_EXYNOS_CPUIDLE
-static void nop_func(void *info) {}
-#endif
-static int exynos_powermode_cpufreq_transition(struct notifier_block *nb,
-				unsigned long val, void *data)
-{
-#ifdef CONFIG_ARM64_EXYNOS_CPUIDLE
-	struct cpufreq_freqs *freq = data;
-	int cpu = freq->cpu;
-
-	/*
-	 * Boot cluster does not support cluster power down.
-	 * Do nothing in this notify call.
-	 */
-	if (is_cpu_boot_cluster(cpu))
-		return NOTIFY_OK;
-
-	if (!pm_info->cpd_enabled)
-		return NOTIFY_OK;;
-
-	switch (val) {
-	case CPUFREQ_PRECHANGE:
-		pm_info->cpd_blocking = true;
-		if (check_cluster_idle_state(cpu))
-			smp_call_function_single(cpu, nop_func, NULL, 0);
-		break;
-	case CPUFREQ_POSTCHANGE:
-		pm_info->cpd_blocking = false;
-		break;
-	}
-#endif
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block exynos_powermode_cpufreq_notifier = {
-	.notifier_call = exynos_powermode_cpufreq_transition,
-};
+#endif /* __CONFIG_ARM64_EXYNOS_CPUIDLE__ */
 
 /******************************************************************************
- *                               Extern function                              *
+ *                          Wakeup mask configuration                         *
  ******************************************************************************/
-int exynos_rtc_wakeup(void)
-{
+#define PMU_EINT_WAKEUP_MASK	0x60C
+#define PMU_WAKEUP_MASK		0x610
+#define PMU_WAKEUP_MASK2	0x614
+#define PMU_WAKEUP_MASK3	0x618
 #define WAKEUP_MASK_RTC_TICK	BIT(2)
 #define WAKEUP_MASK_RTC_ALARM	BIT(1)
-	unsigned int sleep_mask = pm_info->wakeup_mask[SYS_SLEEP][0];
 
-	if (!(sleep_mask & WAKEUP_MASK_RTC_ALARM) ||
-			!(sleep_mask & WAKEUP_MASK_RTC_TICK))
-		return 0;
-
-	return -ENXIO;
-}
-
-/******************************************************************************
- *                            Driver initialization                           *
- ******************************************************************************/
-static int alloc_wakeup_mask(int num_wakeup_mask)
+static void exynos_set_wakeupmask(enum sys_powerdown mode)
 {
-	unsigned int mode;
+	u64 eintmask = exynos_get_eint_wake_mask();
 
-	pm_info->wakeup_mask_offset = kzalloc(sizeof(unsigned int)
-				* num_wakeup_mask, GFP_KERNEL);
-	if (!pm_info->wakeup_mask_offset)
-		return -ENOMEM;
+	/* Set external interrupt mask */
+	exynos_pmu_write(PMU_EINT_WAKEUP_MASK, (u32)eintmask);
 
-	for_each_syspwr_mode(mode) {
-		pm_info->wakeup_mask[mode] = kzalloc(sizeof(unsigned int)
-				* num_wakeup_mask, GFP_KERNEL);
-
-		if (!pm_info->wakeup_mask[mode])
-			goto free_reg_offset;
-	}
-
-	return 0;
-
-free_reg_offset:
-	for_each_syspwr_mode(mode)
-		if (pm_info->wakeup_mask[mode])
-			kfree(pm_info->wakeup_mask[mode]);
-
-	kfree(pm_info->wakeup_mask_offset);
-
-	return -ENOMEM;
+	exynos_pmu_write(PMU_WAKEUP_MASK, powermode_info->wakeup_mask[mode][0]);
+	exynos_pmu_write(PMU_WAKEUP_MASK2, powermode_info->wakeup_mask[mode][1]);
+	exynos_pmu_write(PMU_WAKEUP_MASK3, powermode_info->wakeup_mask[mode][2]);
 }
 
-static int parsing_dt_wakeup_mask(struct device_node *np)
+#if 0
+static int exynos_irq_set_wake(struct irq_data *data, unsigned int on)
+{
+	unsigned int ret = -ENXIO;
+	unsigned int val = powermode_info->wakeup_mask[SYS_SLEEP][0];
+
+	if (!(val & WAKEUP_MASK_RTC_ALARM) || !(val & WAKEUP_MASK_RTC_TICK))
+		ret = 0;
+
+	return ret;
+}
+#endif
+
+static int __maybe_unused parsing_dt_wakeup_mask(struct device_node *np)
 {
 	int ret;
-	struct device_node *root, *child;
-	unsigned int mode, mask_index = 0;
+	unsigned int pdn_num;
 
-	root = of_find_node_by_name(np, "wakeup-masks");
-	pm_info->num_wakeup_mask = of_get_child_count(root);
-
-	ret = alloc_wakeup_mask(pm_info->num_wakeup_mask);
-	if (ret)
-		return ret;
-
-	for_each_child_of_node(root, child) {
-		for_each_syspwr_mode(mode) {
-			ret = of_property_read_u32_index(child, "mask",
-				mode, &pm_info->wakeup_mask[mode][mask_index]);
-			if (ret)
-				return ret;
-		}
-
-		ret = of_property_read_u32(child, "reg-offset",
-				&pm_info->wakeup_mask_offset[mask_index]);
+	for_each_syspower_mode(pdn_num) {
+		ret = of_property_read_u32_index(np, "wakeup_mask",
+				pdn_num, &powermode_info->wakeup_mask[pdn_num][0]);
 		if (ret)
 			return ret;
 
-		mask_index++;
+		ret = of_property_read_u32_index(np, "wakeup_mask2",
+				pdn_num, &powermode_info->wakeup_mask[pdn_num][1]);
+		if (ret)
+			return ret;
+
+		ret = of_property_read_u32_index(np, "wakeup_mask3",
+				pdn_num, &powermode_info->wakeup_mask[pdn_num][2]);
+		if (ret)
+			return ret;
 	}
+
+//	gic_arch_extn.irq_set_wake = exynos_irq_set_wake;
 
 	return 0;
 }
 
-static int __init dt_init(void)
+/******************************************************************************
+ *                           System power down mode                           *
+ ******************************************************************************/
+void exynos_prepare_sys_powerdown(enum sys_powerdown mode, bool is_suspend)
+{
+	/*
+	 * exynos_prepare_sys_powerdown() is called by only cpu0.
+	 */
+	unsigned int cpu = 0;
+#ifdef CONFIG_ARM64_EXYNOS_CPUIDLE
+	if (is_suspend)
+		exynos_set_idle_ip_mask(SYS_SLEEP);
+	else
+		exynos_set_idle_ip_mask(mode);
+#endif
+	if (is_suspend)
+		exynos_set_wakeupmask(SYS_SLEEP);
+	else
+		exynos_set_wakeupmask(mode);
+
+	cal_pm_enter(mode);
+
+	switch (mode) {
+#if !defined(CONFIG_SOC_EXYNOS7870) && !defined(CONFIG_SOC_EXYNOS7570) && !defined(CONFIG_SOC_EXYNOS7270)
+	case SYS_SICD_AUD:
+		exynos_pm_sicd_enter();
+		break;
+#endif
+	case SYS_AFTR:
+#ifdef CONFIG_PMUCAL_MOD
+		cal_cpu_disable(cpu);
+#else
+		exynos_cpu.power_down(cpu);
+#endif
+		break;
+	default:
+		break;
+	}
+}
+
+void exynos_wakeup_sys_powerdown(enum sys_powerdown mode, bool early_wakeup)
+{
+	/*
+	 * exynos_wakeup_sys_powerdown() is called by only cpu0.
+	 */
+	unsigned int cpu = 0;
+
+	if (early_wakeup)
+		cal_pm_earlywakeup(mode);
+	else
+		cal_pm_exit(mode);
+
+	switch (mode) {
+#if !defined(CONFIG_SOC_EXYNOS7870) && !defined(CONFIG_SOC_EXYNOS7570) && !defined(CONFIG_SOC_EXYNOS7270)
+	case SYS_SICD_AUD:
+		exynos_pm_sicd_exit();
+		break;
+#endif
+	case SYS_AFTR:
+		if (early_wakeup)
+#ifdef CONFIG_PMUCAL_MOD
+			cal_cpu_enable(cpu);
+#else
+			exynos_cpu.power_up(cpu);
+#endif
+		break;
+	default:
+		break;
+	}
+}
+
+/******************************************************************************
+ *                              Driver initialized                            *
+ ******************************************************************************/
+static int __init dt_init_exynos_powermode(void)
 {
 	struct device_node *np = of_find_node_by_name(NULL, "exynos-powermode");
 	int ret;
@@ -833,49 +799,46 @@ static int __init dt_init(void)
 	if (ret)
 		pr_warn("Fail to initialize the wakeup mask with err = %d\n", ret);
 
-	if (of_property_read_u32(np, "cpd_residency", &pm_info->cpd_residency))
+	if (of_property_read_u32(np, "cpd_residency", &powermode_info->cpd_residency))
 		pr_warn("No matching property: cpd_residency\n");
 
-	if (of_property_read_u32(np, "sicd_residency", &pm_info->sicd_residency))
+	if (of_property_read_u32(np, "sicd_residency", &powermode_info->sicd_residency))
 		pr_warn("No matching property: sicd_residency\n");
 
-	if (of_property_read_u32(np, "cpd_enabled", &pm_info->cpd_enabled))
-		pr_warn("No matching property: cpd_enabled\n");
-
-	if (of_property_read_u32(np, "sicd_enabled", &pm_info->sicd_enabled))
+	if (of_property_read_u32(np, "sicd_enabled", &powermode_info->sicd_enabled))
 		pr_warn("No matching property: sicd_enabled\n");
 
 	return 0;
 }
 
-static int __init exynos_powermode_early_init(void)
+int __init exynos_powermode_init(void)
 {
-	return register_hotcpu_notifier(&cpuidle_hotcpu_notifier);
-}
-early_initcall(exynos_powermode_early_init);
+	int mode, index;
 
-static int __init exynos_powermode_init(void)
-{
-	pm_info = kzalloc(sizeof(struct exynos_powermode_info), GFP_KERNEL);
-	if (pm_info == NULL) {
+	powermode_info = kzalloc(sizeof(struct exynos_powermode_info), GFP_KERNEL);
+	if (powermode_info == NULL) {
 		pr_err("%s: failed to allocate exynos_powermode_info\n", __func__);
 		return -ENOMEM;
 	}
 
-	dt_init();
+	dt_init_exynos_powermode();
+
+	for_each_syspower_mode(mode)
+		for_each_idle_ip(index)
+			powermode_info->idle_ip_mask[mode][index] = 0xFFFFFFFF;
 
 #ifdef CONFIG_ARM64_EXYNOS_CPUIDLE
-	init_idle_ip();
-
-	if (sysfs_create_file(power_kobj, &cpd.attr))
+	if (sysfs_create_file(power_kobj, &blocking_cpd.attr))
 		pr_err("%s: failed to create sysfs to control CPD\n", __func__);
 
 	if (sysfs_create_file(power_kobj, &sicd.attr))
-		pr_err("%s: failed to create sysfs to control SICD\n", __func__);
-#endif
+		pr_err("%s: failed to create sysfs to control CPD\n", __func__);
 
-	cpufreq_register_notifier(&exynos_powermode_cpufreq_notifier,
-					CPUFREQ_TRANSITION_NOTIFIER);
+	if (sysfs_create_file(power_kobj, &sicd_factory_mode.attr))
+		pr_err("%s: failed to create sysfs to control SICD Factory mode\n", __func__);
+
+	register_hotcpu_notifier(&cpuidle_hotcpu_notifier);
+#endif
 
 	return 0;
 }

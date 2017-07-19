@@ -35,21 +35,19 @@
 #define BLOCK_MINLOCK		"MINLOCK"
 #define BLOCK_GEN_PARAM		"GEN"
 #define BLOCK_BIN		"BIN"
-#define BLOCK_NEW_TIMING_PARAM	"NEWTIME"
 
-#define SYSFS_NODE_HEADER		"header"
-#define SYSFS_NODE_AP_THERMAL		"ap_thermal"
-#define SYSFS_NODE_MIF_THERMAL		"mr4"
-#define SYSFS_NODE_DVFS			"dvfs_table"
-#define SYSFS_NODE_ASV			"asv_table"
-#define SYSFS_NODE_TIMING_PARAM		"mif_timing_parameter"
-#define SYSFS_NODE_RCC			"rcc_table"
-#define SYSFS_NODE_PLL			"pll_list"
-#define SYSFS_NODE_MARGIN		"margin_table"
-#define SYSFS_NODE_MINLOCK		"minlock_table"
-#define SYSFS_NODE_GEN_PARAM		"general_parameter"
-#define SYSFS_NODE_BIN			"binary"
-#define SYSFS_NODE_NEW_TIMING_PARAM	"new_timing_parameter"
+#define SYSFS_NODE_HEADER	"header"
+#define SYSFS_NODE_AP_THERMAL	"ap_thermal"
+#define SYSFS_NODE_MIF_THERMAL	"mr4"
+#define SYSFS_NODE_DVFS		"dvfs_table"
+#define SYSFS_NODE_ASV		"asv_table"
+#define SYSFS_NODE_TIMING_PARAM	"mif_timing_parameter"
+#define SYSFS_NODE_RCC		"rcc_table"
+#define SYSFS_NODE_PLL		"pll_list"
+#define SYSFS_NODE_MARGIN	"margin_table"
+#define SYSFS_NODE_MINLOCK	"minlock_table"
+#define SYSFS_NODE_GEN_PARAM	"general_parameter"
+#define SYSFS_NODE_BIN		"binary"
 
 #define PMIC_VOLTAGE_STEP	(6250)
 
@@ -59,11 +57,6 @@ struct ect_header
 	char version[4];
 	unsigned int total_size;
 	int num_of_header;
-};
-
-enum e_dvfs_mode_flag {
-	e_dvfs_mode_clock_name = 0x1,
-	e_dvfs_mode_sfr_address = 0x2,
 };
 
 struct ect_dvfs_level
@@ -83,9 +76,7 @@ struct ect_dvfs_domain
 	int resume_level_idx;
 	int num_of_clock;
 	int num_of_level;
-	enum e_dvfs_mode_flag mode;
 	char **list_clock;
-	unsigned int *list_sfr;
 	struct ect_dvfs_level  *list_level;
 	unsigned int *list_dvfs_value;
 };
@@ -258,9 +249,8 @@ struct ect_margin_header
 struct ect_timing_param_size
 {
 	unsigned int memory_size;
-	unsigned long long parameter_key;
-	unsigned int offset;
-
+	unsigned int offset
+		;
 	int num_of_timing_param;
 	int num_of_level;
 	unsigned int *timing_parameter;
@@ -336,33 +326,6 @@ struct ect_bin_header
 	struct ect_bin *binary_list;
 };
 
-enum e_new_timing_parameter_mode
-{
-	e_mode_normal_value = 0x1,
-	e_mode_extend_value = 0x2,
-};
-
-struct ect_new_timing_param_size
-{
-	unsigned long long parameter_key;
-	unsigned int offset;
-
-	enum e_new_timing_parameter_mode mode;
-	int num_of_timing_param;
-	int num_of_level;
-
-	unsigned int *timing_parameter;
-};
-
-struct ect_new_timing_param_header
-{
-	int parser_version;
-	char version[4];
-	int num_of_size;
-
-	struct ect_new_timing_param_size *size_list;
-};
-
 struct ect_info
 {
 	char *block_name;
@@ -387,18 +350,13 @@ struct ect_mif_thermal_level *ect_mif_thermal_get_level(void *block, int mr4_lev
 struct ect_ap_thermal_function *ect_ap_thermal_get_function(void *block, char *function_name);
 struct ect_margin_domain *ect_margin_get_domain(void *block, char *domain_name);
 struct ect_timing_param_size *ect_timing_param_get_size(void *block, int size);
-struct ect_timing_param_size *ect_timing_param_get_key(void *block, unsigned long long key);
 struct ect_minlock_domain *ect_minlock_get_domain(void *block, char *domain_name);
 struct ect_gen_param_table *ect_gen_param_get_table(void *block, char *table_name);
 struct ect_bin *ect_binary_get_bin(void *block, char *binary_name);
-struct ect_new_timing_param_size *ect_new_timing_param_get_key(void *block, unsigned long long key);
 
 void ect_init_map_io(void);
 
 int ect_strcmp(char *src1, char *src2);
-int ect_strncmp(char *src1, char *src2, int length);
-
-unsigned long long ect_read_value64(unsigned int *address, int index);
 
 #else
 
@@ -413,18 +371,13 @@ static inline struct ect_mif_thermal_level *ect_mif_thermal_get_level(void *bloc
 static inline struct ect_ap_thermal_function *ect_ap_thermal_get_function(void *block, char *function_name) { return NULL; }
 static inline struct ect_margin_domain *ect_margin_get_domain(void *block, char *domain_name) { return NULL; }
 static inline struct ect_timing_param_size *ect_timing_param_get_size(void *block, int size) { return NULL; }
-static inline struct ect_timing_param_size *ect_timing_param_get_key(void *block, unsigned long long key) { return NULL; }
 static inline struct ect_minlock_domain *ect_minlock_get_domain(void *block, char *domain_name) { return NULL; }
 static inline struct ect_gen_param_table *ect_gen_param_get_table(void *block, char *table_name) { return NULL; }
 static inline struct ect_bin *ect_binary_get_bin(void *block, char *binary_name) { return NULL; }
-static inline struct ect_new_timing_param_size *ect_new_timing_param_get_key(void *block, unsigned long long key) { return NULL; }
 
 static inline void ect_init_map_io(void) {}
 
 static inline int ect_strcmp(char *src1, char *src2) { return -1; }
-static inline int ect_strncmp(char *src1, char *src2, int length) { return -1; }
-
-static inline unsigned long long ect_read_value64(unsigned int *address, int index) { return 0; }
 
 #endif
 

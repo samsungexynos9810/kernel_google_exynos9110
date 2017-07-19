@@ -11,39 +11,68 @@
 
 #ifndef __EXYNOS_POWERMODE_H
 #define __EXYNOS_POWERMODE_H __FILE__
-#include <soc/samsung/cal-if.h>
 
-extern int exynos_prepare_sys_powerdown(enum sys_powerdown mode);
-extern void exynos_wakeup_sys_powerdown(enum sys_powerdown mode, bool early_wakeup);
-extern void exynos_prepare_cp_call(void);
-extern void exynos_wakeup_cp_call(bool early_wakeup);
-extern int exynos_rtc_wakeup(void);
+#if defined(CONFIG_PMUCAL_MOD)
+#include "../../../drivers/soc/samsung/pwrcal/pmucal_mod/pmucal_system.h"
+#endif
 
-static char *sys_powerdown_str[NUM_SYS_POWERDOWN] = {
-	"SICD",
-	"SICD_CPD",
-	"AFTR",
-	"STOP",
-	"LPD",
-	"LPA",
-	"ALPA",
-	"DSTOP",
-	"SLEEP",
-	"SLEEP_VTS_ON",
-	"SLEEP_AUD_ON",
-	"FAPO",
+#if !defined(CONFIG_PMUCAL_MOD)
+/**
+ * System power down mode
+ */
+
+#if defined(CONFIG_SOC_EXYNOS7570)
+enum sys_powerdown {
+	SYS_SICD,
+	SYS_AFTR,
+	SYS_STOP,
+	SYS_LPD,
+	SYS_LPA,
+	SYS_DSTOP,
+	SYS_SLEEP,
+	NUM_SYS_POWERDOWN,
 };
+#else
+enum sys_powerdown {
+        SYS_SICD,
+#if !defined(CONFIG_SOC_EXYNOS7870)
+        SYS_SICD_CPD,
+#endif
+        SYS_AFTR,
+        SYS_STOP,
+#if !defined(CONFIG_SOC_EXYNOS7870)
+        SYS_DSTOP,
+#endif
+        SYS_LPD,
+#if !defined(CONFIG_SOC_EXYNOS7870)
+        SYS_ALPA,
+#endif
+        SYS_SLEEP,
+        NUM_SYS_POWERDOWN,
+};
+#endif
+#endif
 
-static inline char* get_sys_powerdown_str(int mode)
-{
-	return sys_powerdown_str[mode];
-}
+extern void exynos_prepare_sys_powerdown(enum sys_powerdown mode, bool is_suspend);
+extern void exynos_wakeup_sys_powerdown(enum sys_powerdown mode, bool early_wakeup);
+extern int determine_lpm(void);
 
 /**
  * Functions for cpuidle driver
  */
-extern int exynos_cpu_pm_enter(unsigned int cpu, int index);
-extern void exynos_cpu_pm_exit(unsigned int cpu, int enter_failed);
+extern int enter_c2(unsigned int cpu, int index);
+extern void wakeup_from_c2(unsigned int cpu, int early_wakeup);
+
+/**
+ * Cluster power down blocker
+ */
+extern void block_cpd(void);
+extern void release_cpd(void);
+
+/**
+ * Checking cluster idle state
+ */
+extern int check_cluster_idle_state(unsigned int cpu);
 
 /**
   IDLE_IP control
@@ -91,7 +120,7 @@ enum exynos_idle_ip {
 #define for_each_idle_ip(num)					\
         for ((num) = 0; (num) < NUM_IDLE_IP; (num)++)
 
-#define for_each_syspwr_mode(mode)				\
+#define for_each_syspower_mode(mode)				\
 	for ((mode) = 0; (mode) < NUM_SYS_POWERDOWN; (mode)++)
 
 #define for_each_cluster(id)					\
@@ -111,4 +140,6 @@ extern u64 exynos_get_eint_wake_mask(void);
 #else
 static inline u64 exynos_get_eint_wake_mask(void) { return 0xffffffffL; }
 #endif
+
+#define EXYNOS_SS_SICD_INDEX		('S' + 'I' + 'C' + 'D')		/* 291 */
 #endif /* __EXYNOS_POWERMODE_H */

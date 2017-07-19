@@ -12,6 +12,7 @@ obj-$(CONFIG_SOC_EXYNOS5420)	+= clk-exynos5420.o
 obj-$(CONFIG_SOC_EXYNOS5433)	+= clk-exynos5433.o
 obj-$(CONFIG_SOC_EXYNOS5440)	+= clk-exynos5440.o
 ifeq ($(CONFIG_COMPOSITE_CLK_SAMSUNG), y)
+	obj-y				+= composite.o
 	obj-$(CONFIG_SOC_EXYNOS8890)	+= clk-exynos8890.o
 ifneq ($(CONFIG_SOC_EMULATOR8895), y)
 		obj-$(CONFIG_SOC_EXYNOS8895)	+= clk-exynos8895.o
@@ -19,10 +20,12 @@ else
 		obj-$(CONFIG_SOC_EMULATOR8895)	+= clk-emulator8895.o
 endif
 	obj-$(CONFIG_SOC_EXYNOS7872)	+= clk-exynos7872.o
+	obj-$(CONFIG_SOC_EXYNOS7270)	+= clk-exynos7270.o
 else
 	obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-pll.o clk-cpu.o
 endif
 obj-$(CONFIG_SOC_EXYNOS7872)	+= clk-exynos7872.o
+obj-$(CONFIG_SOC_EXYNOS7270)	+= clk-exynos7270.o
 obj-$(CONFIG_ARCH_EXYNOS)	+= clk-exynos-audss.o
 obj-$(CONFIG_ARCH_EXYNOS)	+= clk-exynos-clkout.o
 #obj-$(CONFIG_ARCH_EXYNOS7)	+= clk-exynos7.o

@@ -28,5 +28,8 @@ void log_suspend_abort_reason(const char *fmt, ...);
 #else
 static inline void log_suspend_abort_reason(const char *fmt, ...) { }
 #endif
+#ifdef CONFIG_ARCH_EXYNOS
+void update_wakeup_reason_stats(int irq, int eint);
+#endif
 
 #endif /* _LINUX_WAKEUP_REASON_H */

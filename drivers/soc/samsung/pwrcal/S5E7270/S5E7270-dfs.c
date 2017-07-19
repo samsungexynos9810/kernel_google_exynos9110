@@ -9,6 +9,7 @@
 #include "S5E7270-pmusfr.h"
 #include "S5E7270-cmu.h"
 #include "S5E7270-vclk-internal.h"
+#include <soc/samsung/ect_parser.h>
 
 extern unsigned int dfscpucl0_rate_table[];
 extern unsigned int dfsg3d_rate_table[];
