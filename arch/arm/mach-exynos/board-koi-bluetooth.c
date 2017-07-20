@@ -199,9 +199,11 @@ static void bluetooth_power(int onoff)
 		if(rdev->use_count == 1) {
 			PR_INFO("%s() CLK ON rdev->usecount = %d\n", __func__, rdev->use_count);
 			regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x04);	/* 32kHzBT_EN ON */
+			udelay(64); /* 32KHz*2clk */
 		}
 		bluetooth_set_pincntl(onoff);
 		gpio_set_value(BT_RESET_GPIO, 1);
+		mdelay(200); /* wait at least 150ms before transmitting */
 	}else{
 		bluetooth_set_pincntl(onoff);
 
@@ -212,6 +214,7 @@ static void bluetooth_power(int onoff)
 			PR_INFO("%s() CLK OFF rdev->usecount = %d\n", __func__, rdev->use_count);
 			regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x00); /* 32kHzBT_EN OFF */
 		}
+		mdelay(100);
 	}
 
 	PR_INFO("bluetooth regulator turn on onoff=%d use_count=%d -> %d rc=%d\n",
@@ -243,7 +246,6 @@ static int bcm4330_bt_rfkill_set_power(void *data, bool blocked)
 	PR_INFO("bcm4330_bt_rfkill_set_power() blocked=%d\n",blocked);
 
 	bcm_power_lock(lock_cookie_bt);
-
 	// rfkill_ops callback. Turn transmitter on when blocked is false
 	if (!blocked) {
 		bluetooth_power(BT_PWR_ON);

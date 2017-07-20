@@ -296,7 +296,6 @@ int bcm_wifi_set_power(int enable)
 
 	int lock_cookie_wifi = 'W' | 'i'<<8 | 'F'<<16 | 'i'<<24;    /* cookie "WiFi" */
 
-	mdelay(100);
 	regulator = regulator_get(NULL, "vdd_bt_dual_1v8");
 	if(regulator == NULL) {
  		pr_err("wifi regulator get error\n");
@@ -309,6 +308,7 @@ int bcm_wifi_set_power(int enable)
 		ret = regulator_enable(regulator);
 		if(rdev->use_count == 1) {
 			regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x04); /* 32kHzBT_EN ON */
+			udelay(64); /* 32KHz*2clk */
 		}
 #ifdef CONFIG_BCM4335BT
 		int lock_cookie_wifi = 'W' | 'i'<<8 | 'F'<<16 | 'i'<<24;	/* cookie is "WiFi" */
@@ -333,7 +333,7 @@ int bcm_wifi_set_power(int enable)
 			return ret;
 		}
 		/* WLAN chip to reset */
-		mdelay(150);
+		mdelay(200); /* wait at least 150ms before transmitting */
 		bcm_power_unlock(lock_cookie_wifi);
 		pr_info("%s: wifi power successed to pull up\n", __func__);
 	} else { // OFF
