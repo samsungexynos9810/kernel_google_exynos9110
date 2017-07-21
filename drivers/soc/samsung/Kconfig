@@ -137,8 +137,8 @@ config EXYNOS_CONTENT_PATH_PROTECTION
 	help
 	  Enable content path protection of EXYNOS.
 
-source "drivers/soc/samsung/acpm/Kconfig"
-source "drivers/soc/samsung/exynos-hdcp/Kconfig"
+#source "drivers/soc/samsung/acpm/Kconfig"
+#source "drivers/soc/samsung/exynos-hdcp/Kconfig"
 
 config EXYNOS_MCINFO
 	bool "Exynos memory controller information"
