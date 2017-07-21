@@ -58,6 +58,9 @@ static const char * __init product_id_to_name(unsigned int product_id)
 	case EXYNOS5800_SOC_ID:
 		soc_name = "EXYNOS5800";
 		break;
+	case EXYNOS7270_SOC_ID:
+		soc_name = "EXYNOS7270";
+		break;
 	case EXYNOS8890_SOC_ID:
 		soc_name = "EXYNOS8890";
 		break;
@@ -83,6 +86,13 @@ static const struct exynos_chipid_variant drv_data_exynos8895 = {
 	.sub_rev_bit	= 16,
 };
 
+static const struct exynos_chipid_variant drv_data_exynos7270 = {
+	.unique_id_reg	= 0x14,
+	.rev_reg	= 0x0,
+	.main_rev_bit	= 4,
+	.sub_rev_bit	= 0,
+};
+
 static const struct of_device_id of_exynos_chipid_ids[] = {
 	{
 		.compatible	= "samsung,exynos8890-chipid",
@@ -92,7 +102,10 @@ static const struct of_device_id of_exynos_chipid_ids[] = {
 		.compatible	= "samsung,exynos8895-chipid",
 		.data		= &drv_data_exynos8895,
 	},
-	{},
+	{
+		.compatible	= "samsung,exynos7270-chipid",
+		.data		= &drv_data_exynos7270,
+	}
 };
 
 static void __init exynos_chipid_get_chipid_info(void)
