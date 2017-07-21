@@ -1352,6 +1352,26 @@ static void samsung_pinctrl_resume(void)
 	}
 }
 
+u32 exynos_eint_to_pin_num(int eint)
+{
+	struct samsung_pinctrl_drv_data *drvdata;
+	struct samsung_pin_bank *pbank;
+	int i, offset = 0;
+
+	drvdata = list_first_entry(&drvdata_list,
+			struct samsung_pinctrl_drv_data, node);
+
+	for (i = 0; i < drvdata->nr_banks; i++) {
+		pbank = &drvdata->pin_banks[i];
+		if (!strncmp(pbank->name, "gpa0", strlen(pbank->name)))
+			break;
+
+		offset += pbank->nr_pins;
+	}
+
+	return drvdata->pin_base + eint + offset;
+}
+
 #else
 #define samsung_pinctrl_suspend		NULL
 #define samsung_pinctrl_resume		NULL
@@ -1388,6 +1408,8 @@ static const struct of_device_id samsung_pinctrl_dt_match[] = {
 		.data = (void *)exynos8890_pin_ctrl },
 	{ .compatible = "samsung,exynos8895-pinctrl",
 		.data = (void *)exynos8895_pin_ctrl },
+	{ .compatible = "samsung,exynos7570-pinctrl",
+		.data = (void *)exynos7570_pin_ctrl },
 #endif
 #ifdef CONFIG_PINCTRL_S3C64XX
 	{ .compatible = "samsung,s3c64xx-pinctrl",
