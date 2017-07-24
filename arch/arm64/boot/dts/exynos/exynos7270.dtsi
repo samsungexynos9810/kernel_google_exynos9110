@@ -14,7 +14,6 @@
  */
 
 #include <dt-bindings/clock/exynos7270.h>
-#include <dt-bindings/sysmmu/sysmmu.h>
 #include <dt-bindings/thermal/thermal.h>
 #include "exynos7270-pinctrl.dtsi"
 #include "exynos7270-itm.dtsi"
