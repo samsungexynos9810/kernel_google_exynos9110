@@ -13,7 +13,7 @@
 #include <linux/log2.h>
 #include <linux/of.h>
 #include <linux/delay.h>
-//#include <soc/samsung/cal-if.h>
+#include "../../soc/samsung/pwrcal/pwrcal.h"
 
 #include "composite.h"
 
@@ -1532,7 +1532,7 @@ int cal_vclk_dfs_set_rate_switch(struct clk_hw *hw, unsigned long rate, unsigned
 
 	return ret;
 }
-
+#if 0
 static int cal_vclk_qch_init(struct clk_hw *hw)
 {
 	struct samsung_vclk *vclk = to_vclk(hw);
@@ -1545,6 +1545,7 @@ static int cal_vclk_qch_init(struct clk_hw *hw)
 
 	return ret;
 }
+#endif
 
 static const struct clk_ops samsung_vclk_ops = {
 	.enable = cal_vclk_enable,
@@ -1635,7 +1636,8 @@ void __init samsung_register_vclk(struct samsung_clk_provider *ctx,
 				pr_err("%s: failed to register lookup %s\n",
 						__func__, (&list[cnt])->alias);
 		}
-
+#if 0
 		cal_vclk_qch_init(__clk_get_hw(clk));
+#endif
 	}
 }

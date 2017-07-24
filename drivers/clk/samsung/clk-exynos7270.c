@@ -16,7 +16,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <soc/samsung/ect_parser.h>
-#include <soc/samsung/cal-if.h>
+#include "../../soc/samsung/pwrcal/pwrcal.h"
 
 #include <dt-bindings/clock/exynos7270.h>
 #include "../../soc/samsung/pwrcal/S5E7270/S5E7270-vclk.h"
