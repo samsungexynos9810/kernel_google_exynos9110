@@ -170,22 +170,6 @@
 		default_ptat_cont = <0x1>;
 	};
 
-	tmuctrl_1: tmuctrl_G3D@10130000 {
-		compatible = "samsung,exynos7570-tmu";
-		reg = <0x0 0x10130000 0x200>;
-		interrupts = <0 435 0>;
-		default_ptat_cont = <0x1>;
-
-		/* gpu cooling related table */
-		gpu_idx_num = <5>;
-		/* flags, driver_data(index), frequency */
-		gpu_cooling_table = < 0 0 420000
-				      0 1 350000
-				      0 2 169000
-				      0 3 97000
-				      0 4 TABLE_END>;
-	};
-
 	pinctrl@139F0000 {
 		if_irq: if-irq {
 			samsung,pins = "gpa0-5";
