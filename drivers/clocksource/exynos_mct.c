@@ -83,8 +83,9 @@ static void __iomem *reg_base;
 static unsigned long clk_rate;
 static unsigned int mct_int_type;
 static int mct_irqs[MCT_NR_IRQS];
+#if 0
 extern struct atomic_notifier_head hardlockup_notifier_list;
-
+#endif
 struct mct_clock_event_device {
 	struct clock_event_device evt;
 	unsigned long base;
@@ -447,6 +448,7 @@ static irqreturn_t exynos4_mct_tick_isr(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+#if 0
 static void exynos4_mct_tick_dump(unsigned int cpu)
 {
 	unsigned int icntb, icnto, tcon, intenb, intcstat;
@@ -475,7 +477,7 @@ static int exynos4_mct_hardlockup_handler(struct notifier_block *nb,
 	exynos4_mct_tick_dump(*cpu);
 	return 0;
 }
-
+#endif
 static int exynos4_local_timer_setup(struct mct_clock_event_device *mevt)
 {
 	struct clock_event_device *evt = &mevt->evt;
@@ -558,31 +560,33 @@ static int exynos4_mct_cpu_notify(struct notifier_block *self,
 
 	return NOTIFY_OK;
 }
-
 static struct notifier_block exynos4_mct_cpu_nb = {
 	.notifier_call = exynos4_mct_cpu_notify,
 };
-
+#if 0
 static struct notifier_block nb_hardlockup_block = {
 	.notifier_call = exynos4_mct_hardlockup_handler,
 };
+#endif
 
 static void __init exynos4_timer_resources(struct device_node *np, void __iomem *base)
 {
 	int err;
 	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
-	struct clk *mct_clk, *tick_clk;
+	//struct clk *mct_clk, *tick_clk;
 
-	tick_clk = np ? of_clk_get_by_name(np, "fin_pll") :
-				clk_get(NULL, "fin_pll");
-	if (IS_ERR(tick_clk))
-		panic("%s: unable to determine tick clock rate\n", __func__);
-	clk_rate = clk_get_rate(tick_clk);
+	//return;
 
-	mct_clk = np ? of_clk_get_by_name(np, "mct") : clk_get(NULL, "mct");
-	if (IS_ERR(mct_clk))
-		panic("%s: unable to retrieve mct clock instance\n", __func__);
-	clk_prepare_enable(mct_clk);
+	//tick_clk = np ? of_clk_get_by_name(np, "fin_pll") :
+	//			clk_get(NULL, "fin_pll");
+	//if (IS_ERR(tick_clk))
+	//	panic("%s: unable to determine tick clock rate\n", __func__);
+	clk_rate = 26000000; //clk_get_rate(tick_clk);
+
+//	mct_clk = np ? of_clk_get_by_name(np, "mct") : clk_get(NULL, "mct");
+//	if (IS_ERR(mct_clk))
+//		panic("%s: unable to retrieve mct clock instance\n", __func__);
+//	clk_prepare_enable(mct_clk);
 
 	reg_base = base;
 	if (!reg_base)
@@ -616,9 +620,9 @@ static void __init mct_init_dt(struct device_node *np, unsigned int int_type)
 	u32 nr_irqs, i;
 
 	mct_int_type = int_type;
-
+#if 0
 	atomic_notifier_chain_register(&hardlockup_notifier_list, &nb_hardlockup_block);
-
+#endif
 	/* This driver uses only one global timer interrupt */
 	mct_irqs[MCT_G0_IRQ] = irq_of_parse_and_map(np, MCT_G0_IRQ);
 
@@ -626,7 +630,7 @@ static void __init mct_init_dt(struct device_node *np, unsigned int int_type)
 	 * Find out the number of local irqs specified. The local
 	 * timer irqs are specified after the four global timer
 	 * irqs are specified.
-	 */
+	*/
 #ifdef CONFIG_OF
 	nr_irqs = of_irq_count(np);
 #else

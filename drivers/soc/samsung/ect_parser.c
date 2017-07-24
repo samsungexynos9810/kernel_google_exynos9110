@@ -2136,6 +2136,6 @@ int ect_strcmp(char *src1, char *src2)
 void __init ect_init_map_io(void)
 {
 #if !defined(CONFIG_ECT_HEADER_IN_KERNEL)
-	iotable_init(&exynos_iodesc_ect, 1);
+//	iotable_init(&exynos_iodesc_ect, 1);
 #endif
 }
