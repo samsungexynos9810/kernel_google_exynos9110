@@ -17,7 +17,6 @@
 #include <linux/platform_device.h>
 #include <linux/reboot.h>
 #include <linux/soc/samsung/exynos-soc.h>
-#include <soc/samsung/acpm_ipc_ctrl.h>
 
 extern void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
 static void __iomem *exynos_pmu_base = NULL;
@@ -172,8 +171,6 @@ void mngs_reset_control(int en)
 #ifdef CONFIG_OF
 static void exynos_power_off(void)
 {
-	exynos_acpm_reboot();
-
 	pr_emerg("%s: Set PS_HOLD Low.\n", __func__);
 	writel(readl(exynos_pmu_base + EXYNOS_PMU_PS_HOLD_CONTROL) & 0xFFFFFEFF,
 				exynos_pmu_base + EXYNOS_PMU_PS_HOLD_CONTROL);
@@ -192,8 +189,6 @@ static void exynos_reboot(enum reboot_mode mode, const char *cmd)
 
 	if (!exynos_pmu_base)
 		return;
-
-	exynos_acpm_reboot();
 
 	restart_inform = INFORM_NONE;
 
