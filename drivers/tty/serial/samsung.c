@@ -1861,9 +1861,11 @@ static int s3c24xx_serial_remove(struct platform_device *dev)
 #ifdef CONFIG_SAMSUNG_CLOCK
 		device_remove_file(&dev->dev, &dev_attr_clock_source);
 #endif
+
+#ifdef CONFIG_PM_DEVFREQ
 		if (ourport->uart_logging == 1)
 			kfree(ourport->uart_local_buf.buffer);
-
+#endif
 		uart_remove_one_port(&s3c24xx_uart_drv, port);
 	}
 
