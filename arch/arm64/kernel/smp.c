@@ -38,7 +38,6 @@
 #include <linux/of.h>
 #include <linux/irq_work.h>
 #include <linux/exynos-ss.h>
-#include <linux/exynos-sdm.h>
 
 #include <asm/alternative.h>
 #include <asm/atomic.h>
