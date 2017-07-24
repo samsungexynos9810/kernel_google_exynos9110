@@ -17,7 +17,7 @@
 #include <asm/smp_plat.h>
 
 #include <soc/samsung/exynos-pmu.h>
-#include <soc/samsung/pmu-cp.h>
+//#include <soc/samsung/pmu-cp.h>
 
 /**
  * register offset value from base address
