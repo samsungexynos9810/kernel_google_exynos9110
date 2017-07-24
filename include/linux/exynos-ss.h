@@ -224,7 +224,7 @@ static inline unsigned long exynos_ss_get_spare_paddr(unsigned int offset)
 }
 #endif /* CONFIG_EXYNOS_SNAPSHOT */
 
-static inline void exynos_ss_bug(void) {BUG();}
+static inline void exynos_ss_bug(void) {/*BUG();*/}
 struct ess_dumper {
 	bool active;
 	u32 items;
