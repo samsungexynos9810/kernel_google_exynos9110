@@ -773,10 +773,10 @@ static int alloc_wakeup_mask(int num_wakeup_mask)
 		return -ENOMEM;
 
 	for_each_syspwr_mode(mode) {
-		pm_info->wakeup_mask[mode] = kzalloc(sizeof(unsigned int *)
+		pm_info->wakeup_mask[mode] = kzalloc(sizeof(unsigned int)
 				* num_wakeup_mask, GFP_KERNEL);
 
-		if (!pm_info->wakeup_mask)
+		if (!pm_info->wakeup_mask[mode])
 			goto free_reg_offset;
 	}
 

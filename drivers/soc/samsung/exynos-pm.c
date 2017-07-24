@@ -27,6 +27,9 @@
 #include <soc/samsung/exynos-pmu.h>
 #include <soc/samsung/exynos-powermode.h>
 
+#include <sound/samsung/vts.h>
+#include <sound/samsung/abox.h>
+
 //#include <sound/exynos-audmixer.h>
 
 #define WAKEUP_STAT_EINT                (1 << 0)
@@ -52,6 +55,8 @@ struct exynos_pm_info {
 	unsigned int suspend_psci_idx;		/* psci index to be used in suspend scenario */
 	unsigned int cp_call_mode_idx;		/* power mode to be used in cp_call scenario */
 	unsigned int cp_call_psci_idx;		/* psci index to be used in cp_call scenario */
+	u8 num_extra_stat;			/* Total number of extra wakeup_stat */
+	unsigned int *extra_wakeup_stat;	/* Extra wakeup stat SFRs offset */
 };
 static struct exynos_pm_info *pm_info;
 
@@ -99,17 +104,21 @@ static void exynos_show_wakeup_reason_eint(void)
 		pr_info("%s Resume caused by unknown EINT\n", EXYNOS_PM_PREFIX);
 }
 
-static void exynos_show_wakeup_registers(unsigned long wakeup_stat)
+static void exynos_show_wakeup_registers(unsigned int wakeup_stat)
 {
 	int i, size;
+	int extra_wakeup_stat;
 
-	pr_info("WAKEUP_STAT: 0x%08lx\n", wakeup_stat);
+	pr_info("WAKEUP_STAT:\n");
+	pr_info("0x%08x\n", wakeup_stat);
+	for (i = 0; i < pm_info->num_extra_stat; i++) {
+		exynos_pmu_read(pm_info->extra_wakeup_stat[i], &extra_wakeup_stat);
+		pr_info("0x%08x\n", extra_wakeup_stat);
+	}
 
 	pr_info("EINT_PEND: ");
 	for (i = 0, size = 8; i < pm_info->num_eint; i += size)
 		pr_info("0x%02x ", __raw_readl(EXYNOS_EINT_PEND(pm_info->eint_base, i)));
-
-	pr_info("\n");
 }
 
 static void exynos_show_wakeup_reason(bool sleep_abort)
@@ -133,7 +142,6 @@ static void exynos_show_wakeup_reason(bool sleep_abort)
 	}
 
 	exynos_pmu_read(EXYNOS_PMU_WAKEUP_STAT, &wakeup_stat);
-
 	exynos_show_wakeup_registers(wakeup_stat);
 
 	if (wakeup_stat & WAKEUP_STAT_RTC_ALARM)
@@ -199,6 +207,11 @@ int exynos_pm_notify(enum exynos_pm_event event)
 EXPORT_SYMBOL_GPL(exynos_pm_notify);
 #endif /* CONFIG_CPU_IDLE */
 
+#if defined(CONFIG_SOC_EXYNOS8895)
+#define SLEEP_VTS_ON   9
+#define SLEEP_AUD_ON   10
+#endif
+
 static int exynos_pm_syscore_suspend(void)
 {
 	if (!exynos_check_cp_status()) {
@@ -207,13 +220,17 @@ static int exynos_pm_syscore_suspend(void)
 		return -EINVAL;
 	}
 
-//	pm_info->is_cp_call = is_cp_aud_enabled();
+	pm_info->is_cp_call = abox_is_on();
 	if (pm_info->is_cp_call || pm_dbg->test_cp_call) {
-		exynos_prepare_sys_powerdown(pm_info->cp_call_mode_idx, true);
+		exynos_prepare_sys_powerdown(pm_info->cp_call_mode_idx);
 		pr_info("%s %s: Enter CP Call scenario. (mode_idx = %d)\n",
 				EXYNOS_PM_PREFIX, __func__, pm_info->cp_call_mode_idx);
 	} else {
-		exynos_prepare_sys_powerdown(pm_info->suspend_mode_idx, true);
+		if (vts_is_on())
+			exynos_prepare_sys_powerdown(SYS_SLEEP_VTS_ON);
+		else
+			exynos_prepare_sys_powerdown(pm_info->suspend_mode_idx);
+
 		pr_info("%s %s: Enter Suspend scenario. (mode_idx = %d)\n",
 				EXYNOS_PM_PREFIX,__func__, pm_info->suspend_mode_idx);
 	}
@@ -225,8 +242,12 @@ static void exynos_pm_syscore_resume(void)
 {
 	if (pm_info->is_cp_call || pm_dbg->test_cp_call)
 		exynos_wakeup_sys_powerdown(pm_info->cp_call_mode_idx, pm_info->is_early_wakeup);
-	else
-		exynos_wakeup_sys_powerdown(pm_info->suspend_mode_idx, pm_info->is_early_wakeup);
+	else {
+		if (vts_is_on())
+			exynos_wakeup_sys_powerdown(SYS_SLEEP_VTS_ON, pm_info->is_early_wakeup);
+		else
+			exynos_wakeup_sys_powerdown(pm_info->suspend_mode_idx, pm_info->is_early_wakeup);
+	}
 
 	exynos_show_wakeup_reason(pm_info->is_early_wakeup);
 
@@ -386,6 +407,17 @@ static __init int exynos_pm_drvinit(void)
 			pr_err("%s %s: unabled to get cp_call_psci_idx from DT\n",
 					EXYNOS_PM_PREFIX, __func__);
 			BUG();
+		}
+
+		ret = of_property_count_u32_elems(np, "extra_wakeup_stat");
+		if (!ret) {
+			pr_err("%s %s: unabled to get wakeup_stat value from DT\n",
+					EXYNOS_PM_PREFIX, __func__);
+			BUG();
+		} else {
+			pm_info->num_extra_stat = ret;
+			pm_info->extra_wakeup_stat = kzalloc(sizeof(unsigned int) * ret, GFP_KERNEL);
+			of_property_read_u32_array(np, "extra_wakeup_stat", pm_info->extra_wakeup_stat, ret);
 		}
 	} else {
 		pr_err("%s %s: failed to have populated device tree\n",

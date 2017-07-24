@@ -16,26 +16,24 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <soc/samsung/cal-if.h>
-#include <dt-bindings/clock/exynos8895.h>
+#include <dt-bindings/clock/emulator8895.h>
 
-#include "../../soc/samsung/cal-if/exynos8895/cmucal-vclk.h"
-#include "../../soc/samsung/cal-if/exynos8895/cmucal-node.h"
-#include "../../soc/samsung/cal-if/exynos8895/cmucal-qch.h"
-#include "../../soc/samsung/cal-if/exynos8895/clkout_exynos8895.h"
+#include "../../soc/samsung/cal-if/emulator8895/cmucal-vclk.h"
+#include "../../soc/samsung/cal-if/emulator8895/cmucal-node.h"
+#include "../../soc/samsung/cal-if/emulator8895/cmucal-qch.h"
 #include "composite.h"
 
-static struct samsung_clk_provider *exynos8895_clk_privider;
 /*
  * list of controller registers to be saved and restored during a
  * suspend/resume cycle.
  */
 /* fixed rate clocks generated outside the soc */
-struct samsung_fixed_rate exynos8895_fixed_rate_ext_clks[] __initdata = {
+struct samsung_fixed_rate emulator8895_fixed_rate_ext_clks[] __initdata = {
 	FRATE(OSCCLK, "fin_pll", NULL, CLK_IS_ROOT, 26000000),
 };
 
 /* HWACG VCLK */
-struct init_vclk exynos8895_abox_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_abox_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_ABOX_CMU_ABOX, ABOX_CMU_ABOX_QCH, "GATE_ABOX_CMU_ABOX", NULL, 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_ABOX_TOP, ABOX_TOP_QCH, "GATE_ABOX_TOP", NULL, 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_BTM_ABOX, BTM_ABOX_QCH, "GATE_BTM_ABOX", NULL, 0, VCLK_GATE, NULL),
@@ -45,15 +43,9 @@ struct init_vclk exynos8895_abox_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SMMU_ABOX, SMMU_ABOX_QCH, "GATE_SMMU_ABOX", NULL, 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_SYSREG_ABOX, SYSREG_ABOX_QCH, "GATE_SYSREG_ABOX", NULL, 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_WDT_ABOXCPU, WDT_ABOXCPU_QCH, "GATE_WDT_ABOXCPU", NULL, 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_UAIF0, GOUT_BLK_ABOX_UID_ABOX_TOP_IPCLKPORT_BCLK_UAIF0 , "GATE_UAIF0", NULL, 0, VCLK_GATE | VCLK_QCH_DIS, NULL),
-	HWACG_VCLK(GATE_UAIF1, GOUT_BLK_ABOX_UID_ABOX_TOP_IPCLKPORT_BCLK_UAIF1 , "GATE_UAIF1", NULL, 0, VCLK_GATE | VCLK_QCH_DIS, NULL),
-	HWACG_VCLK(GATE_UAIF2, GOUT_BLK_ABOX_UID_ABOX_TOP_IPCLKPORT_BCLK_UAIF2 , "GATE_UAIF2", NULL, 0, VCLK_GATE | VCLK_QCH_DIS, NULL),
-	HWACG_VCLK(GATE_UAIF3, GOUT_BLK_ABOX_UID_ABOX_TOP_IPCLKPORT_BCLK_UAIF3 , "GATE_UAIF3", NULL, 0, VCLK_GATE | VCLK_QCH_DIS, NULL),
-	HWACG_VCLK(GATE_UAIF4, GOUT_BLK_ABOX_UID_ABOX_TOP_IPCLKPORT_BCLK_UAIF4 , "GATE_UAIF4", NULL, 0, VCLK_GATE | VCLK_QCH_DIS, NULL),
-	HWACG_VCLK(GATE_DSIF, GOUT_BLK_ABOX_UID_ABOX_TOP_IPCLKPORT_BCLK_DSIF, "GATE_DSIF", NULL, 0, VCLK_GATE | VCLK_QCH_DIS, NULL),
 };
 
-struct init_vclk exynos8895_apm_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_apm_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_APM_BUS, MUX_CLKCMU_APM_BUS_USER, "UMUX_CLKCMU_APM_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_APM_SYS, APM_QCH_SYS, "GATE_APM_SYS", "UMUX_CLKCMU_APM_BUS", 0, VCLK_GATE, NULL),
@@ -68,7 +60,7 @@ struct init_vclk exynos8895_apm_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_WDT_APM, WDT_APM_QCH, "GATE_WDT_APM", "UMUX_CLKCMU_APM_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_bus1_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_bus1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_BUS1_BUS, MUX_CLKCMU_BUS1_BUS_USER, "UMUX_CLKCMU_BUS1_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_BUS1_CMU_BUS1, BUS1_CMU_BUS1_QCH, "GATE_BUS1_CMU_BUS1", NULL, 0, VCLK_GATE, NULL),
@@ -76,7 +68,7 @@ struct init_vclk exynos8895_bus1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_BUS1, SYSREG_BUS1_QCH, "GATE_SYSREG_BUS1", NULL, 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_busc_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_busc_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_BUSC_BUS, MUX_CLKCMU_BUSC_BUS_USER, "UMUX_CLKCMU_BUSC_BUS", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_BUSC_BUSPHSI2C, MUX_CLKCMU_BUSC_BUSPHSI2C_USER, "UMUX_CLKCMU_BUSC_BUSPHSI2C", NULL, 0, 0, NULL),
 
@@ -99,7 +91,7 @@ struct init_vclk exynos8895_busc_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_BUSC, SYSREG_BUSC_QCH, "GATE_SYSREG_BUSC", NULL, 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_cam_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_cam_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_CAM_BUS, MUX_CLKCMU_CAM_BUS_USER, "UMUX_CLKCMU_CAM_BUS", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_CAM_TPU0, MUX_CLKCMU_CAM_TPU0_USER, "UMUX_CLKCMU_CAM_TPU0", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_CAM_VRA, MUX_CLKCMU_CAM_VRA_USER, "UMUX_CLKCMU_CAM_VRA", NULL, 0, 0, NULL),
@@ -131,7 +123,7 @@ struct init_vclk exynos8895_cam_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_IS_CAM_TPU1, IS_CAM_QCH_TPU1, "GATE_IS_CAM_TPU1", "UMUX_CLKCMU_CAM_TPU1", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_cmu_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_cmu_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_CMU_CMU_CMUREF, CMU_CMU_CMUREF_QCH, "GATE_CMU_CMU_CMUREF", NULL, 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_DFTMUX_TOP_CIS_CLK0, DFTMUX_TOP_QCH_CIS_CLK0, "GATE_DFTMUX_TOP_CIS_CLK0", NULL, 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_DFTMUX_TOP_CIS_CLK1, DFTMUX_TOP_QCH_CIS_CLK1, "GATE_DFTMUX_TOP_CIS_CLK1", NULL, 0, VCLK_GATE, NULL),
@@ -139,7 +131,7 @@ struct init_vclk exynos8895_cmu_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_DFTMUX_TOP_CIS_CLK3, DFTMUX_TOP_QCH_CIS_CLK3, "GATE_DFTMUX_TOP_CIS_CLK3", NULL, 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_dcam_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_dcam_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_DCAM_BUS, MUX_CLKCMU_DCAM_BUS_USER, "UMUX_CLKCMU_DCAM_BUS", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_DCAM_IMGD, MUX_CLKCMU_DCAM_IMGD_USER, "UMUX_CLKCMU_DCAM_IMGD", NULL, 0, 0, NULL),
 
@@ -151,7 +143,7 @@ struct init_vclk exynos8895_dcam_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_DCAM, SYSREG_DCAM_QCH, "GATE_SYSREG_DCAM", "UMUX_CLKCMU_DCAM_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_dpu0_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_dpu0_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_DPU_BUS, MUX_CLKCMU_DPU_BUS_USER, "UMUX_CLKCMU_DPU_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_BTM_DPUD0, BTM_DPUD0_QCH, "GATE_BTM_DPUD0", "UMUX_CLKCMU_DPU_BUS", 0, VCLK_GATE, NULL),
@@ -174,7 +166,7 @@ struct init_vclk exynos8895_dpu0_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_DPU0, SYSREG_DPU0_QCH, "GATE_SYSREG_DPU0", "UMUX_CLKCMU_DPU_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_dpu1_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_dpu1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_DPU1_BUSD, MUX_CLKCMU_DPU1_BUSD_USER, "UMUX_CLKCMU_DPU1_BUSD", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_DPU1_BUSP, MUX_CLKCMU_DPU1_BUSP_USER, "UMUX_CLKCMU_DPU1_BUSP", NULL, 0, 0, NULL),
 
@@ -186,19 +178,7 @@ struct init_vclk exynos8895_dpu1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_DPU1, SYSREG_DPU1_QCH, "GATE_SYSREG_DPU1", "UMUX_CLKCMU_DPU1_BUSP", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_dsp_hwacg_vclks[] __initdata = {
-	HWACG_VCLK(UMUX_CLKCMU_DSP_BUS, MUX_CLKCMU_DSP_BUS_USER, "UMUX_CLKCMU_DSP_BUS", NULL, 0, 0, NULL),
-
-	HWACG_VCLK(GATE_BTM_SCORE, BTM_SCORE_QCH, "GATE_BTM_SCORE", "UMUX_CLKCMU_DSP_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_DSP_CMU_DSP, DSP_CMU_DSP_QCH, "GATE_DSP_CMU_DSP", "UMUX_CLKCMU_DSP_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PMU_DSP, PMU_DSP_QCH, "GATE_PMU_DSP", "UMUX_CLKCMU_DSP_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_BCM_SCORE, BCM_SCORE_QCH, "GATE_BCM_SCORE", "UMUX_CLKCMU_DSP_BUS", 0, VCLK_GATE, "GATE_BCM_SCORE"),
-	HWACG_VCLK(GATE_SCORE, SCORE_QCH, "GATE_SCORE", "UMUX_CLKCMU_DSP_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_SMMU_SCORE, SMMU_SCORE_QCH, "GATE_SMMU_SCORE", "UMUX_CLKCMU_DSP_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_SYSREG_DSP, SYSREG_DSP_QCH, "GATE_SYSREG_DSP", "UMUX_CLKCMU_DSP_BUS", 0, VCLK_GATE, NULL),
-};
-
-struct init_vclk exynos8895_fsys0_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_fsys0_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_FSYS0_BUS, MUX_CLKCMU_FSYS0_BUS_USER, "UMUX_CLKCMU_FSYS0_BUS", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_FSYS0_DPGTC, MUX_CLKCMU_FSYS0_DPGTC_USER, "UMUX_CLKCMU_FSYS0_DPGTC", "UMUX_CLKCMU_FSYS0_BUS", 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_FSYS0_UFS_EMBD, MUX_CLKCMU_FSYS0_UFS_EMBD_USER, "UMUX_CLKCMU_FSYS0_UFS_EMBD", "UMUX_CLKCMU_FSYS0_BUS", 0, 0, NULL),
@@ -217,11 +197,12 @@ struct init_vclk exynos8895_fsys0_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_USBTV_USBTV_HOST, USBTV_QCH_USBTV_HOST, "GATE_USBTV_USBTV_HOST", "UMUX_CLKCMU_FSYS0_BUS", 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_DP_LINK, DP_LINK_QCH, "GATE_DP_LINK", "UMUX_CLKCMU_FSYS0_DPGTC", 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_UFS_EMBD, UFS_EMBD_QCH, "GATE_UFS_EMBD", "UMUX_CLKCMU_FSYS0_UFS_EMBD", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_MMC_CARD1, MMC_CARD1_QCH, "GATE_MMC_CARD1", "UMUX_CLKCMU_FSYS0_MMC_EMBD", 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_MMC_EMBD, MMC_EMBD_QCH, "GATE_MMC_EMBD", "UMUX_CLKCMU_FSYS0_MMC_EMBD", 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_USBTV_USB30DRD_LINK, USBTV_QCH_USB30DRD_LINK, "GATE_USBTV_USB30DRD_LINK", "UMUX_CLKCMU_FSYS0_USBDRD30", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_fsys1_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_fsys1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_FSYS1_BUS, MUX_CLKCMU_FSYS1_BUS_USER, "UMUX_CLKCMU_FSYS1_BUS", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_FSYS1_MMC_CARD, MUX_CLKCMU_FSYS1_MMC_CARD_USER, "UMUX_CLKCMU_FSYS1_MMC_CARD", "UMUX_CLKCMU_FSYS1_BUS", 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_FSYS1_UFS_CARD, MUX_CLKCMU_FSYS1_UFS_CARD_USER, "UMUX_CLKCMU_FSYS1_UFS_CARD", "UMUX_CLKCMU_FSYS1_BUS", 0, 0, NULL),
@@ -231,16 +212,20 @@ struct init_vclk exynos8895_fsys1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_BTM_FSYS1, BTM_FSYS1_QCH, "GATE_BTM_FSYS1", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_FSYS1_CMU_FSYS1, FSYS1_CMU_FSYS1_QCH, "GATE_FSYS1_CMU_FSYS1", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_GPIO_FSYS1, GPIO_FSYS1_QCH, "GATE_GPIO_FSYS1", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PCIE_PCIE0_MSTR, PCIE_QCH_PCIE0_MSTR, "GATE_PCIE_PCIE0_MSTR", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PCIE_PCIE_PCS, PCIE_QCH_PCIE_PCS, "GATE_PCIE_PCIE_PCS", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PCIE_PCIE_PHY, PCIE_QCH_PCIE_PHY, "GATE_PCIE_PCIE_PHY", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PCIE_PCIE0_DBI, PCIE_QCH_PCIE0_DBI, "GATE_PCIE_PCIE0_DBI", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PCIE_PCIE0_APB, PCIE_QCH_PCIE0_APB, "GATE_PCIE_PCIE0_APB", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE0_QCH_PCIE0_MSTR, PCIE0_QCH_PCIE0_MSTR, "GATE_PCIE0_QCH_PCIE0_MSTR", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE0_QCH_PCIE0_PHY, PCIE0_QCH_PCIE0_PHY, "GATE_PCIE0_QCH_PCIE0_PHY", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE0_QCH_PCIE0_DBI, PCIE0_QCH_PCIE0_DBI, "GATE_PCIE0_QCH_PCIE0_DBI", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE0_QCH_PCIE0_APB, PCIE0_QCH_PCIE0_APB, "GATE_PCIE0_QCH_PCIE0_APB", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE0_QCH_PCIE0_PCS, PCIE0_QCH_PCIE0_PCS, "GATE_PCIE0_QCH_PCIE0_PCS", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
 	/* PCIE ref_clk don't have QCH */
-	HWACG_VCLK(GATE_PCIE_PCIE_SOCPLL, PCIE_QCH_PCIE_SOCPLL, "GATE_PCIE_PCIE_SOCPLL", "UMUX_CLKCMU_FSYS1_PCIE", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PCIE_PCIE1_MSTR, PCIE_QCH_PCIE1_MSTR, "GATE_PCIE_PCIE1_MSTR", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PCIE_PCIE1_DBI, PCIE_QCH_PCIE1_DBI, "GATE_PCIE_PCIE1_DBI", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PCIE_PCIE1_APB, PCIE_QCH_PCIE1_APB, "GATE_PCIE_PCIE1_APB", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE0_QCH_PCIE0_SOCPLL, PCIE0_QCH_PCIE0_SOCPLL, "GATE_PCIE0_QCH_PCIE0_SOCPLL", "UMUX_CLKCMU_FSYS1_PCIE", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE1_QCH_PCIE1_MSTR, PCIE1_QCH_PCIE1_MSTR, "GATE_PCIE1_QCH_PCIE1_MSTR", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE1_QCH_PCIE1_PHY, PCIE1_QCH_PCIE1_PHY, "GATE_PCIE1_QCH_PCIE1_PHY", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE1_QCH_PCIE1_DBI, PCIE1_QCH_PCIE1_DBI, "GATE_PCIE1_QCH_PCIE1_DBI", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE1_QCH_PCIE1_APB, PCIE1_QCH_PCIE1_APB, "GATE_PCIE1_QCH_PCIE1_APB", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	HWACG_VCLK(GATE_PCIE1_QCH_PCIE1_PCS, PCIE1_QCH_PCIE1_PCS, "GATE_PCIE1_QCH_PCIE1_PCS", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
+	/* PCIE ref_clk don't have QCH */
+	HWACG_VCLK(GATE_PCIE1_QCH_PCIE1_OSCPLL, PCIE1_QCH_PCIE1_OSCPLL, "GATE_PCIE1_QCH_PCIE1_OSCPLL", "UMUX_CLKCMU_FSYS1_PCIE", 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_PMU_FSYS1, PMU_FSYS1_QCH, "GATE_PMU_FSYS1", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_BCM_FSYS1, BCM_FSYS1_QCH, "GATE_BCM_FSYS1", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, "GATE_BCM_FSYS1"),
 	HWACG_VCLK(GATE_RTIC, RTIC_QCH, "GATE_RTIC", "UMUX_CLKCMU_FSYS1_BUS", 0, VCLK_GATE, NULL),
@@ -253,7 +238,7 @@ struct init_vclk exynos8895_fsys1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_UFS_CARD, UFS_CARD_QCH, "GATE_UFS_CARD", "UMUX_CLKCMU_FSYS1_UFS_CARD", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_g2d_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_g2d_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_G2D_JPEG, MUX_CLKCMU_G2D_JPEG_USER, "UMUX_CLKCMU_G2D_JPEG", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_G2D_G2D, MUX_CLKCMU_G2D_G2D_USER, "UMUX_CLKCMU_G2D_G2D", "UMUX_CLKCMU_G2D_JPEG", 0, 0, NULL),
 
@@ -277,7 +262,7 @@ struct init_vclk exynos8895_g2d_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SMMU_G2DD2, SMMU_G2DD2_QCH, "GATE_SMMU_G2DD2", "UMUX_CLKCMU_G2D_JPEG", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_g3d_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_g3d_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_AGPU_G3D, AGPU_QCH_G3D, "GATE_AGPU_G3D", NULL, 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_BUSIF_HPMG3D, BUSIF_HPMG3D_QCH, "GATE_BUSIF_HPMG3D", NULL, 0, VCLK_GATE, NULL),
 	HWACG_VCLK(GATE_G3D_CMU_G3D, G3D_CMU_G3D_QCH, "GATE_G3D_CMU_G3D", NULL, 0, VCLK_GATE, NULL),
@@ -285,7 +270,7 @@ struct init_vclk exynos8895_g3d_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_G3D, SYSREG_G3D_QCH, "GATE_SYSREG_G3D", NULL, 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_imem_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_imem_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_IMEM_BUS, MUX_CLKCMU_IMEM_BUS_USER, "UMUX_CLKCMU_IMEM_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_IMEM_CMU_IMEM, IMEM_CMU_IMEM_QCH, "GATE_IMEM_CMU_IMEM", "UMUX_CLKCMU_IMEM_BUS", 0, VCLK_GATE, NULL),
@@ -294,7 +279,7 @@ struct init_vclk exynos8895_imem_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_IMEM, SYSREG_IMEM_QCH, "GATE_SYSREG_IMEM", "UMUX_CLKCMU_IMEM_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_isphq_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_isphq_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_ISPHQ_BUS, MUX_CLKCMU_ISPHQ_BUS_USER, "UMUX_CLKCMU_ISPHQ_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_ISPHQ_CMU_ISPHQ, ISPHQ_CMU_ISPHQ_QCH, "GATE_ISPHQ_CMU_ISPHQ", "UMUX_CLKCMU_ISPHQ_BUS", 0, VCLK_GATE, NULL),
@@ -307,7 +292,7 @@ struct init_vclk exynos8895_isphq_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_ISPHQ, SYSREG_ISPHQ_QCH, "GATE_SYSREG_ISPHQ", "UMUX_CLKCMU_ISPHQ_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_isplq_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_isplq_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_ISPLP_BUS, MUX_CLKCMU_ISPLP_BUS_USER, "UMUX_CLKCMU_ISPLP_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_BTM_ISPLP, BTM_ISPLP_QCH, "GATE_BTM_ISPLP", "UMUX_CLKCMU_ISPLP_BUS", 0, VCLK_GATE, NULL),
@@ -323,20 +308,7 @@ struct init_vclk exynos8895_isplq_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_ISPLP, SYSREG_ISPLP_QCH, "GATE_SYSREG_ISPLP", "UMUX_CLKCMU_ISPLP_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_iva_hwacg_vclks[] __initdata = {
-	HWACG_VCLK(UMUX_CLKCMU_IVA_BUS, MUX_CLKCMU_IVA_BUS_USER, "UMUX_CLKCMU_IVA_BUS", NULL, 0, 0, NULL),
-
-	HWACG_VCLK(GATE_BTM_IVA, BTM_IVA_QCH, "GATE_BTM_IVA", "UMUX_CLKCMU_IVA_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_IVA, IVA_QCH, "GATE_IVA", "UMUX_CLKCMU_IVA_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_IVA_CMU_IVA, IVA_CMU_IVA_QCH, "GATE_IVA_CMU_IVA", "UMUX_CLKCMU_IVA_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_IVA_INTMEM, IVA_INTMEM_QCH, "GATE_IVA_INTMEM", "UMUX_CLKCMU_IVA_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_PMU_IVA, PMU_IVA_QCH, "GATE_PMU_IVA", "UMUX_CLKCMU_IVA_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_BCM_IVA, BCM_IVA_QCH, "GATE_BCM_IVA", "UMUX_CLKCMU_IVA_BUS", 0, VCLK_GATE, "GATE_BCM_IVA"),
-	HWACG_VCLK(GATE_SMMU_IVA, SMMU_IVA_QCH, "GATE_SMMU_IVA", "UMUX_CLKCMU_IVA_BUS", 0, VCLK_GATE, NULL),
-	HWACG_VCLK(GATE_SYSREG_IVA, SYSREG_IVA_QCH, "GATE_SYSREG_IVA", "UMUX_CLKCMU_IVA_BUS", 0, VCLK_GATE, NULL),
-};
-
-struct init_vclk exynos8895_mfc_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_mfc_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_MFC_BUS, MUX_CLKCMU_MFC_BUS_USER, "UMUX_CLKCMU_MFC_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_BTM_MFCD0, BTM_MFCD0_QCH, "GATE_BTM_MFCD0", "UMUX_CLKCMU_MFC_BUS", 0, VCLK_GATE, NULL),
@@ -351,7 +323,7 @@ struct init_vclk exynos8895_mfc_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_MFC, SYSREG_MFC_QCH, "GATE_SYSREG_MFC", "UMUX_CLKCMU_MFC_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_peric0_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_peric0_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_PERIC0_BUS, MUX_CLKCMU_PERIC0_BUS_USER, "UMUX_CLKCMU_PERIC0_BUS", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_PERIC0_UART_DBG, MUX_CLKCMU_PERIC0_UART_DBG_USER, "UMUX_CLKCMU_PERIC0_UART_DBG", "UMUX_CLKCMU_PERIC0_BUS", 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_PERIC0_USI00, MUX_CLKCMU_PERIC0_USI00_USER, "UMUX_CLKCMU_PERIC0_USI00", "UMUX_CLKCMU_PERIC0_BUS", 0, 0, NULL),
@@ -372,7 +344,7 @@ struct init_vclk exynos8895_peric0_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_USI03, USI03_QCH, "GATE_USI03", "UMUX_CLKCMU_PERIC0_USI03", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_peric1_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_peric1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_PERIC1_BUS, MUX_CLKCMU_PERIC1_BUS_USER, "UMUX_CLKCMU_PERIC1_BUS", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_PERIC1_UART_BT, MUX_CLKCMU_PERIC1_UART_BT_USER, "UMUX_CLKCMU_PERIC1_UART_BT", "UMUX_CLKCMU_PERIC1_BUS", 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_PERIC1_USI04, MUX_CLKCMU_PERIC1_USI04_USER, "UMUX_CLKCMU_PERIC1_USI04", "UMUX_CLKCMU_PERIC1_BUS", 0, 0, NULL),
@@ -417,7 +389,7 @@ struct init_vclk exynos8895_peric1_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SPEEDY2_DDI2, SPEEDY2_DDI2_QCH, "GATE_SPEEDY2_DDI2", "UMUX_CLKCMU_PERIC1_SPEEDY2", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_peris_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_peris_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_PERIS_BUS, MUX_CLKCMU_PERIS_BUS_USER, "UMUX_CLKCMU_PERIS_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_BUSIF_TMU, BUSIF_TMU_QCH, "GATE_BUSIF_TMU", "UMUX_CLKCMU_PERIS_BUS", 0, VCLK_GATE, NULL),
@@ -448,7 +420,7 @@ struct init_vclk exynos8895_peris_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_WDT_CLUSTER1, WDT_CLUSTER1_QCH, "GATE_WDT_CLUSTER1", "UMUX_CLKCMU_PERIS_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_srdz_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_srdz_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_SRDZ_BUS, MUX_CLKCMU_SRDZ_BUS_USER, "UMUX_CLKCMU_SRDZ_BUS", NULL, 0, 0, NULL),
 	HWACG_VCLK(UMUX_CLKCMU_SRDZ_IMGD, MUX_CLKCMU_SRDZ_IMGD_USER, "UMUX_CLKCMU_SRDZ_IMGD", NULL, 0, 0, NULL),
 
@@ -461,7 +433,7 @@ struct init_vclk exynos8895_srdz_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_SYSREG_SRDZ, SYSREG_SRDZ_QCH, "GATE_SYSREG_SRDZ", "UMUX_CLKCMU_SRDZ_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_vpu_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_vpu_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(UMUX_CLKCMU_VPU_BUS, MUX_CLKCMU_VPU_BUS_USER, "UMUX_CLKCMU_VPU_BUS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_BTM_VPU, BTM_VPU_QCH, "GATE_BTM_VPU", "UMUX_CLKCMU_VPU_BUS", 0, VCLK_GATE, NULL),
@@ -473,7 +445,7 @@ struct init_vclk exynos8895_vpu_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_VPU_CMU_VPU, VPU_CMU_VPU_QCH, "GATE_VPU_CMU_VPU", "UMUX_CLKCMU_VPU_BUS", 0, VCLK_GATE, NULL),
 };
 
-struct init_vclk exynos8895_vts_hwacg_vclks[] __initdata = {
+struct init_vclk emulator8895_vts_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_OSC_VTS, OSC_VTS, "GATE_OSC_VTS", NULL, 0, 0, NULL),
 
 	HWACG_VCLK(GATE_CMU_VTS_CMUREF, CMU_VTS_CMUREF_QCH, "GATE_CMU_VTS_CMUREF", "GATE_OSC_VTS", 0, VCLK_GATE, NULL),
@@ -491,13 +463,8 @@ struct init_vclk exynos8895_vts_hwacg_vclks[] __initdata = {
 	HWACG_VCLK(GATE_WDT_VTS, WDT_VTS_QCH, "GATE_WDT_VTS", "GATE_OSC_VTS", 0, VCLK_GATE, NULL),
 };
 
-static struct init_vclk exynos8895_clkout_vclks[] __initdata = {
-	VCLK(OSCCLK_NFC, VCLK_CLKOUT1, "OSCCLK_NFC", 0, 0, NULL),
-	VCLK(OSCCLK_AUD, VCLK_CLKOUT0, "OSCCLK_AUD", 0, 0, NULL),
-};
-
 /* Special VCLK */
-struct init_vclk exynos8895_abox_vclks[] __initdata = {
+struct init_vclk emulator8895_abox_vclks[] __initdata = {
 	VCLK(ABOX_CPU_PCLKDBG, VCLK_SPL_CLK_ABOX_CPU_PCLKDBG_BLK_ABOX, "ABOX_CPU_PCLKDBG", 0, 0, NULL),
 	VCLK(ABOX_UAIF0, VCLK_SPL_CLK_ABOX_UAIF0_BLK_ABOX, "ABOX_UAIF0", 0, 0, NULL),
 	VCLK(ABOX_UAIF1, VCLK_SPL_CLK_ABOX_UAIF1_BLK_ABOX, "ABOX_UAIF1", 0, 0, NULL),
@@ -514,23 +481,21 @@ struct init_vclk exynos8895_abox_vclks[] __initdata = {
 	VCLK(DOUT_CLK_ABOX_UAIF2, DIV_CLK_ABOX_UAIF2, "DOUT_CLK_ABOX_UAIF2", 0, 0, NULL),
 	VCLK(DOUT_CLK_ABOX_UAIF3, DIV_CLK_ABOX_UAIF3, "DOUT_CLK_ABOX_UAIF3", 0, 0, NULL),
 	VCLK(DOUT_CLK_ABOX_UAIF4, DIV_CLK_ABOX_UAIF4, "DOUT_CLK_ABOX_UAIF4", 0, 0, NULL),
-	VCLK(PLL_OUT_AUD, PLL_AUD, "PLL_OUT_AUD", 0, 0, NULL),
 };
 
-struct init_vclk exynos8895_fsys0_vclks[] __initdata = {
+struct init_vclk emulator8895_fsys0_vclks[] __initdata = {
 	VCLK(MMC_EMBD, VCLK_SPL_CLK_FSYS0_MMC_EMBD_BLK_CMU, "MMC_EMBD", 0, 0, NULL),
 	VCLK(DPGTC, VCLK_SPL_CLK_FSYS0_DPGTC_BLK_CMU, "DPGTC", 0, 0, NULL),
 	VCLK(UFS_EMBD, VCLK_SPL_CLK_FSYS0_UFS_EMBD_BLK_CMU, "UFS_EMBD", 0, 0, NULL),
 	VCLK(USBDRD30, VCLK_SPL_CLK_FSYS0_USBDRD30_BLK_CMU, "USBDRD30", 0, 0, NULL),
 };
 
-struct init_vclk exynos8895_fsys1_vclks[] __initdata = {
+struct init_vclk emulator8895_fsys1_vclks[] __initdata = {
 	VCLK(MMC_CARD, VCLK_SPL_CLK_FSYS1_MMC_CARD_BLK_CMU, "MMC_CARD", 0, 0, NULL),
 	VCLK(UFS_CARD, VCLK_SPL_CLK_FSYS1_UFS_CARD_BLK_CMU, "UFS_CARD", 0, 0, NULL),
-	VCLK(PCIE, VCLK_OCC_CLK_FSYS1_PCIE_BLK_CMU, "PCIE", 0, 0, NULL),
 };
 
-struct init_vclk exynos8895_peric0_vclks[] __initdata = {
+struct init_vclk emulator8895_peric0_vclks[] __initdata = {
 	VCLK(UART_DBG, VCLK_SPL_CLK_PERIC0_UART_DBG_BLK_CMU, "UART_DBG", 0, 0, "console-sclk0"),
 	VCLK(USI00, VCLK_SPL_CLK_PERIC0_USI00_BLK_CMU, "USI00", 0, 0, NULL),
 	VCLK(USI01, VCLK_SPL_CLK_PERIC0_USI01_BLK_CMU, "USI01", 0, 0, NULL),
@@ -538,7 +503,7 @@ struct init_vclk exynos8895_peric0_vclks[] __initdata = {
 	VCLK(USI03, VCLK_SPL_CLK_PERIC0_USI03_BLK_CMU, "USI03", 0, 0, NULL),
 };
 
-struct init_vclk exynos8895_peric1_vclks[] __initdata = {
+struct init_vclk emulator8895_peric1_vclks[] __initdata = {
 	VCLK(SPI_CAM0, VCLK_SPL_CLK_PERIC1_SPI_CAM0_BLK_CMU, "SPI_CAM0", 0, 0, NULL),
 	VCLK(SPI_CAM1, VCLK_SPL_CLK_PERIC1_SPI_CAM1_BLK_CMU, "SPI_CAM1", 0, 0, NULL),
 	VCLK(UART_BT, VCLK_SPL_CLK_PERIC1_UART_BT_BLK_CMU, "UART_BT", 0, 0, NULL),
@@ -552,11 +517,9 @@ struct init_vclk exynos8895_peric1_vclks[] __initdata = {
 	VCLK(USI11, VCLK_SPL_CLK_PERIC1_USI11_BLK_CMU, "USI11", 0, 0, NULL),
 	VCLK(USI12, VCLK_SPL_CLK_PERIC1_USI12_BLK_CMU, "USI12", 0, 0, NULL),
 	VCLK(USI13, VCLK_SPL_CLK_PERIC1_USI13_BLK_CMU, "USI13", 0, 0, NULL),
-	VCLK(DOUT_CLKCMU_PERIC1_SPI_CAM0, CLKCMU_PERIC1_SPI_CAM0, "DOUT_CLKCMU_PERIC1_SPI_CAM0", 0, 0, NULL),
-	VCLK(DOUT_CLKCMU_PERIC1_SPI_CAM1, CLKCMU_PERIC1_SPI_CAM1, "DOUT_CLKCMU_PERIC1_SPI_CAM1", 0, 0, NULL),
 };
 
-struct init_vclk exynos8895_cmu_vclks[] __initdata = {
+struct init_vclk emulator8895_cmu_vclks[] __initdata = {
 	VCLK(CMU_CMUREF, VCLK_OCC_CMU_CMUREF_BLK_CMU, "CMU_CMUREF", 0, 0, NULL),
 	VCLK(HPM, VCLK_CLKCMU_HPM_BLK_CMU, "HPM", 0, 0, NULL),
 	VCLK(CIS_CLK0, VCLK_CLKCMU_CIS_CLK0_BLK_CMU, "CIS_CLK0", 0, 0, NULL),
@@ -565,58 +528,49 @@ struct init_vclk exynos8895_cmu_vclks[] __initdata = {
 	VCLK(CIS_CLK3, VCLK_CLKCMU_CIS_CLK3_BLK_CMU, "CIS_CLK3", 0, 0, NULL),
 };
 
-struct init_vclk exynos8895_dpu1_vclks[] __initdata = {
+struct init_vclk emulator8895_dpu1_vclks[] __initdata = {
 	VCLK(DECON2, VCLK_SPL_CLK_DPU1_DECON2_BLK_DPU1, "DECON2", 0, 0, NULL),
 };
 
-struct init_vclk exynos8895_vts_vclks[] __initdata = {
+struct init_vclk emulator8895_vts_vclks[] __initdata = {
 	VCLK(DMIC, VCLK_DIV_CLK_VTS_DMIC_BLK_VTS, "DMIC", 0, 0, NULL),
 	VCLK(DOUT_CLK_VTS_DMICIF, DIV_CLK_VTS_DMICIF, "DOUT_CLK_VTS_DMICIF", 0, 0, NULL),
 	VCLK(DOUT_CLK_VTS_DMIC, DIV_CLK_VTS_DMIC, "DOUT_CLK_VTS_DMIC", 0, 0, NULL),
 	VCLK(DOUT_CLK_VTS_DMIC_DIV2, DIV_CLK_VTS_DMIC_DIV2, "DOUT_CLK_VTS_DMIC_DIV2", 0, 0, NULL),
 };
 
-struct init_vclk exynos8895_dvfs_vclks[] __initdata = {
-#if 0
-	VCLK(DVFS_MIF, VCLK_VDD_MIF, "dvfs_mif", 0, VCLK_DFS, NULL),
-	VCLK(DVFS_G3D, VCLK_VDD_G3D, "dvfs_g3d", 0, VCLK_DFS, NULL),
-	VCLK(DVFS_BIG, VCLK_VDD_MNGS, "dvfs_big", 0, VCLK_DFS, NULL),
-	VCLK(DVFS_LITTLE, VCLK_VDD_APOLLO, "dvfs_little", 0, VCLK_DFS, NULL),
-	VCLK(DVFS_INT, VCLK_VDDI, "dvfs_int", 0, VCLK_DFS, NULL),
-#endif
+struct init_vclk emulator8895_dvfs_vclks[] __initdata = {
 	VCLK(DFS_ABOX, VCLK_DFS_ABOX, "dfs_abox", 0, VCLK_DFS, NULL),
 };
 
 static __initdata struct of_device_id ext_clk_match[] = {
-	{.compatible = "samsung,exynos8895-oscclk", .data = (void *)0},
+	{.compatible = "samsung,emulator8895-oscclk", .data = (void *)0},
 	{},
 };
 
-void exynos8895_vclk_init(void)
+void emulator8895_vclk_init(void)
 {
 	/* Common clock init */
 	cal_clk_setrate(VCLK_BLK_BUS1, 266500);
 	cal_clk_setrate(VCLK_BLK_BUSC, 266500);
-	cal_clk_setrate(VCLK_BLK_CORE, 355333);
 	cal_clk_setrate(VCLK_BLK_ABOX, 1179648);
 	cal_clk_setrate(VCLK_BLK_CAM, 266500);
 	cal_clk_setrate(VCLK_BLK_DBG, 200000);
 	cal_clk_setrate(VCLK_BLK_DCAM, 222444);
 	cal_clk_setrate(VCLK_BLK_DPU0, 157500);
-	cal_clk_setrate(VCLK_BLK_DSP, 266500);
 	cal_clk_setrate(VCLK_BLK_G2D, 266500);
 	cal_clk_setrate(VCLK_BLK_ISPHQ, 266500);
 	cal_clk_setrate(VCLK_BLK_ISPLP, 266500);
-	cal_clk_setrate(VCLK_BLK_IVA, 266500);
 	cal_clk_setrate(VCLK_BLK_MFC, 166833);
 	cal_clk_setrate(VCLK_BLK_SRDZ, 266500);
 	cal_clk_setrate(VCLK_BLK_VPU, 266500);
 	cal_clk_setrate(VCLK_BLK_VTS, 49152);
 }
 
-/* register exynos8895 clocks */
-void __init exynos8895_clk_init(struct device_node *np)
+/* register emulator8895 clocks */
+void __init emulator8895_clk_init(struct device_node *np)
 {
+	struct samsung_clk_provider *ctx;
 	void __iomem *reg_base;
 	int ret;
 
@@ -632,61 +586,58 @@ void __init exynos8895_clk_init(struct device_node *np)
 	if (ret)
 		panic("%s: unable to initialize cal-if\n", __func__);
 
-	exynos8895_clk_privider = samsung_clk_init(np, reg_base, CLK_NR_CLKS);
-	if (!exynos8895_clk_privider)
+	ctx = samsung_clk_init(np, reg_base, CLK_NR_CLKS);
+	if (!ctx)
 		panic("%s: unable to allocate context.\n", __func__);
 
-	samsung_register_of_fixed_ext(exynos8895_clk_privider, exynos8895_fixed_rate_ext_clks,
-					  ARRAY_SIZE(exynos8895_fixed_rate_ext_clks),
+	samsung_register_of_fixed_ext(ctx, emulator8895_fixed_rate_ext_clks,
+					  ARRAY_SIZE(emulator8895_fixed_rate_ext_clks),
 					  ext_clk_match);
 	/* register HWACG vclk */
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_abox_hwacg_vclks, ARRAY_SIZE(exynos8895_abox_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_apm_hwacg_vclks, ARRAY_SIZE(exynos8895_apm_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_bus1_hwacg_vclks, ARRAY_SIZE(exynos8895_bus1_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_busc_hwacg_vclks, ARRAY_SIZE(exynos8895_busc_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_cam_hwacg_vclks, ARRAY_SIZE(exynos8895_cam_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_cmu_hwacg_vclks, ARRAY_SIZE(exynos8895_cmu_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_dcam_hwacg_vclks, ARRAY_SIZE(exynos8895_dcam_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_dpu0_hwacg_vclks, ARRAY_SIZE(exynos8895_dpu0_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_dpu1_hwacg_vclks, ARRAY_SIZE(exynos8895_dpu1_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_dsp_hwacg_vclks, ARRAY_SIZE(exynos8895_dsp_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_fsys0_hwacg_vclks, ARRAY_SIZE(exynos8895_fsys0_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_fsys1_hwacg_vclks, ARRAY_SIZE(exynos8895_fsys1_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_g2d_hwacg_vclks, ARRAY_SIZE(exynos8895_g2d_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_g3d_hwacg_vclks, ARRAY_SIZE(exynos8895_g3d_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_imem_hwacg_vclks, ARRAY_SIZE(exynos8895_imem_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_isphq_hwacg_vclks, ARRAY_SIZE(exynos8895_isphq_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_isplq_hwacg_vclks, ARRAY_SIZE(exynos8895_isplq_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_iva_hwacg_vclks, ARRAY_SIZE(exynos8895_iva_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_mfc_hwacg_vclks, ARRAY_SIZE(exynos8895_mfc_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_peric0_hwacg_vclks, ARRAY_SIZE(exynos8895_peric0_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_peric1_hwacg_vclks, ARRAY_SIZE(exynos8895_peric1_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_peris_hwacg_vclks, ARRAY_SIZE(exynos8895_peris_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_srdz_hwacg_vclks, ARRAY_SIZE(exynos8895_srdz_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_vpu_hwacg_vclks, ARRAY_SIZE(exynos8895_vpu_hwacg_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_vts_hwacg_vclks, ARRAY_SIZE(exynos8895_vts_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_abox_hwacg_vclks, ARRAY_SIZE(emulator8895_abox_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_apm_hwacg_vclks, ARRAY_SIZE(emulator8895_apm_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_bus1_hwacg_vclks, ARRAY_SIZE(emulator8895_bus1_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_busc_hwacg_vclks, ARRAY_SIZE(emulator8895_busc_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_cam_hwacg_vclks, ARRAY_SIZE(emulator8895_cam_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_cmu_hwacg_vclks, ARRAY_SIZE(emulator8895_cmu_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_dcam_hwacg_vclks, ARRAY_SIZE(emulator8895_dcam_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_dpu0_hwacg_vclks, ARRAY_SIZE(emulator8895_dpu0_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_dpu1_hwacg_vclks, ARRAY_SIZE(emulator8895_dpu1_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_fsys0_hwacg_vclks, ARRAY_SIZE(emulator8895_fsys0_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_fsys1_hwacg_vclks, ARRAY_SIZE(emulator8895_fsys1_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_g2d_hwacg_vclks, ARRAY_SIZE(emulator8895_g2d_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_g3d_hwacg_vclks, ARRAY_SIZE(emulator8895_g3d_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_imem_hwacg_vclks, ARRAY_SIZE(emulator8895_imem_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_isphq_hwacg_vclks, ARRAY_SIZE(emulator8895_isphq_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_isplq_hwacg_vclks, ARRAY_SIZE(emulator8895_isplq_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_mfc_hwacg_vclks, ARRAY_SIZE(emulator8895_mfc_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_peric0_hwacg_vclks, ARRAY_SIZE(emulator8895_peric0_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_peric1_hwacg_vclks, ARRAY_SIZE(emulator8895_peric1_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_peris_hwacg_vclks, ARRAY_SIZE(emulator8895_peris_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_srdz_hwacg_vclks, ARRAY_SIZE(emulator8895_srdz_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_vpu_hwacg_vclks, ARRAY_SIZE(emulator8895_vpu_hwacg_vclks));
+	samsung_register_vclk(ctx, emulator8895_vts_hwacg_vclks, ARRAY_SIZE(emulator8895_vts_hwacg_vclks));
 
 	/* register special vclk */
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_cmu_vclks, ARRAY_SIZE(exynos8895_cmu_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_abox_vclks, ARRAY_SIZE(exynos8895_abox_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_fsys0_vclks, ARRAY_SIZE(exynos8895_fsys0_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_fsys1_vclks, ARRAY_SIZE(exynos8895_fsys1_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_peric0_vclks, ARRAY_SIZE(exynos8895_peric0_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_peric1_vclks, ARRAY_SIZE(exynos8895_peric1_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_dpu1_vclks, ARRAY_SIZE(exynos8895_dpu1_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_vts_vclks, ARRAY_SIZE(exynos8895_vts_vclks));
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_clkout_vclks, ARRAY_SIZE(exynos8895_clkout_vclks));
+	samsung_register_vclk(ctx, emulator8895_cmu_vclks, ARRAY_SIZE(emulator8895_cmu_vclks));
+	samsung_register_vclk(ctx, emulator8895_abox_vclks, ARRAY_SIZE(emulator8895_abox_vclks));
+	samsung_register_vclk(ctx, emulator8895_fsys0_vclks, ARRAY_SIZE(emulator8895_fsys0_vclks));
+	samsung_register_vclk(ctx, emulator8895_fsys1_vclks, ARRAY_SIZE(emulator8895_fsys1_vclks));
+	samsung_register_vclk(ctx, emulator8895_peric0_vclks, ARRAY_SIZE(emulator8895_peric0_vclks));
+	samsung_register_vclk(ctx, emulator8895_peric1_vclks, ARRAY_SIZE(emulator8895_peric1_vclks));
+	samsung_register_vclk(ctx, emulator8895_dpu1_vclks, ARRAY_SIZE(emulator8895_dpu1_vclks));
+	samsung_register_vclk(ctx, emulator8895_vts_vclks, ARRAY_SIZE(emulator8895_vts_vclks));
 
 	/* register DVFS vclk */
-	samsung_register_vclk(exynos8895_clk_privider, exynos8895_dvfs_vclks, ARRAY_SIZE(exynos8895_dvfs_vclks));
+	samsung_register_vclk(ctx, emulator8895_dvfs_vclks, ARRAY_SIZE(emulator8895_dvfs_vclks));
 
 	clk_register_fixed_factor(NULL, "pwm-clock", "fin_pll",CLK_SET_RATE_PARENT, 1, 1);
 
-	samsung_clk_of_add_provider(np, exynos8895_clk_privider);
+	samsung_clk_of_add_provider(np, ctx);
 
-	late_time_init = exynos8895_vclk_init;
+	late_time_init = emulator8895_vclk_init;
 
-	pr_info("EXYNOS8895: Clock setup completed\n");
+	pr_info("EMULATOR8895: Clock setup completed\n");
 }
 
-CLK_OF_DECLARE(exynos8895_clk, "samsung,exynos8895-clock", exynos8895_clk_init);
+CLK_OF_DECLARE(emulator8895_clk, "samsung,emulator8895-clock", emulator8895_clk_init);
