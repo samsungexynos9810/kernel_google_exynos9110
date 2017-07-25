@@ -224,7 +224,7 @@ static void bcm_wifi_set_pincntl(int en_wifi) {
 		ret = pin_config_set("11000000.pinctrl", "gpx2-3", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
 
 		if(gpio_get_value(BT_GPIO_POWER) == GPIO_OFF) { // BT OFF
-			PR_INFO("%s() ON, BT OFF\n", __func__);
+			PR_INFO("%s():set WiFi ON, BT OFF\n", __func__);
 
 			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0002);/* 1byte:disable 0byte:pud */
 			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0002);/* 1byte:disable 0byte:pud */
@@ -240,7 +240,7 @@ static void bcm_wifi_set_pincntl(int en_wifi) {
 			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
 			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0100);/* 1byte:output 0byte:func */
 		} else { // BT ON
-			PR_INFO("%s() ON, BT ON\n", __func__);
+			PR_INFO("%s():set WiFi ON, BT ON\n", __func__);
 			// no need to switch pins because they were already set when BT up.
 		}
 	} else { // wlan off
@@ -261,7 +261,7 @@ static void bcm_wifi_set_pincntl(int en_wifi) {
 		ret = pin_config_set("11000000.pinctrl", "gpx2-3", 0x0100);/* 1byte:output 0xyte:func */
 
 		if(gpio_get_value(BT_GPIO_POWER) == GPIO_OFF) { // BT OFF
-			PR_INFO("%s() ON, BT OFF\n", __func__);
+			PR_INFO("%s():set WiFi OFF, BT OFF\n", __func__);
 
 			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0102);/* 1byte:pull down 0byte:pud */
 			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0102);/* 1byte:pull down 0byte:pud */
@@ -277,7 +277,7 @@ static void bcm_wifi_set_pincntl(int en_wifi) {
 			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
 			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0100);/* 1byte:output 0byte:func */
 		} else { // BT ON
-			PR_INFO("%s() ON, BT ON\n", __func__);
+			PR_INFO("%s():set WiFi OFF, BT ON\n", __func__);
 			// no need to switch pins because they were already set when BT up.
 		}
 	}
