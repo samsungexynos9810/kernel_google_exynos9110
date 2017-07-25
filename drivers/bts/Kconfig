@@ -1,0 +1,20 @@
+#
+#BTS driver configuration
+#
+
+menuconfig EXYNOS_BTS
+	bool "BTS driver support"
+	default y
+	help
+	  Enable BTS (Bus traffic shaper) support
+
+if EXYNOS_BTS
+
+config EXYNOS7270_BTS
+	bool "Bus traffic shaper support"
+	default y
+	depends on SOC_EXYNOS7270
+	help
+	  Enable BTS (Bus traffic shaper) support
+endif
+
