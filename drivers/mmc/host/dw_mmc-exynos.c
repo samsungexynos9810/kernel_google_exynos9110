@@ -250,10 +250,16 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
  */
 void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 {
+#if 0
 	int ret, id;
+#else
+	int id;
+#endif
 
 	id = of_alias_get_id(host->dev->of_node, "mshc");
 	if (!id) {
+
+#if 0
 #if defined(CONFIG_FMP_MMC)
 		ret = exynos_smc(SMC_CMD_FMP_SECURITY, 0, ID_FMP_UFS_MMC, FMP_DESCTYPE_3);
 #else
@@ -261,7 +267,7 @@ void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 #endif
 		if (ret)
 			dev_err(host->dev, "Fail to smc call for FMP SECURITY\n");
-
+#endif
 		mci_writel(host, MPSBEGIN0, 0);
 		mci_writel(host, MPSEND0, SDMMC_BLOCK_NUM);
 		mci_writel(host, MPSCTRL0, SDMMC_MPSCTRL_BYPASS);

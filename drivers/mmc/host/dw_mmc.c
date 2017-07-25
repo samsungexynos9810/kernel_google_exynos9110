@@ -44,7 +44,9 @@
 #include <soc/samsung/exynos-pm.h>
 #include <soc/samsung/exynos-powermode.h>
 
+#if 0
 #include <crypto/fmp.h>
+#endif
 
 #include "dw_mmc.h"
 #include "dw_mmc-exynos.h"
