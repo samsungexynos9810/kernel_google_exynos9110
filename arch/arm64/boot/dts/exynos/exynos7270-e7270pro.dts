@@ -50,33 +50,35 @@
 	dwmmc0@13540000 {
 		status = "okay";
 		num-slots = <1>;
-		broken-card-detect;
-		bypass-smu;
+		broken-cd;
 		fixed_voltage;
-		clock-gate;
+		supports-highspeed;
 		mmc-ddr-1_8v;
+		mmc-hs200-1_8v;
+		mmc-hs400-1_8v;
 		supports-8bit;
 		supports-cmd23;
 		supports-erase;
+		supports-hs400-enhanced-strobe;
 		enable-ulp-mode;
-		ignore-phase = <(1 << 7)>;
 		use-fine-tuning;
 		only_once_tune;
 		bypass-for-allpass;
 		card-init-hwacg-ctrl;
 		fifo-depth = <0x40>;
 		non-removable;
+		desc-size = <4>;
 		card-detect-delay = <200>;
 		clock-frequency = <700000000>;
 		samsung,dw-mshc-ciu-div = <3>;
 		samsung,dw-mshc-txdt-crc-timer-fastlimit = <0x34>;
 		samsung,dw-mshc-txdt-crc-timer-initval = <0x38>;
-		samsung,dw-mshc-ddr200-delay-line = <0x60>;
+		samsung,dw-mshc-hs400-delay-line = <0x60>;
 		samsung,dw-mshc-sdr-timing = <3 0 2 0>;
 		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
 		samsung,dw-mshc-hs200-timing = <3 0 3 0>;
-		samsung,dw-mshc-ddr200-timing = <1 0 4 0>;
-		samsung,dw-mshc-ddr200-ulp-timing = <3 0 3 0>;
+		samsung,dw-mshc-hs400-timing = <1 0 2 0>;
+		samsung,dw-mshc-hs400-ulp-timing = <3 0 2 0>;
 
 		num-ref-clks = <12>;
 		ciu_clkin = <25 43 43 25 43 87 175 43 43 175 175 175>;
@@ -100,7 +102,7 @@
 	};
 
 	dwmmc2@13560000 {
-		status = "okay";
+		status = "disabled";
 		num-slots = <1>;
 		clock-gate;
 //		fixed_volt;
