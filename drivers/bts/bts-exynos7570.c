@@ -132,10 +132,10 @@ static struct bts_info exynos7_bts[] = {
 		.enable = true,
 	},
 	[BTS_IDX_CP_GNSS] = {
-		.id = BTS_SYSREG_GNSS,
+		.id = BTS_SYSREG_CPGNSS,
 		.name = "cp_gnss",
 		.pa_base = EXYNOS7570_PA_SYSREG_CP,
-		.pd_name = "pd-gnss",
+		.pd_name = "pd-pmu",
 		.table[BS_DISABLE].fn = SF_DISABLE,
 		.table[BS_DEFAULT].fn = SF_SETQOS,
 		.table[BS_DEFAULT].priority = 0x4,
@@ -147,8 +147,7 @@ static struct bts_info exynos7_bts[] = {
 		.pa_base = EXYNOS7570_PA_TREX_CELLULAR,
 		.pd_name = "pd-trex",
 		.table[BS_DISABLE].fn = TF_DISABLE,
-		.table[BS_DEFAULT].fn = TF_SETQOS,
-		.table[BS_DEFAULT].priority = 0xD,
+		.table[BS_DEFAULT].fn = TF_DISABLE,
 		.on = false,
 		.enable = true,
 	},
@@ -541,7 +540,7 @@ static void bts_initialize_domains(void)
 {
 	bts_initialize("pd-cpu", true);
 	bts_initialize("pd-apm", true);
-	bts_initialize("pd-gnss", true);
+	bts_initialize("pd-pmu", true);
 	bts_initialize("pd-trex", true);
 }
 

@@ -19,7 +19,7 @@
 typedef enum {
 	BTS_SYSREG_CPU = 1,
 	BTS_SYSREG_APM,
-	BTS_SYSREG_GNSS,
+	BTS_SYSREG_CPGNSS,
 } QOS_SYSREG_IP;
 
 typedef void __iomem *addr_u32;

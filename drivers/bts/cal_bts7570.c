@@ -266,9 +266,12 @@ void sysreg_setqos(QOS_SYSREG_IP qos_id, addr_u32 base, unsigned int priority)
 {
 	unsigned int tmp_reg;
 	switch (qos_id) {
-	case BTS_SYSREG_GNSS:
-		tmp_reg = __raw_readl(base + SYSREG_GNSS_QOS);
+	case BTS_SYSREG_CPGNSS:
+		tmp_reg = __raw_readl(base + SYSREG_CP_QOS);
 		tmp_reg |= 1;
+		__raw_writel(tmp_reg, base + SYSREG_CP_QOS);
+		tmp_reg = __raw_readl(base + SYSREG_GNSS_QOS);
+		tmp_reg &= ~1;
 		tmp_reg &= ~((0xf << 12) | (0xf << 16));
 		tmp_reg |= (priority & 0xf) << 8;
 		tmp_reg |= (priority & 0xf) << 16;
@@ -296,9 +299,14 @@ void sysreg_disable(QOS_SYSREG_IP qos_id, addr_u32 base)
 {
 	unsigned int tmp_reg;
 	switch (qos_id) {
-	case BTS_SYSREG_GNSS:
+	case BTS_SYSREG_CPGNSS:
+		tmp_reg = __raw_readl(base + SYSREG_CP_QOS);
+		tmp_reg |= 1;
+		__raw_writel(tmp_reg, base + SYSREG_CP_QOS);
 		tmp_reg = __raw_readl(base + SYSREG_GNSS_QOS);
-		tmp_reg &= ~1;
+		tmp_reg |= 1;
+		tmp_reg |= (0x4) << 8;
+		tmp_reg |= (0x4) << 16;
 		__raw_writel(tmp_reg, base + SYSREG_GNSS_QOS);
 		break;
 	case BTS_SYSREG_APM:
@@ -324,11 +332,11 @@ void sysreg_showqos(QOS_SYSREG_IP qos_id, addr_u32 base, struct seq_file *buf)
 {
 	unsigned int tmp_reg;
 	switch (qos_id) {
-	case BTS_SYSREG_GNSS:
+	case BTS_SYSREG_CPGNSS:
 		tmp_reg = __raw_readl(base + SYSREG_GNSS_QOS);
-		LOG("override %u qos 0x%Xr 0x%Xw\n", tmp_reg & 1,
-				(tmp_reg >> 8) & 0xf,
-				(tmp_reg >> 16) & 0xf);
+		LOG("(cp bypass %d)bypass %u qos 0x%Xr 0x%Xw\n",
+		    __raw_readl(base + SYSREG_CP_QOS) && 0x1,
+		    tmp_reg & 1, (tmp_reg >> 8) & 0xf, (tmp_reg >> 16) & 0xf);
 		break;
 	case BTS_SYSREG_APM:
 		tmp_reg = __raw_readl(base + SYSREG_APM_QOS);
