@@ -253,6 +253,10 @@ struct dw_mci {
 	/* Sfr dump */
 	struct dw_mci_sfe_ram_dump      *sfr_dump;
 
+#ifdef CONFIG_MMC_DW_EXYNOS_EMMC_POWERCTRL
+	struct regulator        *vemmc;
+	struct regulator        *vqemmc;
+#endif
 	/* S/W Timeout check */
 	bool sw_timeout_chk;
 

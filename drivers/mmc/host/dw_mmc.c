@@ -2285,6 +2285,45 @@ static int dw_mci_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	return err;
 }
 
+static void dw_mci_emmc_pwr_control(struct mmc_host *mmc, unsigned int power_mode)
+{
+#ifdef CONFIG_MMC_DW_EXYNOS_EMMC_POWERCTRL
+	int ret;
+	struct dw_mci_slot *slot = mmc_priv(mmc);
+	struct dw_mci *host = slot->host;
+
+	dev_info(host->dev,"emmc power ctrl call : %d (0 = off, 1, = up) \n",power_mode);
+	switch(power_mode){
+		case MMC_POWER_UP:
+			if (!IS_ERR(host->vemmc)) {
+				ret = regulator_enable(host->vemmc);
+				if (ret)
+					dev_info(host->dev,"vemmc regulators enable failed\n");
+			}
+			if (!IS_ERR(host->vqemmc)) {
+				ret = regulator_enable(host->vqemmc);
+				if (ret)
+					dev_info(host->dev,"vqemmc regulators enable failed\n");
+			}
+			break;
+		case MMC_POWER_OFF:
+			if (regulator_is_enabled(host->vemmc)) {
+				ret = regulator_disable(host->vemmc);
+				if (ret)
+					dev_info(host->dev,"vemmc regulators disable failed\n");
+			}
+			if (regulator_is_enabled(host->vqemmc)) {
+				ret = regulator_disable(host->vqemmc);
+				if (ret)
+					dev_info(host->dev,"vqemmc regulators disable failed\n");
+			}
+			mdelay(30);     /* discharging time */
+			break;
+	}
+#endif 
+	return;
+}
+
 static int dw_mci_prepare_hs400_tuning(struct mmc_host *mmc,
 				       struct mmc_ios *ios)
 {
@@ -2310,6 +2349,7 @@ static const struct mmc_host_ops dw_mci_ops = {
 	.card_busy		= dw_mci_card_busy,
 	.start_signal_voltage_switch = dw_mci_switch_voltage,
 	.init_card		= dw_mci_init_card,
+	.emmc_pwr               = dw_mci_emmc_pwr_control,
 	.prepare_hs400_tuning	= dw_mci_prepare_hs400_tuning,
 };
 
@@ -4016,6 +4056,27 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "card-detect-gpio", NULL))
 		pdata->cd_type = DW_MCI_CD_GPIO;
 
+#ifdef CONFIG_MMC_DW_EXYNOS_EMMC_POWERCTRL
+	if (of_find_property(np, "mmc_pwr_shut_down", NULL))
+		pdata->caps2 |= MMC_CAP2_PWR_SHUT_DOWN;
+
+	if (of_find_property(np, "mmc_pwr_suspend", NULL))
+		pdata->caps2 |= MMC_CAP2_PWR_SUSPEND;
+
+	/* enable once to prevent power off use_cnt 0 regulators */
+	host->vemmc = devm_regulator_get_optional(dev, "vemmc");
+	if (!IS_ERR(host->vemmc)) {
+		ret = regulator_enable(host->vemmc);
+		if (ret)
+			dev_info(host->dev,"vemmc regulators failed\n");
+	}
+	host->vqemmc = devm_regulator_get_optional(dev, "vqemmc");
+	if (!IS_ERR(host->vqemmc)) {
+		ret = regulator_enable(host->vqemmc);
+		if (ret)
+			dev_info(host->dev,"vqemmc regulators failed\n");
+	}
+#endif
 	return pdata;
 }
 

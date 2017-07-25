@@ -1934,6 +1934,8 @@ static int mmc_suspend(struct mmc_host *host)
 
 	err = _mmc_suspend(host, true);
 	if (!err) {
+		if (host->ops->emmc_pwr && (host->caps2 & MMC_CAP2_PWR_SUSPEND))
+			host->ops->emmc_pwr(host , MMC_POWER_OFF);
 		pm_runtime_disable(&host->card->dev);
 		pm_runtime_set_suspended(&host->card->dev);
 	}
@@ -1981,8 +1983,11 @@ static int mmc_shutdown(struct mmc_host *host)
 		!(host->caps2 & MMC_CAP2_FULL_PWR_CYCLE))
 		err = _mmc_resume(host);
 
-	if (!err)
+	if (!err) {
 		err = _mmc_suspend(host, false);
+		if (host->ops->emmc_pwr && (host->caps2 & MMC_CAP2_PWR_SHUT_DOWN))
+			host->ops->emmc_pwr(host, MMC_POWER_OFF);
+	}
 
 	return err;
 }
@@ -1993,6 +1998,9 @@ static int mmc_shutdown(struct mmc_host *host)
 static int mmc_resume(struct mmc_host *host)
 {
 	int err = 0;
+
+	if (host->ops->emmc_pwr && (host->caps2 & MMC_CAP2_PWR_SUSPEND))
+		host->ops->emmc_pwr(host, MMC_POWER_UP);
 
 	if (!(host->caps & MMC_CAP_RUNTIME_RESUME)) {
 		err = _mmc_resume(host);

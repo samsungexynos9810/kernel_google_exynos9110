@@ -146,6 +146,7 @@ struct mmc_host_ops {
 	 */
 	int	(*multi_io_quirk)(struct mmc_card *card,
 				  unsigned int direction, int blk_size);
+	void    (*emmc_pwr)(struct mmc_host *mmc, unsigned int power_mode);
 };
 
 struct mmc_card;
@@ -292,6 +293,8 @@ struct mmc_host {
 #define MMC_CAP2_NO_WRITE_PROTECT	(1 << 18)	/* No physical write protect pin, assume that card is always read-write */
 #define MMC_CAP2_STROBE_ENHANCED	(1 << 19)	/* enhanced strobe */
 #define MMC_CAP2_SKIP_INIT_SCAN		(1 << 20)	/* skip init mmc scan */
+#define MMC_CAP2_PWR_SHUT_DOWN		(1 << 21)	/* emmc cntrl pwr in shutdown */
+#define MMC_CAP2_PWR_SUSPEND		(1 << 22)	/* emmc cntrl pwr in susepend */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
