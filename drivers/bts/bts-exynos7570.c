@@ -413,24 +413,16 @@ void bts_initialize(const char *pd_name, bool on)
 		if (pd_name && bts->pd_name && !strncmp(bts->pd_name, pd_name, strlen(pd_name))) {
 			BTS_DBG("[BTS] %s on/off:%d->%d\n", bts->name, bts->on, on);
 
-			if (!bts->on && on)
-				bts_clk_on(bts);
-			else if (bts->on && !on)
-				bts_clk_off(bts);
-
 			if (!bts->enable) {
 				bts->on = on;
 				continue;
 			}
 
 			if (on) {
-				if (!bts->on) {
-					bts->on = true;
-					bts_set_ip_table(bts);
-				}
+				bts->on = true;
+				bts_set_ip_table(bts);
 			} else {
-				if (bts->on)
-					bts->on = false;
+				bts->on = false;
 			}
 		}
 
