@@ -589,12 +589,12 @@ void exynos_update_media_scenario(enum bts_media_type media_type,
 	case TYPE_DECON_INT:
 		if (decon_bw == bw)
 			goto out;
-		decon_bw = bw;
+		decon_bw = bw >> 10;
 		break;
 	case TYPE_CAM:
 		if (cam_bw == bw)
 			goto out;
-		cam_bw = bw;
+		cam_bw = bw >> 10;
 		break;
 	default:
 		pr_err("DEVFREQ(MIF) : unsupportd media_type - %u", media_type);
@@ -610,9 +610,9 @@ void exynos_update_media_scenario(enum bts_media_type media_type,
 		mif_freq = decon_bw * 100 / BUS_WIDTH / MIF_UTIL;
 	}
 
-	BTS_DBG("[BTS BW] total: %u, decon %u, cam %u\n",
+	BTS_DBG("[BTS BW] total: %uKB/s, decon %uKB/s, cam %uKB/s\n",
 			total_bw, decon_bw, cam_bw);
-	BTS_DBG("[BTS FREQ] mif_freq: %u\n", mif_freq);
+	BTS_DBG("[BTS FREQ] mif_freq: %uKhz\n", mif_freq);
 
 	pm_qos_update_request(&exynos7_mif_bts_qos, mif_freq);
 out:
