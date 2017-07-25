@@ -312,91 +312,6 @@ static void dw_mci_transferred_cnt_init(struct dw_mci *host, struct mmc_host *mm
 			sysfs_err ? "failed" : "successed");
 }
 
-#if 0
-static int dw_mci_ciu_clk_en(struct dw_mci *host, bool force_gating)
-{
-	int ret = 0;
-
-	if (!host->pdata->use_gate_clock && !force_gating)
-		return 0;
-
-	if (!host->ciu_clk) {
-		dev_err(host->dev, "no available CIU gating clock\n");
-		return 1;
-	}
-
-	if (!atomic_cmpxchg(&host->ciu_clk_cnt, 0, 1)) {
-		ret = clk_prepare_enable(host->ciu_clk);
-		if (ret)
-			dev_err(host->dev, "failed to enable ciu clock\n");
-	}
-
-	return ret;
-}
-
-static void dw_mci_ciu_clk_dis(struct dw_mci *host)
-{
-
-	if (!host->pdata->use_gate_clock)
-		return;
-
-	if (host->pdata->enable_cclk_on_suspend && host->pdata->on_suspend)
-		return;
-
-	if (atomic_read(&host->ciu_en_win)) {
-		dev_err(host->dev, "Not available CIU off: %d\n",
-				atomic_read(&host->ciu_en_win));
-		return;
-	}
-
-	if (host->req_state == DW_MMC_REQ_BUSY)
-		return;
-
-	if (atomic_cmpxchg(&host->ciu_clk_cnt, 1, 0))
-		clk_disable_unprepare(host->ciu_clk);
-}
-
-static int dw_mci_biu_clk_en(struct dw_mci *host, bool force_gating)
-{
-	int ret = 0;
-
-	if (!host->pdata->use_biu_gate_clock && !force_gating)
-		return 0;
-
-	if (!atomic_read(&host->biu_clk_cnt)) {
-		ret = clk_prepare_enable(host->biu_clk);
-		atomic_inc_return(&host->biu_clk_cnt);
-		if (ret)
-			dev_err(host->dev, "failed to enable biu clock\n");
-	}
-
-	return ret;
-}
-
-static void dw_mci_biu_clk_dis(struct dw_mci *host)
-{
-	if (!host->pdata->use_biu_gate_clock)
-		return;
-
-	if (host->pdata->enable_cclk_on_suspend && host->pdata->on_suspend)
-		return;
-
-	if (atomic_read(&host->biu_en_win)) {
-		dev_dbg(host->dev, "Not available BIU off: %d\n",
-				atomic_read(&host->biu_en_win));
-		return;
-	}
-
-	if (host->req_state == DW_MMC_REQ_BUSY)
-		return;
-
-	if (atomic_read(&host->biu_clk_cnt)) {
-		clk_disable_unprepare(host->biu_clk);
-		atomic_dec_return(&host->biu_clk_cnt);
-	}
-}
-#endif
-
 bool dw_mci_fifo_reset(struct device *dev, struct dw_mci *host);
 void dw_mci_ciu_reset(struct device *dev, struct dw_mci *host);
 static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
@@ -968,12 +883,6 @@ static int dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
 
 	dw_mci_translate_sglist(host, host->data, sg_len);
 
-#if 0
-	/* Make sure to reset DMA in case we did PIO before this */
-	dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
-	dw_mci_idmac_reset(host);
-#endif
-
 	/* Select IDMAC interface */
 	temp = mci_readl(host, CTRL);
 	temp |= SDMMC_CTRL_USE_IDMAC;
@@ -1544,63 +1453,6 @@ static void mci_send_cmd(struct dw_mci_slot *slot, u32 cmd, u32 arg)
 		"Timeout sending command (cmd %#x arg %#x status %#x)\n",
 		cmd, arg, cmd_status);
 }
-
-#if 0
-static bool dw_mci_wait_data_busy(struct dw_mci *host, struct mmc_request *mrq)
-{
-	u32 status;
-	unsigned long timeout = jiffies + msecs_to_jiffies(500);
-	struct dw_mci_slot *slot = host->cur_slot;
-	int try = 6;
-	u32 clkena;
-	bool ret = false;
-
-	do {
-		do {
-			status = mci_readl(host, STATUS);
-			if (!(status & SDMMC_STATUS_BUSY)) {
-				ret = true;
-				goto out;
-			}
-
-			usleep_range(10, 20);
-		} while (time_before(jiffies, timeout));
-
-		/* card is checked every 1s by CMD13 at least */
-		if (mrq->cmd->opcode == MMC_SEND_STATUS)
-			return true;
-
-		dw_mci_ctrl_reset(host, SDMMC_CTRL_FIFO_RESET);
-		dw_mci_ctrl_reset(host, SDMMC_CTRL_RESET);
-		/* After CTRL Reset, Should be needed clk val to CIU */
-		if (host->cur_slot) {
-			/* Disable low power mode */
-			clkena = mci_readl(host, CLKENA);
-			clkena &= ~((SDMMC_CLKEN_LOW_PWR) << slot->id);
-			mci_writel(host, CLKENA, clkena);
-
-			mci_send_cmd(host->cur_slot,
-				SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
-		}
-		timeout = jiffies + msecs_to_jiffies(500);
-	} while (--try);
-out:
-	if (host->cur_slot) {
-		if (ret == false)
-			dev_err(host->dev, "Data[0]: data is busy\n");
-
-		/* enable clock */
-		mci_writel(host, CLKENA, ((SDMMC_CLKEN_ENABLE |
-					SDMMC_CLKEN_LOW_PWR) << slot->id));
-
-		/* inform CIU */
-		mci_send_cmd(slot,
-			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
-	}
-
-	return ret;
-}
-#endif
 
 static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
 {
@@ -3696,7 +3548,6 @@ bool dw_mci_fifo_reset(struct device *dev, struct dw_mci *host)
 	return false;
 }
 
-#if 1 
 static bool dw_mci_reset(struct dw_mci *host)
 {
 	u32 flags = SDMMC_CTRL_RESET | SDMMC_CTRL_FIFO_RESET;
@@ -3766,7 +3617,6 @@ ciu_out:
 
 	return ret;
 }
-#endif
 
 static void dw_mci_cmd11_timer(unsigned long arg)
 {
