@@ -4293,7 +4293,9 @@ int dw_mci_probe(struct dw_mci *host)
 	}
 
 	INIT_DELAYED_WORK(&host->qos_work, dw_mci_qos_work);
+#if 0
 	pm_qos_add_request(&host->pm_qos_int, PM_QOS_DEVICE_THROUGHPUT, 0);
+#endif
 
 	ret = devm_request_irq(host->dev, host->irq, dw_mci_interrupt,
 			       host->irq_flags, "dw-mci", host);
