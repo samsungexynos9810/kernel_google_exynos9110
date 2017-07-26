@@ -14,6 +14,7 @@
  */
 
 #include <dt-bindings/clock/exynos7270.h>
+#include <dt-bindings/sysmmu/sysmmu.h>
 #include <dt-bindings/thermal/thermal.h>
 #include "exynos7270-pinctrl.dtsi"
 #include "exynos7270-itm.dtsi"
@@ -1051,6 +1052,7 @@
 		#pb-id-cells = <0>;
 
 		samsung,power-domain = <&spd_disp>;
+		iommus = <&sysmmu_disp>;
 
 		/* int_0: fifo_irq, int_1: vsync_irq, int_2: frame_done_irq, 3: te_irq */
 		interrupts = <0 201 0>, <0 202 0>, <0 203 0>, <0 360 0>;
@@ -1149,74 +1151,6 @@
 		shmem,ipc_size = <0x80000>;
 		shmem,ipc_reg_cnt = <32>;
 	};
-/*
-	iommu-domain_mfc_mscl {
-		compatible = "samsung,exynos-iommu-bus";
-		#address-cells = <2>;
-		#size-cells = <1>;
-		domain-clients = <&smfc>, <&scaler_0>, <&mfc_0>, <&fimc_is>, <&fimc_is_sensor0>, <&fimc_is_sensor1>;
-		ranges;
-
-		smfc: smfc@12C20000 {
-			compatible = "samsung,exynos8890-jpeg";
-			reg = <0x0 0x12C20000 0x2000>;
-			interrupts = <0 404 0>;
-			clocks = <&clock CLK_GATE_JPEG>;
-			clock-names = "gate";
-			samsung,power-domain = <&pd_mfcmscl>;
-		};
-
-		scaler_0: scaler@12C10000 {
-			compatible = "samsung,exynos5-scaler";
-			reg = <0x0 0x12C10000 0x1300>;
-			interrupts = <0 401 0>;
-			clocks = <&clock CLK_GATE_MSCL>;
-			clock-names = "gate";
-			samsung,power-domain = <&pd_mfcmscl>;
-			prefetch-buffer,disable;
-		};
-
-		sysmmu_mfc_mscl: sysmmu@12C80000 {
-			compatible = "samsung,exynos7420-sysmmu";
-			reg = <0x0 0x12C80000 0x3000>;
-			interrupts = <0 352 0>, <0 409 0>;
-			clocks = <&clock CLK_VCLK_SYSMMU_MFC_MSCL>;
-			clock-names = "aclk";
-			samsung,power-domain = <&pd_mfcmscl>;
-			sysmmu,v7tlb_property = <AR(0x2) SYSMMU_BL4_PREFETCH_PREDICTION>,
-						<AR(0x6) SYSMMU_BL4_PREFETCH_PREDICTION>,
-						<AR(0xE) SYSMMU_BL4_PREFETCH_ASCENDING>,
-						<AW(0x22) SYSMMU_BL4_PREFETCH_ASCENDING>,
-						<AW(0x26) SYSMMU_BL4_PREFETCH_ASCENDING>,
-						<AW(0x2A) SYSMMU_BL4_PREFETCH_ASCENDING>;
-			sysmmu,secure_reg = <0x12C70000>;
-			sysmmu,handle_secure-irq;
-			master_ip_list = <&smfc>, <&scaler_0>, <&mfc_0>, <&fimc_is>;
-		};
-
-		sysmmu_isp: sysmmu@0x14470000 {
-			compatible = "samsung,exynos7420-sysmmu";
-			reg = <0x0 0x14470000 0x3000>;
-			interrupts = <0 128 0>;
-			qos = <15>;
-			clocks = <&clock CLK_VCLK_SYSMMU_ISP>;
-			clock-names = "aclk";
-			samsung,power-domain = <&pd_isp>;
-			sysmmu,v7tlb_property = <AW(0x0) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AW(0x4) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AR(0x1) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AW(0x1) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AW(0x5) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AW(0x2) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AW(0x6) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AW(0xA) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AW(0x3) SYSMMU_BL1_PREFETCH_PREDICTION>,
-						<AR(0x3) SYSMMU_BL2_NO_PREFETCH>;
-			master_ip_list = <&fimc_is>, <&fimc_is_sensor0>, <&fimc_is_sensor1>;
-		 };
-	
-	};
-
 
 	iommu-domain_disp {
 		compatible = "samsung,exynos-iommu-bus";
@@ -1226,32 +1160,22 @@
 
 		domain-clients = <&decon_0>;
 
-		sysmmu_disp: sysmmu@14860000 {
-			compatible = "samsung,exynos7420-sysmmu";
-			reg = <0x0 0x14860000 0x3000>;
-			interrupts = <0 192 0>;
-			qos = <15>;
-			clocks = <&clock CLK_VCLK_SYSMMU_DISP_AUD>;
-			clock-names = "aclk";
-			samsung,power-domain = <&pd_dispaud>;
-			sysmmu,v7tlb_property = <AR(0x0) SYSMMU_BL1_NO_PREFETCH>,
-						<AR(0x2) SYSMMU_BL1_NO_PREFETCH>,
-						<AR(0x4) SYSMMU_BL1_NO_PREFETCH>,
-						<AR(0x5) SYSMMU_BL1_NO_PREFETCH>;
-			master_ip_list = <&decon_0>;
-		};
 	};
-*/
-	iommu-domain_fimc-is {
-		compatible = "samsung,exynos-iommu-bus";
-		#address-cells = <2>;
-		#size-cells = <1>;
-		ranges;
 
-		/*domain-clients = <&fimc_is>, <&fimc_is_sensor0>,
-		 * <&fimc_is_sensor1>;*/
-
-	
+	sysmmu_disp: sysmmu@14860000 {
+		compatible = "samsung,exynos-sysmmu";
+		reg = <0x0 0x14860000 0x3000>;
+		interrupts = <0 192 0>;
+		qos = <15>;
+		clocks = <&clock CLK_VCLK_SYSMMU_DISP_AUD>;
+		clock-names = "aclk";
+		sysmmu,tlb_property =
+			/* IDMA */
+			<(SYSMMU_PRIV_ID_NO_PREFETCH_READ | SYSMMU_BL1) SYSMMU_ID(0x0)>,
+			<(SYSMMU_PRIV_ID_NO_PREFETCH_READ | SYSMMU_BL1) SYSMMU_ID(0x2)>,
+			<(SYSMMU_PRIV_ID_NO_PREFETCH_READ | SYSMMU_BL1) SYSMMU_ID(0x4)>,
+			<(SYSMMU_PRIV_ID_NO_PREFETCH_READ | SYSMMU_BL1) SYSMMU_ID(0x5)>;
+		#iommu-cells = <0>;
 	};
 
 	watchdog@10170000 {
