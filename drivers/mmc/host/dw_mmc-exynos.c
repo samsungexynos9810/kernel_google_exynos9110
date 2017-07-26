@@ -436,7 +436,10 @@ static void dw_mci_exynos_adjust_clock(struct dw_mci *host, unsigned int wanted)
 			return;
 	}
 
-	ret = clk_set_rate(host->ciu_clk, wanted * div);
+	if (!IS_ERR(host->ciu_gate))
+		ret = clk_set_rate(host->ciu_gate, wanted * div);
+	else
+		ret = clk_set_rate(host->ciu_clk, wanted * div);
 	if (ret)
 		dev_warn(host->dev,
 			"failed to set clk-rate %u error: %d\n",

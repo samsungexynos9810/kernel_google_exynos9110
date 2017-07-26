@@ -4148,6 +4148,10 @@ int dw_mci_probe(struct dw_mci *host)
 		}
 	}
 
+	host->ciu_gate = devm_clk_get(host->dev, "ciu_gate");
+	if (IS_ERR(host->ciu_gate))
+		dev_dbg(host->dev, "not used ciu gate clock or not available\n");
+
 	host->ciu_clk = devm_clk_get(host->dev, "ciu");
 	if (IS_ERR(host->ciu_clk)) {
 		dev_dbg(host->dev, "ciu clock not available\n");
@@ -4160,7 +4164,10 @@ int dw_mci_probe(struct dw_mci *host)
 		}
 
 		if (host->pdata->bus_hz) {
-			ret = clk_set_rate(host->ciu_clk, host->pdata->bus_hz);
+			if(!IS_ERR(host->ciu_gate))
+				ret = clk_set_rate(host->ciu_gate, host->pdata->bus_hz);
+			else
+				ret = clk_set_rate(host->ciu_clk, host->pdata->bus_hz);
 			if (ret)
 				dev_warn(host->dev,
 					 "Unable to set bus rate to %uHz\n",
