@@ -35,7 +35,6 @@
 #include <linux/input.h>
 #include <linux/of_address.h>
 #include <linux/ptrace.h>
-#include <linux/exynos-sdm.h>
 #include <linux/exynos-ss-soc.h>
 
 #include <asm/cputype.h>
@@ -135,8 +134,8 @@ struct exynos_ss_log {
 
 	struct cpuidle_log {
 		unsigned long long time;
+		int index;
 		unsigned long sp;
-		char *modes;
 		unsigned state;
 		u32 num_online_cpus;
 		int delta;
@@ -853,6 +852,7 @@ void exynos_ss_hook_hardlockup_exit(void)
 	}
 }
 
+#ifndef CONFIG_SOC_EXYNOS7270
 static void exynos_ss_recall_hardlockup_core(void)
 {
 	int i, ret;
@@ -894,11 +894,14 @@ static void exynos_ss_recall_hardlockup_core(void)
 out:
 	return;
 }
+#endif
 
 int exynos_ss_post_panic(void)
 {
 	if (ess_base.enabled) {
+#ifndef CONFIG_SOC_EXYNOS7270
 		exynos_ss_recall_hardlockup_core();
+#endif
 		exynos_ss_dump_sfr();
 		exynos_ss_save_context(NULL);
 		flush_cache_all();
@@ -1649,7 +1652,7 @@ bool exynos_ss_dumper_one(void *v_dumper,
 	{
 		unsigned int delta;
 		int state, num_cpus, en;
-		char *index;
+		int index;
 
 		array_size = ARRAY_SIZE(ess_log->cpuidle[0]) - 1;
 		if (!dumper->active) {
@@ -1660,13 +1663,13 @@ bool exynos_ss_dumper_one(void *v_dumper,
 		ts = ess_log->cpuidle[cpu][idx].time;
 		rem_nsec = do_div(ts, NSEC_PER_SEC);
 
-		index = ess_log->cpuidle[cpu][idx].modes;
+		index = ess_log->cpuidle[cpu][idx].index;
 		en = ess_log->cpuidle[cpu][idx].en;
 		state = ess_log->cpuidle[cpu][idx].state;
 		num_cpus = ess_log->cpuidle[cpu][idx].num_online_cpus;
 		delta = ess_log->cpuidle[cpu][idx].delta;
 
-		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] cpuidle: %s,  "
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] cpuidle: %d,  "
 					    "state:%d,  num_online_cpus:%d,  stay_time:%8u,  %3s\n",
 						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
 						index, state, num_cpus, delta,
@@ -2033,7 +2036,9 @@ static int __init exynos_ss_init_desc(void)
 	memset((struct exynos_ss_desc *)&ess_desc, 0, sizeof(struct exynos_ss_desc));
 	ess_desc.callstack = CONFIG_EXYNOS_SNAPSHOT_CALLSTACK;
 	raw_spin_lock_init(&ess_desc.lock);
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
 	INIT_LIST_HEAD(&ess_desc.sfrdump_list);
+#endif
 
 	for (i = 0; i < ARRAY_SIZE(ess_items); i++) {
 		len = strlen(ess_items[i].name);
