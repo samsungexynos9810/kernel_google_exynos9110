@@ -14,6 +14,7 @@
 #include <linux/of_platform.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
+#include <linux/debugfs.h>
 #include <linux/uaccess.h>
 
 #include <soc/samsung/exynos-pd.h>
@@ -84,10 +85,10 @@ static void exynos_pd_dbg_summary_show(struct generic_pm_domain *genpd)
 
 	mutex_lock(&genpd->lock);
 
-	if (genpd->status >= ARRAY_SIZE(gpd_status_lookup)) {
+	if (WARN_ON(genpd->status >= ARRAY_SIZE(gpd_status_lookup))) {
 		pr_err("%s invalid GPD_STATUS\n", EXYNOS_PD_DBG_PREFIX);
 		mutex_unlock(&genpd->lock);
-		return ;
+		return;
 	}
 
 	pr_info("[GENPD] : %-30s [GPD_STATUS] : %-15s\n",

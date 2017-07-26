@@ -13,9 +13,8 @@
  */
 
 #include <soc/samsung/exynos-pd.h>
-#include <soc/samsung/bts.h>
-#include <soc/samsung/cal-if.h>
-#include <linux/apm-exynos.h>
+#include <sound/exynos-audmixer.h>
+
 struct exynos_pm_domain *exynos_pd_lookup_name(const char *domain_name)
 {
 	struct exynos_pm_domain *exypd = NULL;
@@ -64,29 +63,28 @@ static void exynos_pd_power_on_pre(struct exynos_pm_domain *pd)
 {
 	exynos_update_ip_idle_status(pd->idle_ip_index, 0);
 
-	if (pd->devfreq_index >= 0) {
-		exynos_bts_scitoken_setting(true);
-	}
+	if (pd->devfreq_index >= 0)
+		exynos_devfreq_sync_voltage(pd->devfreq_index, true);
 }
 
 static void exynos_pd_power_on_post(struct exynos_pm_domain *pd)
 {
 #if defined(CONFIG_EXYNOS_BCM)
-	if(cal_pd_status(pd->cal_pdid) && pd->bcm)
-		bcm_pd_sync(pd->bcm, true);
+	if (cal_pd_status(pd->cal_pdid) && pd->bcm)
+			bcm_pd_sync(pd->bcm, true);
 #endif
 }
 
 static void exynos_pd_power_off_pre(struct exynos_pm_domain *pd)
 {
-#ifdef CONFIG_EXYNOS_CL_DVFS_G3D
-	if (!strcmp(pd->name, "pd-g3d")) {
+#if 0
+	/* HACK_APM */
+	if (!strcmp(pd->name, "pd-g3d"))
 		exynos_g3d_power_down_noti_apm();
-	}
-#endif /* CONFIG_EXYNOS_CL_DVFS_G3D */
+#endif
 #if defined(CONFIG_EXYNOS_BCM)
 	if(cal_pd_status(pd->cal_pdid) && pd->bcm)
-		bcm_pd_sync(pd->bcm, false);
+			bcm_pd_sync(pd->bcm, false);
 #endif
 }
 
@@ -94,9 +92,8 @@ static void exynos_pd_power_off_post(struct exynos_pm_domain *pd)
 {
 	exynos_update_ip_idle_status(pd->idle_ip_index, 1);
 
-	if (pd->devfreq_index >= 0) {
-		exynos_bts_scitoken_setting(false);
-	}
+	if (pd->devfreq_index >= 0)
+		exynos_devfreq_sync_voltage(pd->devfreq_index, false);
 }
 
 static void exynos_pd_prepare_forced_off(struct exynos_pm_domain *pd)
@@ -106,21 +103,20 @@ static void exynos_pd_prepare_forced_off(struct exynos_pm_domain *pd)
 static int exynos_pd_power_on(struct generic_pm_domain *genpd)
 {
 	struct exynos_pm_domain *pd = container_of(genpd, struct exynos_pm_domain, genpd);
-	int ret = 0;
-
-	mutex_lock(&pd->access_lock);
+	int ret;
 
 	DEBUG_PRINT_INFO("%s(%s)+\n", __func__, pd->name);
-
 	if (unlikely(!pd->pd_control)) {
 		pr_debug(EXYNOS_PD_PREFIX "%s is Logical sub power domain, dose not have to power on control\n", pd->name);
-		goto acc_unlock;
+		return 0;
 	}
 
-	if (pd->power_down_skipped) {
-		pr_info(EXYNOS_PD_PREFIX "%s power-on is skipped.\n", pd->name);
-		goto acc_unlock;
+	if (pd->check_cp_status && (is_cp_aud_enabled() || is_test_cp_call_set())) {
+		pr_info(EXYNOS_PD_PREFIX "%s power-on is skipped due to CP call.\n", pd->name);
+		return 0;
 	}
+
+	mutex_lock(&pd->access_lock);
 
 	exynos_pd_power_on_pre(pd);
 
@@ -128,38 +124,45 @@ static int exynos_pd_power_on(struct generic_pm_domain *genpd)
 	if (ret) {
 		pr_err(EXYNOS_PD_PREFIX "%s cannot be powered on\n", pd->name);
 		exynos_pd_power_off_post(pd);
-		ret = -EAGAIN;
-		goto acc_unlock;
+
+		mutex_unlock(&pd->access_lock);
+		return -EAGAIN;
 	}
 
 	exynos_pd_power_on_post(pd);
 
-acc_unlock:
-	DEBUG_PRINT_INFO("%s(%s)-, ret = %d\n", __func__, pd->name, ret);
+	/* enable bts features if exists */
+	if (pd->bts)
+		bts_initialize(pd->name, true);
+
 	mutex_unlock(&pd->access_lock);
 
-	return ret;
+	DEBUG_PRINT_INFO("%s(%s)-\n", __func__, pd->name);
+	return 0;
 }
 
 static int exynos_pd_power_off(struct generic_pm_domain *genpd)
 {
 	struct exynos_pm_domain *pd = container_of(genpd, struct exynos_pm_domain, genpd);
-	int ret = 0;
-
-	mutex_lock(&pd->access_lock);
+	int ret;
 
 	DEBUG_PRINT_INFO("%s(%s)+\n", __func__, pd->name);
 
 	if (unlikely(!pd->pd_control)) {
 		pr_debug(EXYNOS_PD_PREFIX "%s is Logical sub power domain, dose not have to power off control\n", genpd->name);
-		goto acc_unlock;
+		return 0;
 	}
 
-	if (pd->power_down_ok && !pd->power_down_ok()) {
-		pr_info(EXYNOS_PD_PREFIX "%s power-off is skipped.\n", pd->name);
-		pd->power_down_skipped = true;
-		goto acc_unlock;
+	if (pd->check_cp_status && (is_cp_aud_enabled() || is_test_cp_call_set())) {
+		pr_info(EXYNOS_PD_PREFIX "%s power-off is skipped due to CP call.\n", pd->name);
+		return 0;
 	}
+
+	mutex_lock(&pd->access_lock);
+
+	/* disable bts features if exists */
+	if (pd->bts)
+		bts_initialize(pd->name, false);
 
 	exynos_pd_power_off_pre(pd);
 
@@ -180,16 +183,57 @@ static int exynos_pd_power_off(struct generic_pm_domain *genpd)
 	}
 
 	exynos_pd_power_off_post(pd);
-	pd->power_down_skipped = false;
 
 acc_unlock:
-	DEBUG_PRINT_INFO("%s(%s)-, ret = %d\n", __func__, pd->name, ret);
 	mutex_unlock(&pd->access_lock);
-
+	DEBUG_PRINT_INFO("%s(%s)-\n", __func__, pd->name);
 	return ret;
 }
 
 #ifdef CONFIG_OF
+
+/**
+ *  of_device_bts_is_available - check if bts feature is enabled or not
+ *
+ *  @device: Node to check for availability, with locks already held
+ *
+ *  Returns 1 if the status property is "enabled" or "ok",
+ *  0 otherwise
+ */
+static int of_device_bts_is_available(const struct device_node *device)
+{
+	const char *status;
+	int statlen;
+
+	status = of_get_property(device, "bts-status", &statlen);
+	if (status == NULL)
+		return 0;
+
+	if (statlen > 0) {
+		if (!strcmp(status, "enabled") || !strcmp(status, "ok"))
+			return 1;
+	}
+
+	return 0;
+}
+
+static bool of_get_check_cp_status(const struct device_node *device)
+{
+	const char *check_cp_status;
+	int len;
+
+	check_cp_status = of_get_property(device, "check-cp-status", &len);
+	if (check_cp_status == NULL)
+		return false;
+
+	if (len > 0) {
+		if (!strcmp(check_cp_status, "true"))
+			return true;
+	}
+
+	return false;
+}
+
 /**
  *  of_get_devfreq_sync_volt_idx - check devfreq sync voltage idx
  *
@@ -208,51 +252,6 @@ static int of_get_devfreq_sync_volt_idx(const struct device_node *device)
 	return val;
 }
 
-static bool exynos_pd_power_down_ok_aud(void)
-{
-#ifdef CONFIG_SND_SOC_SAMSUNG_ABOX
-#ifdef CONFIG_SOC_EMULATOR8895
-	return false;
-#else
-	return !abox_is_on();
-#endif
-#else
-	return true;
-#endif
-}
-
-static bool exynos_pd_power_down_ok_vts(void)
-{
-#ifdef CONFIG_SND_SOC_SAMSUNG_VTS
-	return !vts_is_on();
-#else
-	return true;
-#endif
-}
-
-static void of_get_power_down_ok(struct exynos_pm_domain *pd)
-{
-	int ret;
-	u32 val;
-	struct device_node *device = pd->of_node;
-
-	ret = of_property_read_u32(device, "power-down-ok", &val);
-	if (ret)
-		return ;
-	else {
-		switch (val) {
-		case PD_OK_AUD:
-			pd->power_down_ok = exynos_pd_power_down_ok_aud;
-			break;
-		case PD_OK_VTS:
-			pd->power_down_ok = exynos_pd_power_down_ok_vts;
-			break;
-		default:
-			break;
-		}
-	}
-}
-
 static void exynos_pd_genpd_init(struct exynos_pm_domain *pd, int state)
 {
 	pd->genpd.name = pd->name;
@@ -262,6 +261,18 @@ static void exynos_pd_genpd_init(struct exynos_pm_domain *pd, int state)
 	/* pd power on/off latency is less than 1ms */
 	pd->genpd.power_on_latency_ns = 1000000;
 	pd->genpd.power_off_latency_ns = 1000000;
+
+	do {
+		int ret;
+
+		/* bts feature is enabled if exists */
+		ret = of_device_bts_is_available(pd->of_node);
+		if (ret) {
+			pd->bts = 1;
+			bts_initialize(pd->name, true);
+			DEBUG_PRINT_INFO("%s - bts feature is enabled\n", pd->name);
+		}
+	} while (0);
 
 	pm_genpd_init(&pd->genpd, NULL, state ? false : true);
 }
@@ -327,8 +338,7 @@ static __init int exynos_pd_dt_parse(void)
 		pd->pd_control = cal_pd_control;
 		pd->check_status = exynos_pd_status;
 		pd->devfreq_index = of_get_devfreq_sync_volt_idx(pd->of_node);
-		of_get_power_down_ok(pd);
-		pd->power_down_skipped = false;
+		pd->check_cp_status = of_get_check_cp_status(pd->of_node);
 		initial_state = cal_pd_status(pd->cal_pdid);
 		if (initial_state == -1) {
 			pr_err(EXYNOS_PD_PREFIX "%s: %s is in unknown state\n",
@@ -373,7 +383,8 @@ static __init int exynos_pd_dt_parse(void)
 			if (!sub_pdev)
 				sub_pdev = of_platform_device_create(children, NULL, &pdev->dev);
 			if (!sub_pdev) {
-				pr_err(EXYNOS_PD_PREFIX "sub domain allocation failed: %s\n", children->name);
+				pr_err(EXYNOS_PD_PREFIX "sub domain allocation failed: %s\n",
+							kstrdup(children->name, GFP_KERNEL));
 				continue;
 			}
 
@@ -416,7 +427,8 @@ static __init int exynos_pd_dt_parse(void)
 
 			/* display error when parent is unmanaged. */
 			if (!of_device_is_available(parent)) {
-				pr_err(EXYNOS_PD_PREFIX "%s is not managed by runtime pm.\n", parent->name);
+				pr_err(EXYNOS_PD_PREFIX "%s is not managed by runtime pm.\n",
+						kstrdup(parent->name, GFP_KERNEL));
 				continue;
 			}
 

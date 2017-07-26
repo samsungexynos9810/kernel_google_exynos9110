@@ -16,9 +16,10 @@
 	pd_dispaud: pd-dispaud@11C84020 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x0 0x11C84020 0x20>;
-		cal_id = <0xB1380000>;
+		cal_id = <0xB138000D>;
 		status = "okay";
 		check-cp-status = "true";
+		devfreq-sync-voltage = <2>;
 
 		spd_aud: spd-aud@11C84020 {
 			compatible = "samsung,exynos-spd";
@@ -27,13 +28,18 @@
 		spd_disp: spd-disp@11C84020 {
 			compatible = "samsung,exynos-spd";
 		};
+
+		spd_fm: spd-fm@11C84020 {
+			compatible = "samsung,exynos-spd";
+		};
+
 	};
 
 	pd_isp: pd-isp@11C84040 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x0 0x11C84040 0x20>;
 		parent = <&pd_mfcmscl>;
-		cal_id = <0xB1380002>;
+		cal_id = <0xB1380003>;
 		devfreq-sync-voltage = <3>;
 		status = "okay";
 	};
@@ -41,14 +47,14 @@
 	pd_mfcmscl: pd-mfcmscl@11C84060 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x0 0x11C84060 0x20>;
-		cal_id = <0xB1380003>;
+		cal_id = <0xB1380008>;
 		status = "okay";
 	};
 
 	pd_g3d: pd-g3d@11C84000 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x0 0x11C84000 0x20>;
-		cal_id = <0xB1380001>;
+		cal_id = <0xB1380000>;
 		status = "okay";
 	};
 

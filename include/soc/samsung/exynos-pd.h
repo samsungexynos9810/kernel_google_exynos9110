@@ -26,14 +26,17 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
-#include <linux/debugfs.h>
+#include <linux/fs.h>
 
 #include <linux/mfd/samsung/core.h>
 #include <soc/samsung/bcm.h>
 
+#include "../../../drivers/soc/samsung/pwrcal/pwrcal.h"
+
 #include <soc/samsung/exynos-powermode.h>
+#include <soc/samsung/exynos-pm.h>
 #include <soc/samsung/exynos-devfreq.h>
-#include <dt-bindings/power/exynos-power.h>
+#include <soc/samsung/bts.h>
 
 #define EXYNOS_PD_PREFIX	"EXYNOS-PD: "
 #define EXYNOS_PD_DBG_PREFIX	"EXYNOS-PD-DBG: "
@@ -60,7 +63,6 @@ struct exynos_pm_domain {
 	struct device_node *of_node;
 	int (*pd_control)(unsigned int cal_id, int on);
 	int (*check_status)(struct exynos_pm_domain *pd);
-	bool (*power_down_ok)(void);
 	unsigned int bts;
 	int devfreq_index;
 	struct mutex access_lock;
@@ -68,7 +70,7 @@ struct exynos_pm_domain {
 #if defined(CONFIG_EXYNOS_BCM)
 	struct bcm_info *bcm;
 #endif
-	bool power_down_skipped;
+	bool check_cp_status;
 };
 
 struct exynos_pd_dbg_info {
@@ -86,13 +88,6 @@ static inline struct exynos_pm_domain *exynos_pd_lookup_name(const char *domain_
 {
 	return NULL;
 }
-#endif
-
-#ifdef CONFIG_SND_SOC_SAMSUNG_VTS
-extern bool vts_is_on(void);
-#endif
-#ifdef CONFIG_SND_SOC_SAMSUNG_ABOX
-extern bool abox_is_on(void);
 #endif
 
 #endif /* __EXYNOS_PD_H */

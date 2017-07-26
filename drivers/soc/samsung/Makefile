@@ -15,7 +15,7 @@ obj-$(CONFIG_CAL_IF)		+= cal-if/
 obj-$(CONFIG_EXYNOS_PMU)	+= exynos-pmu.o
 obj-$(CONFIG_EXYNOS_CHIPID)	+= exynos-chipid.o
 obj-$(CONFIG_EXYNOS_REBOOT)	+= exynos-reboot.o
-obj-$(CONFIG_EXYNOS_PD)        += pm_domains-cal.o pm_domains_sysfs.o
+obj-$(CONFIG_EXYNOS_PD)		+= exynos-pd.o exynos-pd-dbg.o
 # ACPM
 obj-$(CONFIG_EXYNOS_ACPM)    	+= acpm/
 
