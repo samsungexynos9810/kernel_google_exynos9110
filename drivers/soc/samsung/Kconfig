@@ -163,4 +163,6 @@ config EXYNOS_EARLY_TMU
 	help
 	  Enable Exynos Early TMU for Exynos SoC.
 
+source "drivers/soc/samsung/acpm/Kconfig"
+
 endif #SOC_SAMSUNG

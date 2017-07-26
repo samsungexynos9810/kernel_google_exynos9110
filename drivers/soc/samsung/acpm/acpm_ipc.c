@@ -13,203 +13,37 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/platform_device.h>
+#include <linux/debugfs.h>
 #include <linux/interrupt.h>
 #include <linux/of_irq.h>
-#include <linux/delay.h>
-#include <linux/list.h>
-#include <linux/wait.h>
-#include <linux/slab.h>
+#include <linux/workqueue.h>
 
 #include "acpm.h"
 #include "acpm_ipc.h"
-#include "fw_header/framework.h"
 
 static struct acpm_ipc_info *acpm_ipc;
-static struct workqueue_struct *debug_logging_wq;
-static struct acpm_debug_info *acpm_debug;
-static bool is_acpm_stop_log = false;
-static bool acpm_stop_log_req = false;
-struct acpm_framework *acpm_initdata;
-void __iomem *acpm_srambase;
-
-void acpm_ipc_set_waiting_mode(bool mode)
-{
-	acpm_ipc->w_mode = mode;
-}
-
-void acpm_fw_log_level(unsigned int on)
-{
-	acpm_debug->debug_log_level = on;
-}
-
-void acpm_ramdump(void)
-{
-#ifdef CONFIG_EXYNOS_SNAPSHOT_ACPM
-	if (acpm_debug->dump_size)
-		memcpy(acpm_debug->dump_dram_base, acpm_debug->dump_base, acpm_debug->dump_size);
-#endif
-}
-
-void timestamp_write(void)
-{
-	unsigned int tmp_index;
-
-	if (spin_trylock(&acpm_debug->lock)) {
-		tmp_index = __raw_readl(acpm_debug->time_index);
-
-		tmp_index++;
-
-		if (tmp_index == acpm_debug->num_timestamps)
-			tmp_index = 0;
-
-		acpm_debug->timestamps[tmp_index] = sched_clock();
-
-		__raw_writel(tmp_index, acpm_debug->time_index);
-		spin_unlock(&acpm_debug->lock);
-	}
-}
-
-void acpm_log_print(void)
-{
-	unsigned int front;
-	unsigned int rear;
-	unsigned int id;
-	unsigned int index;
-	unsigned int count;
-	unsigned char str[9] = {0,};
-	unsigned int val;
-	unsigned int log_header;
-	unsigned long long time;
-	unsigned int log_level;
-
-	if (is_acpm_stop_log)
-		return ;
-	/* ACPM Log data dequeue & print */
-	front = __raw_readl(acpm_debug->log_buff_front);
-	rear = __raw_readl(acpm_debug->log_buff_rear);
-
-	while (rear != front) {
-		log_header = __raw_readl(acpm_debug->log_buff_base + acpm_debug->log_buff_size * rear);
-
-		/* log header information
-		 * id: [31:29]
-		 * index: [28:23]
-		 * apm systick count: [22:0]
-		 */
-		id = (log_header & (0x7 << LOG_ID_SHIFT)) >> LOG_ID_SHIFT;
-		log_level = (log_header & (0x1 << LOG_LEVEL)) >> LOG_LEVEL;
-		index = (log_header & (0x1f << LOG_TIME_INDEX)) >> LOG_TIME_INDEX;
-		count = log_header & 0x7fffff;
-
-		/* string length: log_buff_size - header(4) - integer_data(4) */
-		memcpy_align_4(str, acpm_debug->log_buff_base + (acpm_debug->log_buff_size * rear) + 4,
-				acpm_debug->log_buff_size - 8);
-
-		val = __raw_readl(acpm_debug->log_buff_base + acpm_debug->log_buff_size * rear +
-				acpm_debug->log_buff_size - 4);
-
-		time = acpm_debug->timestamps[index];
-
-		/* systick period: 1 / 26MHz */
-		time += count * APM_SYSTICK_NS_PERIOD;
-
-		exynos_ss_acpm(time, str, val);
-
-		if (acpm_debug->debug_log_level == 1 || !log_level)
-			pr_info("[ACPM_FW][%llu] id:%u, %s, %x\n", time, id, str, val);
-
-		if (acpm_debug->log_buff_len == (rear + 1))
-			rear = 0;
-		else
-			rear++;
-
-		__raw_writel(rear, acpm_debug->log_buff_rear);
-		front = __raw_readl(acpm_debug->log_buff_front);
-	}
-
-	timestamp_write();
-	if (acpm_stop_log_req) {
-		is_acpm_stop_log = true;
-		acpm_ramdump();
-	}
-}
-
-void acpm_stop_log(void)
-{
-	acpm_stop_log_req = true;
-}
-
-static void acpm_debug_logging(struct work_struct *work)
-{
-	acpm_log_print();
-
-	queue_delayed_work(debug_logging_wq, &acpm_debug->work,
-			msecs_to_jiffies(acpm_debug->period));
-}
-
-int acpm_ipc_set_ch_mode(struct device_node *np, bool polling)
-{
-	int reg;
-	int i, len, req_ch_id;
-	const __be32 *prop;
-
-	if (!np)
-		return -ENODEV;
-
-	prop = of_get_property(np, "acpm-ipc-channel", &len);
-	if (!prop)
-		return -ENOENT;
-	req_ch_id = be32_to_cpup(prop);
-
-	for(i = 0; i < acpm_ipc->num_channels; i++) {
-		if (acpm_ipc->channel[i].id == req_ch_id) {
-
-			reg = __raw_readl(acpm_ipc->intr + INTMR1);
-			reg &= ~(1 << acpm_ipc->channel[i].id);
-			reg |= polling << acpm_ipc->channel[i].id;
-			__raw_writel(reg, acpm_ipc->intr + INTMR1);
-
-			acpm_ipc->channel[i].polling = polling;
-
-			return 0;
-		}
-	}
-
-	return -ENODEV;
-}
 
 unsigned int acpm_ipc_request_channel(struct device_node *np, ipc_callback handler,
 		unsigned int *id, unsigned int *size)
 {
-	struct callback_info *cb;
-	int i, len, req_ch_id;
-	const __be32 *prop;
+	struct device_node *node;
+	int i;
 
 	if (!np)
 		return -ENODEV;
 
-	prop = of_get_property(np, "acpm-ipc-channel", &len);
-	if (!prop)
+	node = of_parse_phandle(np, "acpm-ipc-channel", 0);
+
+	if (!node)
 		return -ENOENT;
-	req_ch_id = be32_to_cpup(prop);
 
-	for(i = 0; i < acpm_ipc->num_channels; i++) {
-		if (acpm_ipc->channel[i].id == req_ch_id) {
+	for(i = 0; i < acpm_ipc->channel_num; i++) {
+		if (acpm_ipc->channel[i].ch_node == node) {
 			*id = acpm_ipc->channel[i].id;
-			*size = acpm_ipc->channel[i].tx_ch.size;
+			*size = acpm_ipc->channel[i].buff_size;
 
-			if (handler) {
-				cb = devm_kzalloc(acpm_ipc->dev, sizeof(struct callback_info),
-						GFP_KERNEL);
-				if (cb == NULL)
-					return -ENOMEM;
-				cb->ipc_callback = handler;
-				cb->client = np;
-
-				spin_lock(&acpm_ipc->channel[i].ch_lock);
-				list_add(&cb->list, &acpm_ipc->channel[i].list);
-				spin_unlock(&acpm_ipc->channel[i].ch_lock);
-			}
+			if (handler)
+				acpm_ipc->channel[i].ipc_callback = handler;
 
 			return 0;
 		}
@@ -218,168 +52,115 @@ unsigned int acpm_ipc_request_channel(struct device_node *np, ipc_callback handl
 	return -ENODEV;
 }
 
-unsigned int acpm_ipc_release_channel(struct device_node *np, unsigned int channel_id)
+unsigned int acpm_ipc_release_channel(unsigned int channel_id)
 {
 	struct acpm_ipc_ch *channel = &acpm_ipc->channel[channel_id];
-	struct list_head *cb_list = &channel->list;
-	struct callback_info *cb;
 
-	list_for_each_entry(cb, cb_list, list) {
-		if (cb->client == np) {
-			spin_lock(&channel->ch_lock);
-			list_del(&cb->list);
-			spin_unlock(&channel->ch_lock);
-			devm_kfree(acpm_ipc->dev, cb);
-			break;
-		}
-	}
+	channel->ipc_callback = NULL;
 
 	return 0;
 }
 
-static bool check_response(struct acpm_ipc_ch *channel, struct ipc_config *cfg)
+static irqreturn_t acpm_ipc_handler(int irq, void *p)
 {
-	unsigned int front;
-	unsigned int rear;
-	struct list_head *cb_list = &channel->list;
-	struct callback_info *cb;
-	unsigned int data;
-	bool ret = true;
-	unsigned int i;
-
-	spin_lock(&channel->rx_lock);
-	/* IPC command dequeue */
-	front = __raw_readl(channel->rx_ch.front);
-	rear = __raw_readl(channel->rx_ch.rear);
-
-	i = rear;
-
-	while (i != front) {
-		data = __raw_readl(channel->rx_ch.base + channel->rx_ch.size * i);
-		data = (data >> ACPM_IPC_PROTOCOL_SEQ_NUM) & 0x3f;
-
-		if (data == ((cfg->cmd[0] >> ACPM_IPC_PROTOCOL_SEQ_NUM) & 0x3f)) {
-			memcpy_align_4(cfg->cmd, channel->rx_ch.base + channel->rx_ch.size * i,
-					channel->rx_ch.size);
-			memcpy_align_4(channel->cmd, channel->rx_ch.base + channel->rx_ch.size * i,
-					channel->rx_ch.size);
-
-			/* i: target command, rear: another command
-			 * 1. i index command dequeue
-			 * 2. rear index command copy to i index position
-			 * 3. incresed rear index
-			 */
-			if (i != rear)
-				memcpy_align_4(channel->rx_ch.base + channel->rx_ch.size * i,
-						channel->rx_ch.base + channel->rx_ch.size * rear,
-						channel->rx_ch.size);
-
-			list_for_each_entry(cb, cb_list, list)
-				if (cb && cb->ipc_callback)
-					cb->ipc_callback(channel->cmd, channel->rx_ch.size);
-
-			rear++;
-			rear = rear % channel->rx_ch.len;
-
-			__raw_writel(rear, channel->rx_ch.rear);
-			front = __raw_readl(channel->rx_ch.front);
-
-			if (rear == front) {
-				__raw_writel((1 << channel->id), acpm_ipc->intr + INTCR1);
-				if (rear != __raw_readl(channel->rx_ch.front)) {
-					__raw_writel((1 << channel->id), acpm_ipc->intr + INTGR1);
-				}
-			}
-			ret = false;
-			break;
-		}
-		i++;
-		i = i % channel->rx_ch.len;
-	}
-
-	spin_unlock(&channel->rx_lock);
-
-	return ret;
-}
-
-static void dequeue_policy(struct acpm_ipc_ch *channel)
-{
-	unsigned int front;
-	unsigned int rear;
-	struct list_head *cb_list = &channel->list;
-	struct callback_info *cb;
-
-	spin_lock(&channel->rx_lock);
-
-	if (channel->type == TYPE_BUFFER) {
-		memcpy_align_4(channel->cmd, channel->rx_ch.base, channel->rx_ch.size);
-		spin_unlock(&channel->rx_lock);
-		list_for_each_entry(cb, cb_list, list)
-			if (cb && cb->ipc_callback)
-				cb->ipc_callback(channel->cmd, channel->rx_ch.size);
-
-		return;
-	}
-
-	/* IPC command dequeue */
-	front = __raw_readl(channel->rx_ch.front);
-	rear = __raw_readl(channel->rx_ch.rear);
-
-	while (rear != front) {
-		memcpy_align_4(channel->cmd, channel->rx_ch.base + channel->rx_ch.size * rear,
-				channel->rx_ch.size);
-
-		list_for_each_entry(cb, cb_list, list)
-			if (cb && cb->ipc_callback)
-				cb->ipc_callback(channel->cmd, channel->rx_ch.size);
-
-		if (channel->rx_ch.len == (rear + 1))
-			rear = 0;
-		else
-			rear++;
-
-		if (!channel->polling)
-			complete(&channel->wait);
-
-		__raw_writel(rear, channel->rx_ch.rear);
-		front = __raw_readl(channel->rx_ch.front);
-	}
-
-	acpm_log_print();
-	spin_unlock(&channel->rx_lock);
-}
-
-static irqreturn_t acpm_ipc_irq_handler(int irq, void *data)
-{
-	struct acpm_ipc_info *ipc = data;
+	struct acpm_ipc_info *ipc = p;
 	unsigned int status;
+	unsigned int int_check = 0;
 	int i;
 
 	/* ACPM IPC INTERRUPT STATUS REGISTER */
 	status = __raw_readl(acpm_ipc->intr + INTSR1);
 
-	for (i = 0; i < acpm_ipc->num_channels; i++) {
-		if (!ipc->channel[i].polling && (status & (0x1 << ipc->channel[i].id))) {
+	for (i = 0; i < acpm_ipc->channel_num; i++) {
+		if (status & (0x1 << ipc->channel[i].id)) {
+			tasklet_schedule(&ipc->channel[i].dequeue_task);
 			/* ACPM IPC INTERRUPT PENDING CLEAR */
 			__raw_writel(1 << ipc->channel[i].id, ipc->intr + INTCR1);
 		}
+		int_check |= 0x1 << ipc->channel[i].id;
 	}
 
-	ipc->intr_status = status;
-
-	return IRQ_WAKE_THREAD;
-}
-
-static irqreturn_t acpm_ipc_irq_handler_thread(int irq, void *data)
-{
-	struct acpm_ipc_info *ipc = data;
-	int i;
-
-	for (i = 0; i < acpm_ipc->num_channels; i++)
-		if (!ipc->channel[i].polling && (ipc->intr_status & (1 << i)))
-			dequeue_policy(&ipc->channel[i]);
+	if (status & ~int_check) {
+		pr_err("[ACPM] unknown interrupt, status:0x%x\n", status);
+		return IRQ_NONE;
+	}
 
 	return IRQ_HANDLED;
+}
+
+#ifdef CONFIG_ACPM_IPC_PROFILE
+
+#define ACPM_IPC_ITERATION		(1000)
+#define ACPM_IPC_CH_NUM			(4)
+struct time_data {
+	unsigned long min;
+	unsigned long max;
+	unsigned int cnt;
+};
+
+struct time_data time_d[ACPM_IPC_CH_NUM];
+struct time_data en_time_d[ACPM_IPC_CH_NUM];
+#endif
+
+static void dequeue_policy(struct acpm_ipc_ch *channel)
+{
+	unsigned int front;
+	unsigned int rear;
+#ifdef CONFIG_ACPM_IPC_PROFILE
+	unsigned long after, before;
+
+	before = sched_clock();
+#endif
+	spin_lock_bh(&channel->rx_lock);
+
+	/* IPC command dequeue */
+	front = __raw_readl(channel->rx_front);
+	rear = __raw_readl(channel->rx_rear);
+
+	while (rear != front) {
+		memcpy_align_4(channel->cmd, channel->rx_base + channel->buff_size * rear,
+				channel->buff_size);
+
+		if (channel->ipc_callback)
+			channel->ipc_callback(channel->cmd, channel->buff_size);
+
+		if (channel->buff_len == (rear + 1))
+			rear = 0;
+		else
+			rear++;
+
+		__raw_writel(rear, channel->rx_rear);
+		front = __raw_readl(channel->rx_front);
+	}
+
+	acpm_log_print();
+	spin_unlock_bh(&channel->rx_lock);
+
+#ifdef CONFIG_ACPM_IPC_PROFILE
+	after = sched_clock();
+
+	if (time_d[channel->id].max < (after - before))
+		time_d[channel->id].max = after - before;
+	if (time_d[channel->id].min > (after - before))
+		time_d[channel->id].min = after - before;
+	time_d[channel->id].cnt += 1;
+	if (time_d[channel->id].cnt == ACPM_IPC_ITERATION) {
+		pr_err("[dequeue_ACPM][%u] chnnale:%u, min:%lu, max:%lu\n",
+				time_d[channel->id].cnt,
+				channel->id, time_d[channel->id].min,
+				time_d[channel->id].max);
+		time_d[channel->id].cnt = 0;
+		time_d[channel->id].min = ~0;
+		time_d[channel->id].max = 0;
+	}
+#endif
+}
+
+static void dequeue_tasklet(unsigned long data)
+{
+	struct acpm_ipc_ch *channel = (struct acpm_ipc_ch *)data;
+
+	dequeue_policy(channel);
 }
 
 static void apm_interrupt_gen(unsigned int id)
@@ -388,297 +169,220 @@ static void apm_interrupt_gen(unsigned int id)
 	__raw_writel((1 << id) << 16, acpm_ipc->intr + INTGR0);
 }
 
-static int enqueue_indirection_cmd(struct acpm_ipc_ch *channel,
-		struct ipc_config *cfg)
-{
-	unsigned int front;
-	unsigned int rear;
-	unsigned int buf;
-	bool timeout_flag = 0;
-
-	if (cfg->indirection) {
-		front = __raw_readl(channel->tx_ch.front);
-		rear = __raw_readl(channel->tx_ch.rear);
-
-		/* another indirection command check */
-		while (rear != front) {
-			buf = __raw_readl(channel->tx_ch.base + channel->tx_ch.size * rear);
-
-			if (buf & (1 << ACPM_IPC_PROTOCOL_INDIRECTION)) {
-
-				UNTIL_EQUAL(true, rear != __raw_readl(channel->tx_ch.rear),
-						timeout_flag);
-
-				if (timeout_flag) {
-					acpm_log_print();
-					return -ETIMEDOUT;
-				} else {
-					rear = __raw_readl(channel->tx_ch.rear);
-				}
-
-			} else {
-				if (channel->tx_ch.len == (rear + 1))
-					rear = 0;
-				else
-					rear++;
-			}
-		}
-
-		if (cfg->indirection_base)
-			memcpy_align_4(channel->tx_ch.direction, cfg->indirection_base,
-					cfg->indirection_size);
-		else
-			return -EINVAL;
-	}
-
-	return 0;
-}
-
-int acpm_ipc_send_data_sync(unsigned int channel_id, struct ipc_config *cfg)
-{
-	int ret;
-	struct acpm_ipc_ch *channel;
-
-	ret = acpm_ipc_send_data(channel_id, cfg);
-
-	if (!ret) {
-		channel = &acpm_ipc->channel[channel_id];
-
-		if (!channel->polling && cfg->response) {
-			ret = wait_for_completion_interruptible_timeout(&channel->wait,
-					msecs_to_jiffies(50));
-			if (!ret) {
-				pr_err("[%s] ipc_timeout!!!\n", __func__);
-				ret = -ETIMEDOUT;
-			} else {
-				ret = 0;
-			}
-		}
-	}
-
-	return ret;
-}
-
 int acpm_ipc_send_data(unsigned int channel_id, struct ipc_config *cfg)
 {
 	unsigned int front;
 	unsigned int rear;
 	unsigned int tmp_index;
 	struct acpm_ipc_ch *channel;
+	unsigned int buf;
 	bool timeout_flag = 0;
-	int ret;
-	u64 timeout, now;
-	u32 retry_cnt = 0;
+#ifdef CONFIG_ACPM_IPC_PROFILE
+	unsigned long after, before;
 
-	if (channel_id >= acpm_ipc->num_channels && !cfg)
+	before = sched_clock();
+#endif
+	if (channel_id >= acpm_ipc->channel_num)
 		return -EIO;
 
 	channel = &acpm_ipc->channel[channel_id];
 
 	spin_lock(&channel->tx_lock);
 
-	front = __raw_readl(channel->tx_ch.front);
-	rear = __raw_readl(channel->tx_ch.rear);
+	front = __raw_readl(channel->tx_front);
+	rear = __raw_readl(channel->tx_rear);
 
 	tmp_index = front + 1;
 
-	if (tmp_index >= channel->tx_ch.len)
+	if (tmp_index >= channel->buff_len)
 		tmp_index = 0;
 
 	/* buffer full check */
-	UNTIL_EQUAL(true, tmp_index != __raw_readl(channel->tx_ch.rear), timeout_flag);
+	UNTIL_EQUAL(true, tmp_index != __raw_readl(channel->tx_rear), timeout_flag);
 	if (timeout_flag) {
 		acpm_log_print();
-		acpm_debug->debug_log_level = 1;
 		spin_unlock(&channel->tx_lock);
-		pr_err("[%s] tx buffer full! timeout!!!\n", __func__);
 		return -ETIMEDOUT;
 	}
 
-	if (!cfg->cmd) {
-		spin_unlock(&channel->tx_lock);
-		return -EIO;
-	}
+	memcpy_align_4(channel->tx_base + channel->buff_size * front, cfg->cmd,
+			channel->buff_size);
 
-	if (++channel->seq_num == 64)
-		channel->seq_num = 1;
+	if (cfg->cmd[0] & (1 << ACPM_IPC_PROTOCOL_INDIRECTION)) {
+		/* another indirection command check */
+		while (rear != front) {
+			buf = __raw_readl(channel->tx_base + channel->buff_size * rear);
 
-	cfg->cmd[0] |= (channel->seq_num & 0x3f) << ACPM_IPC_PROTOCOL_SEQ_NUM;
+			if (buf & (1 << ACPM_IPC_PROTOCOL_INDIRECTION)) {
 
-	memcpy_align_4(channel->tx_ch.base + channel->tx_ch.size * front, cfg->cmd,
-			channel->tx_ch.size);
+				UNTIL_EQUAL(true, rear != __raw_readl(channel->tx_rear),
+						timeout_flag);
 
-	cfg->cmd[1] = 0;
-	cfg->cmd[2] = 0;
-	cfg->cmd[3] = 0;
-
-	ret = enqueue_indirection_cmd(channel, cfg);
-	if (ret) {
-		pr_err("[ACPM] indirection command fail %d\n", ret);
-		spin_unlock(&channel->tx_lock);
-		return ret;
-	}
-
-	__raw_writel(tmp_index, channel->tx_ch.front);
-
-	timestamp_write();
-
-	apm_interrupt_gen(channel->id);
-	spin_unlock(&channel->tx_lock);
-
-	if (channel->polling && cfg->response) {
-retry:
-		timeout = sched_clock() + IPC_TIMEOUT;
-		timeout_flag = false;
-
-		while (!(__raw_readl(acpm_ipc->intr + INTSR1) & (1 << channel->id)) ||
-				check_response(channel, cfg)) {
-			now = sched_clock();
-			if (timeout < now) {
-				if (retry_cnt++ < 5) {
-					pr_err("acpm_ipc timeout retry %d"
-						"now = %llu,"
-						"timeout = %llu\n",
-						retry_cnt, now, timeout);
-					goto retry;
+				if (timeout_flag) {
+					acpm_log_print();
+					spin_unlock(&channel->tx_lock);
+					return -ETIMEDOUT;
+				} else {
+					rear = __raw_readl(channel->tx_rear);
 				}
-				timeout_flag = true;
-				break;
+
 			} else {
-				if (acpm_ipc->w_mode)
-					usleep_range(50, 100);
+				if (channel->buff_len == (rear + 1))
+					rear = 0;
 				else
-					cpu_relax();
+					rear++;
 			}
 		}
 
-		if (timeout_flag) {
-			if (!check_response(channel, cfg))
-				return 0;
-			pr_err("%s Timeout error! now = %llu, timeout = %llu\n",
-					__func__, now, timeout);
-			pr_err("[ACPM] status:0x%x, 0x%x\n",
-					__raw_readl(acpm_ipc->intr + INTSR1),
-					1 << channel->id);
-			pr_err("[ACPM] queue, rear:%u, front:%u\n",
-					__raw_readl(channel->rx_ch.rear),
-					__raw_readl(channel->rx_ch.front));
+		if (cfg->indirection)
+			memcpy_align_4(channel->tx_direction, cfg->indirection,
+					cfg->indirection_size);
+		else
+			return -EINVAL;
+	}
 
-			acpm_debug->debug_log_level = 1;
+	__raw_writel(tmp_index, channel->tx_front);
+
+	timestamp_write();
+	apm_interrupt_gen(channel->id);
+
+	spin_unlock(&channel->tx_lock);
+
+#ifdef CONFIG_ACPM_IPC_PROFILE
+	after = sched_clock();
+	if (en_time_d[channel->id].max < (after - before))
+		en_time_d[channel->id].max = after - before;
+	if (en_time_d[channel->id].min > (after - before))
+		en_time_d[channel->id].min = after - before;
+	en_time_d[channel->id].cnt += 1;
+	if (en_time_d[channel->id].cnt == ACPM_IPC_ITERATION) {
+		pr_err("[enqueue_ACPM][%u] chnnale:%u, min:%lu, max:%lu\n",
+				en_time_d[channel->id].cnt,
+				channel->id, en_time_d[channel->id].min,
+				en_time_d[channel->id].max);
+		en_time_d[channel->id].cnt = 0;
+		en_time_d[channel->id].min = ~0;
+		en_time_d[channel->id].max = 0;
+	}
+#endif
+	if (channel->polling && cfg->responce) {
+		UNTIL_EQUAL(true, !!(__raw_readl(acpm_ipc->intr + INTSR1) & (1 << channel->id)),
+				timeout_flag);
+		if (timeout_flag) {
 			acpm_log_print();
-			acpm_debug->debug_log_level = 0;
-			acpm_ramdump();
 			return -ETIMEDOUT;
 		}
 
-		acpm_log_print();
+		dequeue_policy(channel);
+
+		__raw_writel((1 << channel->id), acpm_ipc->intr + INTCR1);
 	}
 
 	return 0;
 }
 
-static void log_buffer_init(struct device *dev, struct device_node *node)
+static int channel_init(struct device_node *node, struct acpm_ipc_info *acpm_ipc)
 {
+	struct device_node *child;
 	const __be32 *prop;
-	unsigned int num_timestamps = 0;
-	unsigned int len = 0;
-	unsigned int dump_base = 0;
-	unsigned int dump_size = 0;
+	unsigned int len;
+	unsigned int max_buff_size;
+	int i = 0;
+	void __iomem *addr;
+	int polling = 0;
 
-	prop = of_get_property(node, "num-timestamps", &len);
+	acpm_ipc->channel_num = of_get_child_count(node);
+
+	prop = of_get_property(node, "polling", &len);
 	if (prop)
-		num_timestamps = be32_to_cpup(prop);
+		polling = be32_to_cpup(prop);
 
-	acpm_debug = devm_kzalloc(dev, sizeof(struct acpm_debug_info), GFP_KERNEL);
-	if (IS_ERR(acpm_debug))
-		return ;
-
-	acpm_debug->time_index = acpm_ipc->sram_base + acpm_ipc->initdata->ktime_index;
-	acpm_debug->num_timestamps = num_timestamps;
-	acpm_debug->timestamps = devm_kzalloc(dev,
-			sizeof(unsigned long long) * num_timestamps, GFP_KERNEL);
-	acpm_debug->log_buff_rear = acpm_ipc->sram_base + acpm_ipc->initdata->log_buf_rear;
-	acpm_debug->log_buff_front = acpm_ipc->sram_base + acpm_ipc->initdata->log_buf_front;
-	acpm_debug->log_buff_base = acpm_ipc->sram_base + acpm_ipc->initdata->log_data;
-	acpm_debug->log_buff_len = acpm_ipc->initdata->log_entry_len;
-	acpm_debug->log_buff_size = acpm_ipc->initdata->log_entry_size;
-
-	prop = of_get_property(node, "debug-log-level", &len);
-	if (prop)
-		acpm_debug->debug_log_level = be32_to_cpup(prop);
-
-	prop = of_get_property(node, "dump-base", &len);
-	if (prop)
-		dump_base = be32_to_cpup(prop);
-
-	prop = of_get_property(node, "dump-size", &len);
-	if (prop)
-		dump_size = be32_to_cpup(prop);
-
-	if (dump_base && dump_size) {
-		acpm_debug->dump_base = ioremap(dump_base, dump_size);
-		acpm_debug->dump_size = dump_size;
-	}
-
-	prop = of_get_property(node, "logging-period", &len);
-	if (prop)
-		acpm_debug->period = be32_to_cpup(prop);
-
-#ifdef CONFIG_EXYNOS_SNAPSHOT_ACPM
-	acpm_debug->dump_dram_base = kzalloc(acpm_debug->dump_size, GFP_KERNEL);
-	exynos_ss_printk("[ACPM] acpm framework SRAM dump to dram base: 0x%x\n",
-			virt_to_phys(acpm_debug->dump_dram_base));
-#endif
-	pr_info("[ACPM] acpm framework SRAM dump to dram base: 0x%llx\n",
-			virt_to_phys(acpm_debug->dump_dram_base));
-
-	spin_lock_init(&acpm_debug->lock);
-}
-
-static int channel_init(void)
-{
-	int i;
-	unsigned int mask = 0;
-	struct ipc_channel *ipc_ch;
-
-	acpm_ipc->num_channels = acpm_ipc->initdata->ipc_ap_max;
+	if (polling)
+		disable_irq(acpm_ipc->irq);
 
 	acpm_ipc->channel = devm_kzalloc(acpm_ipc->dev,
-			sizeof(struct acpm_ipc_ch) * acpm_ipc->num_channels, GFP_KERNEL);
+			sizeof(struct acpm_ipc_ch) * acpm_ipc->channel_num, GFP_KERNEL);
 
-	for (i = 0; i < acpm_ipc->num_channels; i++) {
-		ipc_ch = (struct ipc_channel *)(acpm_ipc->sram_base + acpm_ipc->initdata->ipc_channels);
-		acpm_ipc->channel[i].polling = ipc_ch[i].ap_poll;
-		acpm_ipc->channel[i].id = ipc_ch[i].id;
-		acpm_ipc->channel[i].type = ipc_ch[i].type;
-		mask |= acpm_ipc->channel[i].polling << acpm_ipc->channel[i].id;
+	prop = of_get_property(node, "max_buff_size", &len);
+	if (prop)
+		max_buff_size = be32_to_cpup(prop);
+	else
+		max_buff_size = 0x300 * acpm_ipc->channel_num;
 
-		/* Channel's RX buffer info */
-		acpm_ipc->channel[i].rx_ch.size = ipc_ch[i].ch.q_elem_size;
-		acpm_ipc->channel[i].rx_ch.len = ipc_ch[i].ch.q_len;
-		acpm_ipc->channel[i].rx_ch.rear = acpm_ipc->sram_base + ipc_ch[i].ch.tx_rear;
-		acpm_ipc->channel[i].rx_ch.front = acpm_ipc->sram_base + ipc_ch[i].ch.tx_front;
-		acpm_ipc->channel[i].rx_ch.base = acpm_ipc->sram_base + ipc_ch[i].ch.tx_base;
-		/* Channel's TX buffer info */
-		acpm_ipc->channel[i].tx_ch.size = ipc_ch[i].ch.q_elem_size;
-		acpm_ipc->channel[i].tx_ch.len = ipc_ch[i].ch.q_len;
-		acpm_ipc->channel[i].tx_ch.rear = acpm_ipc->sram_base + ipc_ch[i].ch.rx_rear;
-		acpm_ipc->channel[i].tx_ch.front = acpm_ipc->sram_base + ipc_ch[i].ch.rx_front;
-		acpm_ipc->channel[i].tx_ch.base = acpm_ipc->sram_base + ipc_ch[i].ch.rx_base;
-		acpm_ipc->channel[i].tx_ch.d_buff_size = ipc_ch[i].ch.rx_indr_buf_size;
-		acpm_ipc->channel[i].tx_ch.direction = acpm_ipc->sram_base + ipc_ch[i].ch.rx_indr_buf;
+	for_each_child_of_node(node, child) {
+		acpm_ipc->channel[i].ch_node = child;
+		acpm_ipc->channel[i].polling = polling;
+
+		prop = of_get_property(child, "channel_id", &len);
+		if (prop)
+			acpm_ipc->channel[i].id = be32_to_cpup(prop);
+		else
+			acpm_ipc->channel[i].id = i;
+
+		prop = of_get_property(child, "buff_size", &len);
+		if (prop)
+			acpm_ipc->channel[i].buff_size = be32_to_cpup(prop);
+		else
+			acpm_ipc->channel[i].buff_size = 12;
+
+		prop = of_get_property(child, "buff_len", &len);
+		if (prop)
+			acpm_ipc->channel[i].buff_len = be32_to_cpup(prop);
+		else
+			acpm_ipc->channel[i].buff_len = 8;
+
+		prop = of_get_property(child, "direction_buff", &len);
+		if (prop)
+			acpm_ipc->channel[i].d_buff_size = be32_to_cpup(prop);
+		else
+			acpm_ipc->channel[i].d_buff_size = 0;
+
+		if (max_buff_size < (acpm_ipc->channel[i].buff_size *
+					acpm_ipc->channel[i].buff_len * 2 +
+					acpm_ipc->channel[i].d_buff_size + 8)) {
+			dev_err(acpm_ipc->dev, "exceed the buff size-"
+					"max:%u, size:%u, len:%u, direction:%u\n",
+					max_buff_size,
+					acpm_ipc->channel[i].buff_size,
+					acpm_ipc->channel[i].buff_len,
+					acpm_ipc->channel[i].d_buff_size);
+			return -ENOMEM;
+		}
+
+		prop = of_get_property(child, "rx_buff", &len);
+		if (prop)
+			addr = ioremap(be32_to_cpup(prop), acpm_ipc->channel[i].buff_size *
+					acpm_ipc->channel[i].buff_len + 8);
+
+		acpm_ipc->channel[i].rx_rear = addr;
+		acpm_ipc->channel[i].rx_front = addr + 4;
+		acpm_ipc->channel[i].rx_base = addr + 8;
 
 		acpm_ipc->channel[i].cmd = devm_kzalloc(acpm_ipc->dev,
-				acpm_ipc->channel[i].tx_ch.size, GFP_KERNEL);
+				acpm_ipc->channel[i].buff_size, GFP_KERNEL);
 
-		init_completion(&acpm_ipc->channel[i].wait);
+		prop = of_get_property(child, "tx_buff", &len);
+		if (prop)
+			addr = ioremap(be32_to_cpup(prop), acpm_ipc->channel[i].buff_size *
+					acpm_ipc->channel[i].buff_len +
+					acpm_ipc->channel[i].d_buff_size + 8);
+
+		/* acpm_ipc queue base address init */
+		acpm_ipc->channel[i].tx_rear = addr;
+		acpm_ipc->channel[i].tx_front = addr + 4;
+		acpm_ipc->channel[i].tx_base = addr + 8;
+		if (acpm_ipc->channel[i].d_buff_size)
+			acpm_ipc->channel[i].tx_direction = addr + 8 +
+				acpm_ipc->channel[i].buff_size *
+				acpm_ipc->channel[i].buff_len;
+
+		tasklet_init(&acpm_ipc->channel[i].dequeue_task, dequeue_tasklet,
+				(unsigned long)&acpm_ipc->channel[i]);
+
 		spin_lock_init(&acpm_ipc->channel[i].rx_lock);
 		spin_lock_init(&acpm_ipc->channel[i].tx_lock);
-		spin_lock_init(&acpm_ipc->channel[i].ch_lock);
-		INIT_LIST_HEAD(&acpm_ipc->channel[i].list);
+		i++;
 	}
-
-	__raw_writel(mask, acpm_ipc->intr + INTMR1);
 
 	return 0;
 }
@@ -687,8 +391,7 @@ static int acpm_ipc_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
 	struct resource *res;
-	int ret = 0, len;
-	const __be32 *prop;
+	int ret = 0;
 
 	if (!node) {
 		dev_err(&pdev->dev, "driver doesnt support"
@@ -701,16 +404,11 @@ static int acpm_ipc_probe(struct platform_device *pdev)
 	acpm_ipc = devm_kzalloc(&pdev->dev,
 			sizeof(struct acpm_ipc_info), GFP_KERNEL);
 
-	if (IS_ERR(acpm_ipc))
-		return PTR_ERR(acpm_ipc);
-
-	acpm_ipc->irq = irq_of_parse_and_map(node, 0);
-
-	ret = devm_request_threaded_irq(&pdev->dev, acpm_ipc->irq, acpm_ipc_irq_handler,
-			acpm_ipc_irq_handler_thread,
-			IRQF_ONESHOT,
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	acpm_ipc->irq = res->start;
+	ret = devm_request_irq(&pdev->dev, acpm_ipc->irq,
+			acpm_ipc_handler, IRQF_SHARED,
 			dev_name(&pdev->dev), acpm_ipc);
-
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register acpm_ipc interrupt:%d\n", ret);
 		return ret;
@@ -718,37 +416,19 @@ static int acpm_ipc_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	acpm_ipc->intr = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(acpm_ipc->intr))
-		return PTR_ERR(acpm_ipc->intr);
 
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-	acpm_ipc->sram_base = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(acpm_ipc->sram_base))
-		return PTR_ERR(acpm_ipc->sram_base);
+	acpm_ipc->channel = devm_kzalloc(&pdev->dev,
+			sizeof(struct acpm_ipc_info), GFP_KERNEL);
 
-	prop = of_get_property(node, "initdata-base", &len);
-	if (prop) {
-		acpm_ipc->initdata_base = be32_to_cpup(prop);
-	} else {
-		dev_err(&pdev->dev, "Parsing initdata_base failed.\n");
-		return -EINVAL;
-	}
-	acpm_ipc->initdata = (struct acpm_framework *)(acpm_ipc->sram_base + acpm_ipc->initdata_base);
-	acpm_initdata = acpm_ipc->initdata;
-	acpm_srambase = acpm_ipc->sram_base;
+	if (IS_ERR(acpm_ipc))
+		return PTR_ERR(acpm_ipc);
 
 	acpm_ipc->dev = &pdev->dev;
 
-	log_buffer_init(&pdev->dev, node);
+	node = of_get_child_by_name(node, "channels");
 
-	channel_init();
-
-	if (acpm_debug->period) {
-		debug_logging_wq = create_freezable_workqueue("acpm_debug_logging");
-		INIT_DELAYED_WORK(&acpm_debug->work, acpm_debug_logging);
-
-		queue_delayed_work(debug_logging_wq, &acpm_debug->work,
-				msecs_to_jiffies(10000));
+	if (node) {
+		ret = channel_init(node, acpm_ipc);
 	}
 
 	return ret;
@@ -776,6 +456,7 @@ static struct platform_driver samsung_acpm_ipc_driver = {
 
 static int __init exynos_acpm_ipc_init(void)
 {
+
 	return platform_driver_register(&samsung_acpm_ipc_driver);
 }
 arch_initcall(exynos_acpm_ipc_init);

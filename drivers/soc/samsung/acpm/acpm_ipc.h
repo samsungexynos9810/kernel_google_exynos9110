@@ -3,79 +3,41 @@
 
 #include <soc/samsung/acpm_ipc_ctrl.h>
 
-struct buff_info {
-	void __iomem *rear;
-	void __iomem *front;
-	void __iomem *base;
-	void __iomem *direction;
-
-	unsigned int size;
-	unsigned int len;
-	unsigned int d_buff_size;
-};
-
-struct callback_info {
-	void (*ipc_callback) (unsigned int *cmd, unsigned int size);
-	struct device_node *client;
-	struct list_head list;
-};
-
 struct acpm_ipc_ch {
-	struct buff_info rx_ch;
-	struct buff_info tx_ch;
-	struct list_head list;
-
+	struct device_node *ch_node;
 	unsigned int id;
-	unsigned int type;
-	unsigned int seq_num;
+	void __iomem *rx_rear;
+	void __iomem *rx_front;
+	void __iomem *rx_base;
+
+	void __iomem *tx_rear;
+	void __iomem *tx_front;
+	void __iomem *tx_base;
+	void __iomem *tx_direction;
+
+	unsigned int buff_size;
+	unsigned int buff_len;
+	unsigned int d_buff_size;
 	unsigned int *cmd;
+	struct tasklet_struct dequeue_task;
 	spinlock_t rx_lock;
 	spinlock_t tx_lock;
-	spinlock_t ch_lock;
-	struct mutex wait_lock;
-
-	struct completion wait;
 	bool polling;
+
+	void (*ipc_callback) (unsigned int *cmd, unsigned int size);
 };
 
 struct acpm_ipc_info {
-	unsigned int num_channels;
+	unsigned int channel_num;
 	struct device *dev;
 	struct acpm_ipc_ch *channel;
 	unsigned int irq;
 	void __iomem *intr;
-	void __iomem *sram_base;
-	bool w_mode;
-	struct acpm_framework *initdata;
-	unsigned int initdata_base;
-	unsigned int intr_status;
-};
-
-struct acpm_debug_info {
-	unsigned int period;
-	void __iomem *time_index;
-	unsigned int num_timestamps;
-	unsigned long long *timestamps;
-
-	void __iomem *log_buff_rear;
-	void __iomem *log_buff_front;
-	void __iomem *log_buff_base;
-	unsigned int log_buff_len;
-	unsigned int log_buff_size;
-	void __iomem *dump_base;
-	unsigned int dump_size;
-	void __iomem *dump_dram_base;
-	unsigned int debug_log_level;
-	struct delayed_work work;
-
-	spinlock_t lock;
 };
 
 #define LOG_ID_SHIFT				(29)
-#define LOG_LEVEL				(28)
 #define LOG_TIME_INDEX				(23)
-#define BUSY_WAIT				(0)
-#define SLEEP_WAIT				(1)
+
 #define INTGR0					0x0008
 #define INTCR0					0x000C
 #define INTMR0					0x0010
@@ -91,7 +53,7 @@ struct acpm_debug_info {
 #define SR2					0x0088
 #define SR3					0x008C
 
-#define IPC_TIMEOUT				(150000000)
+#define IPC_TIMEOUT				(10000000)
 #define APM_SYSTICK_NS_PERIOD			(1000 / 26)
 
 #define UNTIL_EQUAL(arg0, arg1, flag)			\
@@ -102,8 +64,6 @@ do {							\
 		if ((arg0) == (arg1)) {			\
 			t_flag = false;			\
 			break;				\
-		} else {				\
-			cpu_relax();			\
 		}					\
 	} while (timeout >= sched_clock());		\
 	if (t_flag) {					\
@@ -112,11 +72,5 @@ do {							\
 	}						\
 	(flag) = t_flag;				\
 } while(0)
-
-extern void acpm_log_print(void);
-extern void timestamp_write(void);
-extern void acpm_ramdump(void);
-extern void acpm_fw_log_level(unsigned int on);
-extern void acpm_ipc_set_waiting_mode(bool mode);
 
 #endif

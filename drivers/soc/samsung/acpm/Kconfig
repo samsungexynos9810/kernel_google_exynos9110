@@ -23,11 +23,4 @@ config EXYNOS7270_ACPM
 	depends on SOC_EXYNOS7270
 	help
 	  Enable ACPM support
-
-config EXYNOS8895_ACPM
-	bool "EXYNOS8895_ACPM support"
-	default y
-	depends on SOC_EXYNOS8895
-	help
-	  Enable ACPM support
 endif
