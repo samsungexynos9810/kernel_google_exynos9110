@@ -326,18 +326,22 @@
 				};
 
 				ldo8_reg: LDO8 {
-					regulator-name = "vqemmc";
+					regulator-name = "vdd_ldo8";
 					regulator-min-microvolt = <1500000>;
 					regulator-max-microvolt = <2000000>;
-					regulator-initial-mode = <0>;
+					regulator-always-on;
+					regulator-boot-on;
+					regulator-initial-mode = <3>;
 					regulator-ramp-delay = <12000>;
 				};
 
 				ldo9_reg: LDO9 {
-					regulator-name = "vemmc";
+					regulator-name = "vdd_ldo9";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-initial-mode = <0>;
+					regulator-always-on;
+					regulator-boot-on;
+					regulator-initial-mode = <3>;
 					regulator-ramp-delay = <12000>;
 				};
 
