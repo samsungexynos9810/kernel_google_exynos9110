@@ -180,7 +180,7 @@
 	i2c@13880000 {
 		status = "okay";
 		muic-s2mm001@25 {
-			compatible = "sec-muic,i2c";
+			compatible = "samsung,muic-s2mm001";
 			reg = <0x25>;
 			pinctrl-names = "default";
 			muic,muic_int = <&gpa1 1 0>;
