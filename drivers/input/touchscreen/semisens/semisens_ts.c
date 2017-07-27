@@ -1501,7 +1501,7 @@ static s32 touch_check_functionality(struct touch_pdata *pdata)
 	if(pdata->irq_mode == IRQ_MODE_THREAD)
 		pdata->irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
 	else
-		pdata->irq_flags = IRQF_TRIGGER_FALLING | IRQF_DISABLED;
+		pdata->irq_flags = IRQF_TRIGGER_FALLING;
 
 	pdata->max_fingers	= SEMISENS_TS_FINGER_MAX;
 
