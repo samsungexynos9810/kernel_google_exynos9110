@@ -54,8 +54,6 @@
 		fixed_voltage;
 		supports-highspeed;
 		mmc-ddr-1_8v;
-		mmc-hs200-1_8v;
-		mmc-hs400-1_8v;
 		supports-8bit;
 		supports-cmd23;
 		supports-erase;
