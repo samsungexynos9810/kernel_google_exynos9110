@@ -29,6 +29,7 @@
 #include "regs-decon.h"
 #include "decon_common.h"
 #include "./panels/decon_lcd.h"
+#include "../../../../staging/android/sw_sync.h"
 
 extern struct ion_device *ion_exynos;
 extern struct decon_device *decon_int_drvdata;

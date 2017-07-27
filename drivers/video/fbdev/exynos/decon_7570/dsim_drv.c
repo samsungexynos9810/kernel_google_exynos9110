@@ -741,7 +741,7 @@ static int dsim_enable(struct dsim_device *dsim)
 	if (dsim->state == DSIM_STATE_HSCLKEN)
 		return 0;
 
-#if defined(CONFIG_PM_RUNTIME)
+#if defined(CONFIG_PM)
 	pm_runtime_get_sync(dsim->dev);
 #else
 	dsim_runtime_resume(dsim->dev);
@@ -804,7 +804,7 @@ static int dsim_disable(struct dsim_device *dsim)
 	phy_power_off(dsim->phy);
 	dsim_set_panel_power(dsim, 0);
 
-#if defined(CONFIG_PM_RUNTIME)
+#if defined(CONFIG_PM)
 	pm_runtime_put_sync(dsim->dev);
 #else
 	dsim_runtime_suspend(dsim->dev);
@@ -847,7 +847,7 @@ static int dsim_enter_ulps(struct dsim_device *dsim)
 
 	phy_power_off(dsim->phy);
 
-#if defined(CONFIG_PM_RUNTIME)
+#if defined(CONFIG_PM)
 	pm_runtime_put_sync(dsim->dev);
 #else
 	dsim_runtime_suspend(dsim->dev);
@@ -876,7 +876,7 @@ static int dsim_exit_ulps(struct dsim_device *dsim)
 		goto err;
 	}
 
-#if defined(CONFIG_PM_RUNTIME)
+#if defined(CONFIG_PM)
 	pm_runtime_get_sync(dsim->dev);
 #else
 	dsim_runtime_resume(dsim->dev);
@@ -1369,7 +1369,7 @@ static int dsim_probe(struct platform_device *pdev)
 
 	dsim->state = DSIM_STATE_SUSPEND;
 
-#if defined(CONFIG_PM_RUNTIME)
+#if defined(CONFIG_PM)
 	pm_runtime_get_sync(dsim->dev);
 #else
 	dsim_runtime_resume(dsim->dev);

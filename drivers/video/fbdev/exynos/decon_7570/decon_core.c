@@ -43,7 +43,7 @@
 #include "../../../../staging/android/sw_sync.h"
 
 #define MHZ (1000 * 1000)
-#define PROTECT
+//#define PROTECT
 #define DISP_SS_REGS 0x148F0004
 
 #ifdef CONFIG_OF
@@ -846,7 +846,7 @@ int decon_enable(struct decon_device *decon)
 	/* disable idle status for display */
 	exynos_update_ip_idle_status(decon->idle_ip_index, 0);
 
-#if defined(CONFIG_PM_RUNTIME)
+#if defined(CONFIG_PM)
 	pm_runtime_get_sync(decon->dev);
 #else
 	decon_runtime_resume(decon->dev);
@@ -1029,7 +1029,7 @@ int decon_disable(struct decon_device *decon)
 
 	decon_set_qos(decon, NULL, true, true);
 
-#if defined(CONFIG_PM_RUNTIME)
+#if defined(CONFIG_PM)
 	pm_runtime_put_sync(decon->dev);
 #else
 	decon_runtime_suspend(decon->dev);
@@ -2116,7 +2116,7 @@ static int decon_set_win_config(struct decon_device *decon,
 	int plane_cnt = 0;
 	unsigned int bw = 0;
 
-	fd = get_unused_fd();
+	fd = get_unused_fd_flags(0);
 	if (fd < 0)
 		return fd;
 
@@ -2524,7 +2524,7 @@ static int decon_s_stream(struct v4l2_subdev *sd, int enable)
 	return 0;
 }
 
-static int decon_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+static int decon_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
 		       struct v4l2_subdev_format *format)
 {
 	decon_err("unsupported ioctl");
@@ -3191,7 +3191,7 @@ static int decon_probe(struct platform_device *pdev)
 		goto fail_lpd_work;
 	}
 
-	decon->ion_client = ion_client_create(ion_exynos, device_name);
+	decon->ion_client = exynos_ion_client_create(device_name);
 	if (IS_ERR(decon->ion_client)) {
 		decon_err("failed to ion_client_create\n");
 		goto fail_lpd_work;
@@ -3340,7 +3340,7 @@ static int decon_probe(struct platform_device *pdev)
 			decon->lcd_info->yres, 4,
 			decon->lcd_info->fps);
 
-#if defined(CONFIG_PM_RUNTIME)
+#if defined(CONFIG_PM)
 	pm_runtime_get_sync(decon->dev);
 #else
 	decon_runtime_resume(decon->dev);

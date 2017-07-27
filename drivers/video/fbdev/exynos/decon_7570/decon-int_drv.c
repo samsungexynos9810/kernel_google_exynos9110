@@ -20,7 +20,7 @@
 #include <media/v4l2-subdev.h>
 
 #include "../../../../soc/samsung/pwrcal/pwrcal.h"
-#include "../../../../soc/samsung/pwrcal/S5E7570/S5E7570-vclk.h"
+#include "../../../../soc/samsung/pwrcal/S5E7270/S5E7270-vclk.h"
 #include "decon.h"
 #include "dsim.h"
 #include "decon_helper.h"
