@@ -23,12 +23,13 @@
 #define __S2MPW01_MFD_H__
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
+#include <linux/power/s2mu00x_charger_common.h>
 
 #define MFD_DEV_NAME "s2mpw01"
 #define M2SH(m) ((m) & 0x0F ? ((m) & 0x03 ? ((m) & 0x01 ? 0 : 1) : ((m) & 0x04 ? 2 : 3)) : \
 		((m) & 0x30 ? ((m) & 0x10 ? 4 : 5) : ((m) & 0x40 ? 6 : 7)))
 
-#if defined(CONFIG_SEC_CHARGER_S2MPW01)
+#if defined(CONFIG_CHARGER_S2MPW01)
 typedef struct s2mpw01_charger_platform_data {
 	sec_charging_current_t *charging_current_table;
 	int chg_float_voltage;
@@ -36,6 +37,7 @@ typedef struct s2mpw01_charger_platform_data {
 	char *fuelgauge_name;
 	bool chg_eoc_dualpath;
 	uint32_t is_1MHz_switching:1;
+	sec_battery_full_charged_t full_check_type;
 	/* 2nd full check */
 	 sec_battery_full_charged_t full_check_type_2nd;
 } s2mpw01_charger_platform_data_t;
@@ -124,8 +126,7 @@ struct s2mpw01_platform_data {
 
 };
 
-struct s2mpw01
-{
+struct s2mpw01 {
 	struct regmap *regmap;
 };
 

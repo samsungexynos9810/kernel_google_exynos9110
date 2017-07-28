@@ -49,11 +49,14 @@ static struct mfd_cell s2mpw01_devs[] = {
 #ifdef CONFIG_RTC_DRV_S2MPW01
 	{ .name = "s2mp-rtc", },
 #endif
-#ifdef CONFIG_SEC_CHARGER_S2MPW01
+#ifdef CONFIG_CHARGER_S2MPW01
 	{ .name = "s2mpw01-charger", },
 #endif
-#ifdef CONFIG_SEC_FUELGAUGE_S2MPW01
+#ifdef CONFIG_FUELGAUGE_S2MPW01
 	{ .name = "s2mpw01-fuelgauge", },
+#endif
+#if defined(CONFIG_BATTERY_S2MU00X)
+	{ .name = "s2mu00x-battery", },
 #endif
 #ifdef CONFIG_KEYBOARD_S2MPW01
 	{ .name = "s2mpw01-power-keys", },
@@ -205,7 +208,7 @@ static int of_s2mpw01_dt(struct device *dev,
 	if (of_get_property(np, "i2c-speedy-address", NULL))
 		pdata->use_i2c_speedy = true;
 
-	pr_info("%s: irq-gpio: %u \n", __func__, pdata->irq_gpio);
+	pr_info("%s: irq-gpio: %u\n", __func__, pdata->irq_gpio);
 
 	ret = of_property_read_u32(np, "cache_data", &val);
 	if (ret)
@@ -308,14 +311,14 @@ static int s2mpw01_i2c_probe(struct i2c_client *i2c,
 		pdata = devm_kzalloc(&i2c->dev, sizeof(struct s2mpw01_platform_data),
 				GFP_KERNEL);
 		if (!pdata) {
-			dev_err(&i2c->dev, "Failed to allocate memory \n");
+			dev_err(&i2c->dev, "Failed to allocate memory\n");
 			ret = -ENOMEM;
 			goto err;
 		}
 
 		ret = of_s2mpw01_dt(&i2c->dev, pdata);
 		if (ret < 0) {
-			dev_err(&i2c->dev, "Failed to get device of_node \n");
+			dev_err(&i2c->dev, "Failed to get device of_node\n");
 			goto err;
 		}
 

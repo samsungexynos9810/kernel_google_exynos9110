@@ -26,11 +26,20 @@
 #include <linux/mfd/samsung/s2mpw01.h>
 #include <linux/mfd/samsung/s2mpw01-private.h>
 
-#if defined(CONFIG_SEC_CHARGER_S2MPW01)
+#if defined(CONFIG_CHARGER_S2MPW01)
 #include <linux/power/s2mpw01_charger.h>
 #endif
-#if defined(CONFIG_SEC_FUELGAUGE_S2MPW01)
+#if defined(CONFIG_FUELGAUGE_S2MPW01)
 #include <linux/power/s2mpw01_fuelgauge.h>
+#endif
+#ifdef CONFIG_SLEEP_MONITOR
+#include <linux/power/slp_mon_irq_dev.h>
+#endif
+#ifdef CONFIG_PM_SLEEP_HISTORY
+#include <linux/power/sleep_history.h>
+#endif
+#ifdef CONFIG_ENERGY_MONITOR
+#include <linux/power/energy_monitor.h>
 #endif
 
 static const u8 s2mpw01_mask_reg[] = {
@@ -38,13 +47,10 @@ static const u8 s2mpw01_mask_reg[] = {
 	[PMIC_INT1] = S2MPW01_PMIC_REG_INT1M,
 	[PMIC_INT2] = S2MPW01_PMIC_REG_INT2M,
 	[PMIC_INT3] = S2MPW01_PMIC_REG_INT3M,
-#if defined(CONFIG_SEC_CHARGER_S2MPW01)
+#if defined(CONFIG_CHARGER_S2MPW01)
 	[CHG_INT1] = S2MPW01_CHG_REG_INT1M,
 	[CHG_INT2] = S2MPW01_CHG_REG_INT2M,
 	[CHG_INT3] = S2MPW01_CHG_REG_INT3M,
-#endif
-#if defined(CONFIG_SEC_FUELGAUGE_S2MPW01)
-	[FG_INT] = S2MPW01_FG_REG_INTM,
 #endif
 };
 
@@ -54,13 +60,9 @@ static struct i2c_client *get_i2c(struct s2mpw01_dev *s2mpw01,
 	switch (src) {
 	case PMIC_INT1 ... PMIC_INT3:
 		return s2mpw01->pmic;
-#if defined(CONFIG_SEC_CHARGER_S2MPW01)
+#if defined(CONFIG_CHARGER_S2MPW01)
 	case CHG_INT1 ... CHG_INT3:
 		return s2mpw01->charger;
-#endif
-#if defined(CONFIG_SEC_FUELGAUGE_S2MPW01)
-	case FG_INT:
-		return s2mpw01->fuelgauge;
 #endif
 	default:
 		return ERR_PTR(-EINVAL);
@@ -71,6 +73,8 @@ struct s2mpw01_irq_data {
 	int mask;
 	enum s2mpw01_irq_source group;
 };
+
+short g_check_pmic_int;
 
 #define DECLARE_IRQ(idx, _group, _mask)	\
 	[(idx)] = {.group = (_group), .mask = (_mask)}
@@ -95,7 +99,7 @@ static const struct s2mpw01_irq_data s2mpw01_irqs[] = {
 	DECLARE_IRQ(S2MPW01_PMIC_IRQ_120C_INT3,		PMIC_INT3, 1 << 0),
 	DECLARE_IRQ(S2MPW01_PMIC_IRQ_140C_INT3,		PMIC_INT3, 1 << 1),
 	DECLARE_IRQ(S2MPW01_PMIC_IRQ_TSD_INT3,		PMIC_INT3, 1 << 2),
-#if defined(CONFIG_SEC_CHARGER_S2MPW01)
+#if defined(CONFIG_CHARGER_S2MPW01)
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_RECHG_INT1,		CHG_INT1, 1 << 0),
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_CHGDONE_INT1,	CHG_INT1, 1 << 1),
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_TOPOFF_INT1,	CHG_INT1, 1 << 2),
@@ -105,19 +109,21 @@ static const struct s2mpw01_irq_data s2mpw01_irqs[] = {
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_CHGVINOVP_INT1,	CHG_INT1, 1 << 6),
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_CHGVIN_INT1,	CHG_INT1, 1 << 7),
 
+	DECLARE_IRQ(S2MPW01_CHG_IRQ_UART_BOOT_OFF_INT2,	CHG_INT2, 1 << 0),
+	DECLARE_IRQ(S2MPW01_CHG_IRQ_USB_BOOT_ON_INT2,		CHG_INT2, 1 << 1),
+	DECLARE_IRQ(S2MPW01_CHG_IRQ_USB_BOOT_OFF_INT2,	CHG_INT2, 1 << 2),
+	DECLARE_IRQ(S2MPW01_CHG_IRQ_JIGON_INT2,	CHG_INT2, 1 << 3),
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_ADPATH_INT2,	CHG_INT2, 1 << 4),
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_FCHG_INT2,		CHG_INT2, 1 << 5),
+	DECLARE_IRQ(S2MPW01_CHG_IRQ_CHGIN_INPUT_INT2,		CHG_INT2, 1 << 6),
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_BATDET_INT2,	CHG_INT2, 1 << 7),
 
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_CVOK_INT3,		CHG_INT3, 1 << 0),
+	DECLARE_IRQ(S2MPW01_CHG_IRQ_UART_CABLE_INT3,		CHG_INT3, 1 << 1),
+	DECLARE_IRQ(S2MPW01_CHG_IRQ_FACT_LEAKAGE_INT3,		CHG_INT3, 1 << 2),
+	DECLARE_IRQ(S2MPW01_CHG_IRQ_UART_BOOT_ON_INT3,		CHG_INT3, 1 << 3),
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_TMROUT_INT3,	CHG_INT3, 1 << 4),
 	DECLARE_IRQ(S2MPW01_CHG_IRQ_CHGTSDINT3,		CHG_INT3, 1 << 5),
-#endif
-#if defined(CONFIG_SEC_FUELGAUGE_S2MPW01)
-	DECLARE_IRQ(S2MPW01_FG_IRQ_VBAT_L_INT,		FG_INT, 1 << 0),
-	DECLARE_IRQ(S2MPW01_FG_IRQ_SOC_L_INT,		FG_INT, 1 << 1),
-	DECLARE_IRQ(S2MPW01_FG_IRQ_IDLE_ST_INT,		FG_INT, 1 << 2),
-	DECLARE_IRQ(S2MPW01_FG_IRQ_INIT_ST_INT,		FG_INT, 1 << 3),
 #endif
 };
 
@@ -177,6 +183,12 @@ static void s2mpw01_irq_unmask(struct irq_data *data)
 		return;
 
 	s2mpw01->irq_masks_cur[irq_data->group] &= ~irq_data->mask;
+
+	pr_info("%s : topoff_status %d, irq_masks_cur[3] 0x%x\n", __func__,
+		s2mpw01->topoff_mask_status, s2mpw01->irq_masks_cur[3]);
+
+	if (s2mpw01->topoff_mask_status == 0)
+		s2mpw01->irq_masks_cur[3] |= 0x04;
 }
 
 static struct irq_chip s2mpw01_irq_chip = {
@@ -193,7 +205,11 @@ static irqreturn_t s2mpw01_irq_thread(int irq, void *data)
 	struct device *dev = s2mpw01->dev;
 	u8 irq_reg[S2MPW01_IRQ_GROUP_NR] = {[0 ... S2MPW01_IRQ_GROUP_NR-1] = 0};
 	u8 irq_src;
+#if defined(CONFIG_CHARGER_S2MPW01)
+	u8 chg_st1;
+#endif
 	int i, ret;
+	short is_find = 0;
 
 	ret = s2mpw01_read_reg(s2mpw01->i2c,
 					S2MPW01_PMIC_REG_INTSRC, &irq_src);
@@ -217,8 +233,57 @@ static irqreturn_t s2mpw01_irq_thread(int irq, void *data)
 
 		dev_info(dev, "%s() pmic intrrupt(0x%02x, 0x%02x, 0x%02x)\n", __func__,
 			irq_reg[PMIC_INT1], irq_reg[PMIC_INT2], irq_reg[PMIC_INT3]);
+#if defined(CONFIG_CHARGER_S2MPW01)
+		if ((irq_reg[PMIC_INT1] & 0x30) == 0x30) {
+			s2mpw01_read_reg(s2mpw01->charger, S2MPW01_CHG_REG_STATUS1, &chg_st1);
+			irq_reg[PMIC_INT1] &= 0xCF;
+			if (chg_st1 & (1 << CHG_STATUS1_CHGVIN))
+				irq_reg[PMIC_INT1] |= 0x20;
+			else
+				irq_reg[PMIC_INT1] |= 0x10;
+		}
+#endif
+		if (g_check_pmic_int == 1) {
+			if ((irq_reg[PMIC_INT1] & 0x02) | (irq_reg[PMIC_INT1] & 0x01)) {
+				pr_info("Resume caused by key_power\n");
+#ifdef CONFIG_PM_SLEEP_HISTORY
+				sleep_history_marker(SLEEP_HISTORY_WAKEUP_IRQ, NULL, NULL,
+									 irq, "key_power");
+#endif
+#ifdef CONFIG_SLEEP_MONITOR
+				add_slp_mon_irq_list(irq, "key_power");
+#endif
+			} else if ((irq_reg[PMIC_INT1] & 0x04) | (irq_reg[PMIC_INT1] & 0x08)) {
+				pr_info("Resume caused by jig\n");
+#ifdef CONFIG_PM_SLEEP_HISTORY
+				sleep_history_marker(SLEEP_HISTORY_WAKEUP_IRQ, NULL, NULL,
+									 irq, "jig");
+#endif
+#ifdef CONFIG_SLEEP_MONITOR
+				add_slp_mon_irq_list(irq, "jig");
+#endif
+			} else if ((irq_reg[PMIC_INT2] & 0x02) | (irq_reg[PMIC_INT2] & 0x04)) {
+				pr_info("Resume caused by pmic-rtc\n");
+#ifdef CONFIG_PM_SLEEP_HISTORY
+				sleep_history_marker(SLEEP_HISTORY_WAKEUP_IRQ, NULL, NULL,
+									 irq, "pmic-rtc");
+#endif
+#ifdef CONFIG_SLEEP_MONITOR
+				add_slp_mon_irq_list(irq, "pmic-rtc");
+#endif
+			} else {
+				pr_info("Resume caused by other-pmic-int\n");
+#ifdef CONFIG_PM_SLEEP_HISTORY
+				sleep_history_marker(SLEEP_HISTORY_WAKEUP_IRQ, NULL, NULL,
+									 irq, "other-pmic-int");
+#endif
+#ifdef CONFIG_SLEEP_MONITOR
+				add_slp_mon_irq_list(irq, "other-pmic-int");
+#endif
+			}
+		}
 	}
-#ifdef CONFIG_SEC_CHARGER_S2MPW01
+#ifdef CONFIG_CHARGER_S2MPW01
 	if (irq_src & S2MPW01_IRQSRC_CHG) {
 		/* CHG_INT */
 		ret = s2mpw01_bulk_read(s2mpw01->charger, S2MPW01_CHG_REG_INT1,
@@ -234,31 +299,29 @@ static irqreturn_t s2mpw01_irq_thread(int irq, void *data)
 				irq_reg[CHG_INT3]);
 	}
 #endif
-#ifdef CONFIG_SEC_FUELGAUGE_S2MPW01
-	if (irq_src & S2MPW01_IRQSRC_FG) {
-		/* FG_INT */
-		ret = s2mpw01_read_reg(s2mpw01->fuelgauge, S2MPW01_FG_REG_IRQ,
-				&irq_reg[FG_INT]);
-		if (ret) {
-			pr_err("%s:%s Failed to read charger interrupt: %d\n",
-				MFD_DEV_NAME, __func__, ret);
-			return IRQ_NONE;
-		}
-		pr_info("%s: fuelgauge interrupt(0x%02x)\n", __func__,
-			irq_reg[FG_INT]);
-
-	}
-#endif
 	/* Apply masking */
 	for (i = 0; i < S2MPW01_IRQ_GROUP_NR; i++)
 		irq_reg[i] &= ~s2mpw01->irq_masks_cur[i];
 
 	/* Report */
 	for (i = 0; i < S2MPW01_IRQ_NR; i++) {
-		if (irq_reg[s2mpw01_irqs[i].group] & s2mpw01_irqs[i].mask)
+		if (irq_reg[s2mpw01_irqs[i].group] & s2mpw01_irqs[i].mask) {
 			handle_nested_irq(s2mpw01->irq_base + i);
+			if (is_find == 0 && g_check_pmic_int == 1) {
+#ifdef CONFIG_ENERGY_MONITOR
+				energy_monitor_record_wakeup_reason(s2mpw01->irq_base + i, NULL);
+#endif
+				is_find = 1;
+			}
+		}
 	}
+	g_check_pmic_int = 0;
 
+#if defined(CONFIG_CHARGER_S2MPW01)
+	s2mpw01_read_reg(s2mpw01->charger, S2MPW01_CHG_REG_INT1M, &chg_st1);
+	pr_info("%s : CHG_INT1 ---> 0x%x, topoff_status %d\n",
+			__func__, chg_st1, s2mpw01->topoff_mask_status);
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -338,13 +401,13 @@ int s2mpw01_irq_init(struct s2mpw01_dev *s2mpw01)
 
 	/* Unmask pmic interrupt : already sub-masked its section. */
 	i2c_data &= ~(S2MPW01_IRQSRC_PMIC);
-#if defined(CONFIG_SEC_CHARGER_S2MPW01)
+#if defined(CONFIG_CHARGER_S2MPW01)
 	/* Unmask charger interrupt */
 	i2c_data &= ~(S2MPW01_IRQSRC_CHG);
 #endif
-#if defined(CONFIG_SEC_FUELGAUGE_S2MPW01)
+#if defined(CONFIG_FUELGAUGE_S2MPW01)
 	/* Unmask charger interrupt */
-	i2c_data &= ~(S2MPW01_IRQSRC_FG);
+	i2c_data |= (S2MPW01_IRQSRC_FG);
 #endif
 
 	s2mpw01_write_reg(s2mpw01->i2c, S2MPW01_PMIC_REG_INTSRC_MASK, i2c_data);
