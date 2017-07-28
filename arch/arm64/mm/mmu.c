@@ -863,30 +863,23 @@ static void __init *early_alloc_aligned(unsigned long sz, unsigned long align)
 /*
  * Create the architecture specific mappings
  */
-static void __init __iotable_init(struct map_desc *io_desc, int nr, int exec)
+void __init iotable_init(struct map_desc *io_desc, int nr)
 {
 	struct map_desc *md;
 	struct vm_struct *vm;
 	struct static_vm *svm;
 	phys_addr_t phys;
-	pgprot_t prot;
 
 	if (!nr)
 		return;
 
 	svm = early_alloc_aligned(sizeof(*svm) * nr, __alignof__(*svm));
 
-	if (!exec) {
-		iotable_on = 1;
-		prot = pgprot_iotable_init(PAGE_KERNEL_EXEC);
-	} else {
-		iotable_on = 0;
-		prot = PAGE_KERNEL_EXEC;
-	}
+	iotable_on = 1;
 
 	for (md = io_desc; nr; md++, nr--) {
 		phys = __pfn_to_phys(md->pfn);
-		create_mapping(phys, md->virtual, md->length, prot);
+		create_mapping(phys, md->virtual, md->length);
 		vm = &svm->vm;
 		vm->addr = (void *)(md->virtual & PAGE_MASK);
 		vm->size = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
@@ -898,14 +891,4 @@ static void __init __iotable_init(struct map_desc *io_desc, int nr, int exec)
 	}
 
 	iotable_on = 0;
-}
-
-void __init iotable_init(struct map_desc *io_desc, int nr)
-{
-	__iotable_init(io_desc, nr, 0);
-}
-
-void __init iotable_init_exec(struct map_desc *io_desc, int nr)
-{
-	__iotable_init(io_desc, nr, 1);
 }
