@@ -767,7 +767,6 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 		ret = PTR_ERR(wdt->rate_clock);
 		goto err;
 	}
-	wdt->freq = clk_get_rate(wdt->rate_clock);
 
 	wdt->gate_clock = devm_clk_get(dev, "gate_watchdog");
 	if (IS_ERR(wdt->gate_clock)) {
@@ -781,6 +780,8 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to enable gate clock\n");
 		return ret;
 	}
+
+	wdt->freq = clk_get_rate(wdt->rate_clock);
 
 	ret = s3c2410wdt_cpufreq_register(wdt);
 	if (ret < 0) {
