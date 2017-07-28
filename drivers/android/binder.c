@@ -4596,10 +4596,6 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	/*pr_info("binder_ioctl: %d:%d %x %lx\n",
 			proc->pid, current->pid, cmd, arg);*/
 
-	if (unlikely(current->mm != proc->vma_vm_mm)) {
-		pr_err("current mm mismatch proc mm\n");
-		return -EINVAL;
-	}
 	trace_binder_ioctl(cmd, arg);
 
 	ret = wait_event_interruptible(binder_user_error_wait, binder_stop_on_user_error < 2);
@@ -4775,10 +4771,11 @@ static int binder_open(struct inode *nodp, struct file *filp)
 	proc = kzalloc(sizeof(*proc), GFP_KERNEL);
 	if (proc == NULL)
 		return -ENOMEM;
+	spin_lock_init(&proc->inner_lock);
+	spin_lock_init(&proc->outer_lock);
+	get_task_struct(current->group_leader);
+	proc->tsk = current->group_leader;
 
-	get_task_struct(current);
-	proc->tsk = current;
-	proc->vma_vm_mm = current->mm;
 	INIT_LIST_HEAD(&proc->todo);
 	if (binder_supported_policy(current->policy)) {
 		proc->default_priority.sched_policy = current->policy;
