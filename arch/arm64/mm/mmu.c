@@ -29,7 +29,6 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/stop_machine.h>
-#include <linux/vmalloc.h>
 
 #include <asm/barrier.h>
 #include <asm/cputype.h>
@@ -42,7 +41,6 @@
 #include <asm/tlb.h>
 #include <asm/memblock.h>
 #include <asm/mmu_context.h>
-#include <asm/map.h>
 
 #include "mm.h"
 
@@ -53,7 +51,6 @@
 #endif
 
 u64 idmap_t0sz = TCR_T0SZ(VA_BITS);
-static int iotable_on;
 
 u64 kimage_voffset __read_mostly;
 EXPORT_SYMBOL(kimage_voffset);
@@ -146,10 +143,7 @@ static void alloc_init_pte(pmd_t *pmd, unsigned long addr,
 
 	pte = pte_set_fixmap_offset(pmd, addr);
 	do {
-		if (iotable_on == 1)
-			set_pte(pte, pfn_pte(pfn, pgprot_iotable_init(PAGE_KERNEL_EXEC)));
-		else
-			set_pte(pte, pfn_pte(pfn, prot));
+		set_pte(pte, pfn_pte(pfn, prot));
 		pfn++;
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 
@@ -827,65 +821,44 @@ void *__init fixmap_remap_fdt(phys_addr_t dt_phys)
 	memblock_reserve(dt_phys, size);
 	return dt_virt;
 }
-/* For compatible with Exynos */
 
-LIST_HEAD(static_vmlist);
-
-void __init add_static_vm_early(struct static_vm *svm)
+int __init arch_ioremap_pud_supported(void)
 {
-	struct static_vm *curr_svm;
-	struct vm_struct *vm;
-	void *vaddr;
-
-	vm = &svm->vm;
-	vm_area_add_early(vm);
-	vaddr = vm->addr;
-
-	list_for_each_entry(curr_svm, &static_vmlist, list) {
-		vm = &curr_svm->vm;
-
-		if (vm->addr > vaddr)
-			break;
-	}
-	list_add_tail(&svm->list, &curr_svm->list);
+	/* only 4k granule supports level 1 block mappings */
+	return IS_ENABLED(CONFIG_ARM64_4K_PAGES);
 }
 
-static void __init *early_alloc_aligned(unsigned long sz, unsigned long align)
+int __init arch_ioremap_pmd_supported(void)
 {
-	void *ptr = __va(memblock_alloc(sz, align));
-	memset(ptr, 0, sz);
-	return ptr;
+	return 1;
 }
 
-/*
- * Create the architecture specific mappings
- */
-void __init iotable_init(struct map_desc *io_desc, int nr)
+int pud_set_huge(pud_t *pud, phys_addr_t phys, pgprot_t prot)
 {
-	struct map_desc *md;
-	struct vm_struct *vm;
-	struct static_vm *svm;
-	phys_addr_t phys;
+	BUG_ON(phys & ~PUD_MASK);
+	set_pud(pud, __pud(phys | PUD_TYPE_SECT | pgprot_val(mk_sect_prot(prot))));
+	return 1;
+}
 
-	if (!nr)
-		return;
+int pmd_set_huge(pmd_t *pmd, phys_addr_t phys, pgprot_t prot)
+{
+	BUG_ON(phys & ~PMD_MASK);
+	set_pmd(pmd, __pmd(phys | PMD_TYPE_SECT | pgprot_val(mk_sect_prot(prot))));
+	return 1;
+}
 
-	svm = early_alloc_aligned(sizeof(*svm) * nr, __alignof__(*svm));
+int pud_clear_huge(pud_t *pud)
+{
+	if (!pud_sect(*pud))
+		return 0;
+	pud_clear(pud);
+	return 1;
+}
 
-	iotable_on = 1;
-
-	for (md = io_desc; nr; md++, nr--) {
-		phys = __pfn_to_phys(md->pfn);
-		create_mapping(phys, md->virtual, md->length);
-		vm = &svm->vm;
-		vm->addr = (void *)(md->virtual & PAGE_MASK);
-		vm->size = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
-		vm->phys_addr = __pfn_to_phys(md->pfn);
-		vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
-		vm->flags |= VM_ARM_MTYPE(md->type);
-		vm->caller = iotable_init;
-		add_static_vm_early(svm++);
-	}
-
-	iotable_on = 0;
+int pmd_clear_huge(pmd_t *pmd)
+{
+	if (!pmd_sect(*pmd))
+		return 0;
+	pmd_clear(pmd);
+	return 1;
 }
