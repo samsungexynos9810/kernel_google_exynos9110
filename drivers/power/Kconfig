@@ -508,6 +508,42 @@ config AXP20X_POWER
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
 
+config CHARGER_S2MPW01
+	tristate "S2MPW01 charger driver"
+	default n
+	depends on MFD_S2MPW01
+	help
+	  Say Y to include support
+	  for S2MPW01 charger driver.
+	  This driver source code implemented
+	  functions for S2MPW01 charger.
+
+config S2MPW01_RID_DETECT
+	tristate "S2MPW01 RID detect feature"
+	default n
+	depends on CHARGER_S2MPW01
+	depends on MFD_S2MPW01
+	help
+	  Say Y to include support
+	  for S2MPW01 charger RID detection feature.
+	  This feature replace MUIC fuctionality.
+
+config FUELGAUGE_S2MPW01
+	tristate "S2MPW01 fuel gauge driver"
+	default n
+	depends on MFD_S2MPW01
+	help
+	  Say Y to include support
+	  for SAMSUNG S2MPW01 fuel gauge driver.
+	  This fuel-gauge can be used
+	  only in voltage-tracking mode.
+
+config BATTERY_S2MU00X
+	tristate "S2MU00x battery driver"
+	depends on (MFD_S2MPW01) && I2C
+	help
+	  Say Y here to enable support for S2MU00x battery driver.
+
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY

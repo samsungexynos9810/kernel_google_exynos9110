@@ -17,6 +17,7 @@
 
 #ifndef __S2MPW01_FUELGAUGE_H
 #define __S2MPW01_FUELGAUGE_H __FILE__
+#include <linux/wakelock.h>
 #include <linux/mfd/samsung/s2mpw01.h>
 #include <linux/mfd/samsung/s2mpw01-private.h>
 
@@ -24,27 +25,27 @@
 #include <linux/android_alarm.h>
 #endif
 
-#include <linux/power/sec_charging_common.h>
+#include <linux/power/s2mu00x_charger_common.h>
 
 /* Slave address should be shifted to the right 1bit.
  * R/W bit should NOT be included.
  */
 
 #define S2MPW01_FG_REG_STATUS		0x00
-#define S2MPW01_FG_REG_IRQ			0x02
+#define S2MPW01_FG_REG_IRQ		0x02
 #define S2MPW01_FG_REG_INTM		0x03
 #define S2MPW01_FG_REG_RVBAT		0x04
-#define S2MPW01_FG_REG_ROCV			0x06
-#define S2MPW01_FG_REG_RCUR			0x08
-#define S2MPW01_FG_REG_RSOC_SYS		0x0A
-#define S2MPW01_FG_REG_RSOC			0x0C
-#define S2MPW01_FG_REG_RTEMP		0x0E
-#define S2MPW01_FG_REG_RBATCAP		0x10
-#define S2MPW01_FG_REG_RZADJ		0x12
-#define S2MPW01_FG_REG_RBATZ0		0x14
-#define S2MPW01_FG_REG_RBATZ1		0x16
-#define S2MPW01_FG_REG_IRQ_LVL		0x18
-#define S2MPW01_FG_REG_START		0x1A
+#define S2MPW01_FG_REG_ROCV		0x06
+#define S2MPW01_FG_REG_RSOC		0x08
+#define S2MPW01_FG_REG_RTEMP		0x0A
+#define S2MPW01_FG_REG_RBATCAP		0x0C
+#define S2MPW01_FG_REG_RZADJ		0x0E
+#define S2MPW01_FG_REG_RBATZ0		0x10
+#define S2MPW01_FG_REG_RBATZ1		0x12
+#define S2MPW01_FG_REG_IRQ_LVL		0x14
+#define S2MPW01_FG_REG_START		0x16
+#define S2MPW01_FG_REG_MONOUT_CFG	0x19
+#define S2MPW01_FG_REG_CURR		0x1A
 
 struct sec_fg_info {
 	/* test print count */
@@ -91,7 +92,9 @@ struct s2mpw01_fuelgauge_data {
 
 	struct mutex            fuelgauge_mutex;
 	struct s2mpw01_fuelgauge_platform_data *pdata;
-	struct power_supply	psy_fg;
+	struct power_supply	*psy_fg;
+	struct power_supply_desc	psy_fg_desc;
+	int dev_id;
 	/* struct delayed_work isr_work; */
 
 	int cable_type;
@@ -104,9 +107,11 @@ struct s2mpw01_fuelgauge_data {
 	struct sec_fg_info      info;
 	bool is_fuel_alerted;
 	struct wake_lock fuel_alert_wake_lock;
+	struct delayed_work scaled_work;
 
 	unsigned int capacity_old;      /* only for atomic calculation */
 	unsigned int capacity_max;      /* only for dynamic calculation */
+	unsigned int scaled_capacity_max;
 	unsigned int standard_capacity;
 
 	bool initial_update_of_soc;
@@ -119,5 +124,21 @@ struct s2mpw01_fuelgauge_data {
 
 	unsigned int pre_soc;
 	int fg_irq;
+
+	/* temperature level */
+	int before_temp_level;
+};
+
+enum {
+	TEMP_LEVEL_VERY_LOW = 0,
+	TEMP_LEVEL_LOW,
+	TEMP_LEVEL_MID,
+	TEMP_LEVEL_HIGH,
+};
+
+enum {
+	SCALED_VAL_UNKNOWN = 0,
+	SCALED_VAL_NO_EXIST,
+	SCALED_VAL_EXIST,
 };
 #endif /* __S2MPW01_FUELGAUGE_H */

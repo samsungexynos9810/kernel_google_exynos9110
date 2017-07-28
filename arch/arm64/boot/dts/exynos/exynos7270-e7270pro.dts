@@ -686,17 +686,40 @@
 	};
 
 	battery {
-		battery,charger_name = "sec-charger";
-		battery,fuelgauge_name = "sec-fuelgauge";
+		battery,charger_name = "s2mpw01-charger";
+		battery,fuelgauge_name = "s2mpw01-fuelgauge";
+		battery,vendor = "SDI SDI";
+		battery,technology = <2>;
+
 		battery,chg_eoc_dualpath = <1>;
 
 		battery,input_current_limit = <500 0 0 500 460 900 1000 460 1000 0 820 1900 1000 0 0 400 700 1300 300 1000 1500 0 1667 1000 80 1800>;
 		battery,fast_charging_current = <500 0 0 500 460 1200 1000 460 1200 0 1000 1600 1000 0 0 400 700 1300 300 1000 1500 0 3150 1000 80 1800>;
 		battery,full_check_current_1st = <100 0 0 100 100 250 250 250 250 0 250 250 250 0 0 350 350 350 350 350 350 0 350 350 0 350>;
 		battery,full_check_current_2nd = <3000 0 0 3000 3000 3000 3000 3000 3000 0 3000 3000 0 0 0 3000 3000 3000 3000 3000 3000 0 3000 3000 3000 3000>;
-		battery,input_current_limit_new = <1800 0 0 1500 460 900 1000 460 1000 0 820 1900 1000 0 0 400 700 1300 300 1000 1500 0 1667 1000 80 1800>;
-		battery,fast_charging_current_new = <2100 0 0 1700 460 1200 1000 460 1200 0 1000 1600 1000 0 0 400 700 1300 300 1000 1500 0 3150 1000 80 1800>;
+		battery,full_check_current = <3000 0 0 3000 3000 3000 3000 3000 3000 0 3000 3000 0 0 0 3000 3000 3000 3000 3000 3000 0 3000 3000 3000 3000>;
 		battery,recharge_condition_vcell = <4250>;
+
+		/* Battery - Charging Scenario */
+		/* SEC_BATTERY_FULLCHARGED_CHGPSY */
+		battery,full_check_type = <7>;
+		/* SEC_BATTERY_FULLCHARGED_CHGPSY */
+		battery,full_check_type_2nd = <7>;
+		battery,full_check_count = <1>;
+		battery,chg_gpio_full_check = <0>;
+		battery,chg_polarity_full_check = <1>;
+		battery,chg_full_vcell = <4330>;
+		battery,chg_recharge_vcell = <4300>;
+
+		battery,temp_check_type = <2>;
+		battery,temp_check_count = <1>;
+
+		battery,temp_highlimit_threshold_normal = <800>;
+		battery,temp_highlimit_recovery_normal = <750>;
+		battery,temp_high_threshold_normal = <550>;
+		battery,temp_high_recovery_normal = <540>;
+		battery,temp_low_threshold_normal = <(-50)>;
+		battery,temp_low_recovery_normal = <0>;
 	};
 	/* ST HUB */
 	pinctrl@139F0000 {
@@ -758,12 +781,13 @@
 		};
 
 	};
-	
+
 	s2mpw01-charger {
 		battery,chg_float_voltage = <4390>;
 	};
 
 	s2mpw01-fuelgauge {
+		fuelgauge,fuel_int = <&gpa0 0 0>;
 		fuelgauge,fuel_alert_soc = <1>;
 		fuelgauge,capacity_max = <1000>;
 		fuelgauge,capacity_max_margin = <70>;
@@ -1063,32 +1087,32 @@
   			mclk_ch = <0>;
   			sensor_i2c_ch = <1>;
   			sensor_i2c_addr = <0x56>;
-  			position = <1>; /* Rear:0. Front:1 */
-  
-  			gpio_reset = <&gpd1 1 0x1>; /*camera reset */
-  			status = "okay";
+			position = <1>; /* Rear:0. Front:1 */
+
+			gpio_reset = <&gpd1 1 0x1>; /*camera reset */
+			status = "okay";
 		};
-	};	
+	};
 /*
 	fimc_is_sensor1: fimc_is_sensor1@14420000 {
-		scenario = <SENSOR_SCENARIO_EXTERNAL>;    
+		scenario = <SENSOR_SCENARIO_EXTERNAL>;
 		id = <1>;
 		csi_ch = <0>;
 		flite_ch = <0>;
 		is_bns = <1>;
 		status = "okay";
 	};
-	
+
 
 
 	fimc_is_sensor0: fimc_is_sensor0@14420000 {
-		scenario = <SENSOR_SCENARIO_NORMAL>;   
+		scenario = <SENSOR_SCENARIO_NORMAL>;
 		id = <0>;
 		csi_ch = <0>;
 		flite_ch = <0>;
 		is_bns = <1>;
 		status = "okay";
 	};
-	
+
 */
 };
