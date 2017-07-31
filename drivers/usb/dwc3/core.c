@@ -1013,6 +1013,7 @@ static int dwc3_probe(struct platform_device *pdev)
 	void __iomem		*regs;
 	void			*mem;
 
+	pr_info("%s: +++\n", __func__);
 	mem = devm_kzalloc(dev, sizeof(*dwc) + DWC3_ALIGN_MASK, GFP_KERNEL);
 	if (!mem)
 		return -ENOMEM;
@@ -1244,6 +1245,7 @@ static int dwc3_probe(struct platform_device *pdev)
 
 	pm_runtime_allow(dev);
 
+	pr_info("%s: ---\n", __func__);
 	return 0;
 
 err6:

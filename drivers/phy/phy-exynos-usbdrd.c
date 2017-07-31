@@ -279,37 +279,9 @@ static int exynos_usbdrd_phyclk_get(struct exynos_usbdrd_phy *phy_drd)
 	}
 	phyclk_ids[phyclk_count] = NULL;
 
-	if (!strcmp("none", phyclk_ids[0])) {
-		dev_info(dev, "don't need user Mux for phyclk\n");
-		phy_drd->use_phy_umux = false;
-		phyclk_count = 0;
-
-	} else {
-		phy_drd->use_phy_umux = true;
-
-		phy_drd->phy_clocks = (struct clk **) devm_kmalloc(dev,
-				(phyclk_count+1) * sizeof(struct clk *),
-				GFP_KERNEL);
-		if (!phy_drd->phy_clocks) {
-			dev_err(dev, "failed to alloc : phy clocks\n");
-			return -ENOMEM;
-		}
-
-		for (i = 0; phyclk_ids[i] != NULL; i++) {
-			clk = devm_clk_get(dev, phyclk_ids[i]);
-			if (IS_ERR_OR_NULL(clk)) {
-				dev_err(dev, "couldn't get %s clock\n", phyclk_ids[i]);
-				return -EINVAL;
-			}
-			phy_drd->phy_clocks[i] = clk;
-		}
-
-		phy_drd->phy_clocks[i] = NULL;
-	}
-
-	clk_count = of_property_count_strings(dev->of_node, "clock-names");
-	if (IS_ERR_VALUE(clk_count)) {
-		dev_err(dev, "invalid clk list in %s node", dev->of_node->name);
+	default:
+		dev_err(phy_drd->dev, "couldn't get clock : unknown cpu type[ret:%d]\n",
+					phy_drd->drv_data->cpu_type);
 		return -EINVAL;
 	}
 	clk_ids = (const char **)devm_kmalloc(dev,
@@ -977,25 +949,31 @@ static int exynos_usbdrd_get_phyinfo(struct exynos_usbdrd_phy *phy_drd)
 	int ret;
 	int value;
 
-
-	if (!of_property_read_u32(dev->of_node, "phy_version", &value)) {
-		phy_drd->usbphy_info.version = value;
-	} else {
-		dev_err(dev, "can't get phy_version\n");
-		return -EINVAL;
-	}
-
-	if (!of_property_read_u32(dev->of_node, "use_io_for_ovc", &value)) {
-		phy_drd->usbphy_info.use_io_for_ovc = value ? true : false;
-	} else {
-		dev_err(dev, "can't get io_for_ovc\n");
-		return -EINVAL;
-	}
-
-	if (!of_property_read_u32(dev->of_node, "common_block_disable", &value)) {
-		phy_drd->usbphy_info.common_block_disable = value ? true : false;
-	} else {
-		dev_err(dev, "can't get common_block_disable\n");
+	switch (phy_drd->drv_data->cpu_type) {
+	case TYPE_EXYNOS8890:
+		if (phy_drd->drv_data->ip_type == TYPE_USB3DRD) {
+			phy_drd->usbphy_info.version = EXYNOS_USBCON_VER_01_0_1;
+			phy_drd->usbphy_info.refsel =
+						USBPHY_REFSEL_DIFF_INTERNAL;
+			phy_drd->usbphy_info.use_io_for_ovc = true;
+			phy_drd->usbphy_info.common_block_enable = false;
+		} else {
+			phy_drd->usbphy_info.version = EXYNOS_USBCON_VER_02_1_1;
+			phy_drd->usbphy_info.refsel =
+						USBPHY_REFCLK_EXT_12MHZ;
+			phy_drd->usbphy_info.use_io_for_ovc = false;
+			phy_drd->usbphy_info.common_block_enable = false;
+		}
+		break;
+	case TYPE_EXYNOS7870:
+	case TYPE_EXYNOS7570:
+		phy_drd->usbphy_info.version = EXYNOS_USBCON_VER_02_1_0,
+		phy_drd->usbphy_info.refsel = USBPHY_REFSEL_CLKCORE,
+		phy_drd->usbphy_info.use_io_for_ovc = false;
+		break;
+	default:
+		dev_err(phy_drd->dev, "%s: unknown cpu type[%d]\n", __func__,
+					phy_drd->drv_data->cpu_type);
 		return -EINVAL;
 	}
 

@@ -1634,6 +1634,7 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 			cfg = container_of(c, struct config_usb_cfg, c);
 			list_for_each_entry_safe(f, tmp, &dev->linked_func, list) {
 				if (!strcmp(f->name, name)) {
+					pr_err("%s: enable device[%s]\n", __func__, name);
 					list_move_tail(&f->list, &cfg->func_list);
 				}
 			}

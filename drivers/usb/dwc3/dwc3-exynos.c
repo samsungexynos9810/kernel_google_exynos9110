@@ -472,6 +472,7 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
 
 	int			ret;
 
+	pr_info("%s: +++\n", __func__);
 	exynos = devm_kzalloc(dev, sizeof(*exynos), GFP_KERNEL);
 	if (!exynos)
 		return -ENOMEM;
@@ -566,6 +567,7 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
 		goto err5;
 	}
 
+	pr_info("%s: ---\n", __func__);
 	return 0;
 
 err5:
