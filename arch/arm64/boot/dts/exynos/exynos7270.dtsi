@@ -62,8 +62,8 @@
 		spi3 = &spi_3;
 		mshc0 = &dwmmc_0;
 		mshc2 = &dwmmc_2;
+		dsim0 = &dsim_0;
 		decon0 = &decon_0;
-		///dsim0 = &dsim_0;
 		//tmuctrl0 = &tmuctrl_0;
 		//tmuctrl1 = &tmuctrl_1;
 		//scaler0 = &scaler_0;
