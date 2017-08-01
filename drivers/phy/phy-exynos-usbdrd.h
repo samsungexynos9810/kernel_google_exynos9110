@@ -14,8 +14,8 @@
 
 /* PMU register offset for USB */
 #define EXYNOS_USBDEV_PHY_CONTROL	(0x704)
-#define EXYNOS_USBDRD_ENABLE		BIT(0)
-#define EXYNOS_USBHOST_ENABLE		BIT(1)
+#define EXYNOS_USB3PHY_ENABLE		BIT(0)
+#define EXYNOS_USB2PHY_ENABLE		BIT(1)
 
 /* Exynos USB PHY registers */
 #define EXYNOS_FSEL_9MHZ6		0x0
@@ -37,7 +37,7 @@
 
 #define EXYNOS_DRD_PHYPIPE			0x0c
 
-#define PHYPIPE_PHY_CLOCK_SEL			(0x1 << 4)
+#define PHY_CLOCK_SEL				(0x1 << 4)
 
 #define EXYNOS_DRD_PHYCLKRST			0x10
 
@@ -124,6 +124,11 @@ struct exynos_usbdrd_phy_config {
 
 struct exynos_usbdrd_phy_drvdata {
 	const struct exynos_usbdrd_phy_config *phy_cfg;
+	bool phy_usermux;
+	u32 pmu_offset_usbdrd0_phy;
+	u32 pmu_offset_usbdrd1_phy;
+	u32 cpu_type;
+	u32 ip_type;
 };
 
 /**
@@ -143,7 +148,6 @@ struct exynos_usbdrd_phy_drvdata {
 struct exynos_usbdrd_phy {
 	struct device *dev;
 	void __iomem *reg_phy;
-	void __iomem *reg_phy2;
 	struct clk **clocks;
 	struct clk **phy_clocks;
 	const struct exynos_usbdrd_phy_drvdata *drv_data;
@@ -152,13 +156,15 @@ struct exynos_usbdrd_phy {
 		u32 index;
 		struct regmap *reg_pmu;
 		u32 pmu_offset;
-		u32 pmu_mask;
+		u32 uart_io_share_en;
+		u32 uart_io_share_offset;
+		u32 uart_io_share_mask;
 		const struct exynos_usbdrd_phy_config *phy_cfg;
 	} phys[EXYNOS_DRDPHYS_NUM];
 	u32 extrefclk;
+	u32 use_additional_tuning;
 	u32 request_extrefclk;
 	bool extrefclk_requested;
-	bool use_phy_umux;
 	struct completion can_use_extrefclk;
 	int (*request_extrefclk_cb)(void);
 	int (*release_extrefclk_cb)(void);
@@ -167,17 +173,6 @@ struct exynos_usbdrd_phy {
 	struct exynos_usbphy_info usbphy_info;
 	struct exynos_usbphy_ss_tune ss_value[2];
 	struct exynos_usbphy_hs_tune hs_value[2];
-	u32 ip_type;
-#if IS_ENABLED(CONFIG_EXYNOS_OTP)
-#define OTP_SUPPORT_USBPHY_NUMBER	2
-#define OTP_USB3PHY_INDEX		0
-#define OTP_USB2PHY_INDEX		1
-	u8 otp_type[OTP_SUPPORT_USBPHY_NUMBER];
-	u8 otp_index[OTP_SUPPORT_USBPHY_NUMBER];
-	struct tune_bits *otp_data[OTP_SUPPORT_USBPHY_NUMBER];
-#endif
-
-	u32 phy_port;
 };
 
 #endif	/* __PHY_EXYNOS_USBDRD_H__ */

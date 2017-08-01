@@ -338,18 +338,7 @@ config PHY_EXYNOS_USBDRD
 	  Enable USB DRD PHY support for Exynos SoC series.
 	  This driver provides PHY interface for USB 3.0 DRD controller
 	  present on Exynos SoC series.
-
-config PHY_EXYNOS_DEBUGFS
-	tristate "Exynos SoC series USB DRD PHY DebugFS"
-	depends on DEBUG_FS
-	depends on PHY_EXYNOS_USBDRD
-	select GENERIC_PHY
-	default y
-	help
-	  Enable USB DRD PHY DEBUGFS support for Exynos SoC series.
-	  This driver provides PHY debugging interface for USBDRD PHY controller
-	  present on Exynos SoC series.
-
+ 
 config PHY_SAMSUNG_USB_CAL
 	bool "Samsung USB PHY CAL"
 	depends on PHY_EXYNOS_USBDRD
