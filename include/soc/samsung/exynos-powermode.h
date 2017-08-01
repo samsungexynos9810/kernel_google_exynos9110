@@ -74,7 +74,7 @@ extern int check_cluster_idle_state(unsigned int cpu);
 #define IDLE_IP_MAX_CONFIGURABLE_INDEX	(IDLE_IP_MAX_INDEX - IDLE_IP_FIX_INDEX_COUNT)
 
 
-#ifdef CONFIG_CPU_IDLE
+#ifdef CONFIG_ARM64_EXYNOS_CPUIDLE
 void exynos_update_ip_idle_status(int index, int idle);
 int exynos_get_idle_ip_index(const char *name);
 void exynos_get_idle_ip_list(char *(*idle_ip_list)[IDLE_IP_REG_SIZE]);

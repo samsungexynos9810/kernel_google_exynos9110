@@ -2,8 +2,8 @@
 # Exynos SoC Specific drivers
 #
 
-#obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-powermode.o
-#obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-pm.o
+obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-powermode.o
+obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-pm.o
 
 obj-$(CONFIG_ARM64_EXYNOS_CPUIDLE)	+= cpuidle_profiler.o
 

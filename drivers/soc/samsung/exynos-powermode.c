@@ -21,6 +21,7 @@
 #include <linux/irqchip/arm-gic.h>
 
 #include <asm/smp_plat.h>
+#include <linux/psci.h>
 
 #include <soc/samsung/exynos-pm.h>
 #include <soc/samsung/exynos-pmu.h>
@@ -672,7 +673,7 @@ static int __maybe_unused parsing_dt_wakeup_mask(struct device_node *np)
 			return ret;
 	}
 
-//	gic_arch_extn.irq_set_wake = exynos_irq_set_wake;
+	//gic_arch_extn.irq_set_wake = exynos_irq_set_wake;
 
 	return 0;
 }

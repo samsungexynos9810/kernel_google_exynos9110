@@ -28,9 +28,7 @@
 #include <soc/samsung/exynos-pmu.h>
 #include <soc/samsung/exynos-powermode.h>
 
-#if 0
 #include <sound/exynos-audmixer.h>
-#endif
 
 #define WAKEUP_STAT_EINT                (1 << 0)
 #define WAKEUP_STAT_RTC_ALARM           (1 << 1)
@@ -245,11 +243,6 @@ int exynos_pm_sicd_exit(void)
 }
 EXPORT_SYMBOL_GPL(exynos_pm_sicd_exit);
 #endif /* CONFIG_CPU_IDLE */
-
-static bool is_cp_aud_enabled(void)
-{
-	return false;
-}
 
 static int exynos_pm_syscore_suspend(void)
 {
