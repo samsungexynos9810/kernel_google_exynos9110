@@ -91,6 +91,10 @@ static struct dwc3_exynos_drvdata dwc3_exynos8895 = {
 	.ip_type	= TYPE_USB3DRD,
 };
 
+static struct dwc3_exynos_drvdata dwc2_exynos7570 = {
+	.cpu_type	= TYPE_EXYNOS7570,
+};
+
 static const struct of_device_id exynos_dwc3_match[] = {
 	{
 		.compatible = "samsung,exynos5250-dwusb3",
@@ -115,6 +119,10 @@ static const struct of_device_id exynos_dwc3_match[] = {
 		.compatible = "samsung,exynos8895-dwusb3",
 		.data = &dwc3_exynos8895,
 	},
+	{
+		.compatible = "samsung,exynos7570-dwusb2",
+		.data = &dwc2_exynos7570,
+	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_dwc3_match);
@@ -126,6 +134,7 @@ static const char *dwc3_exynos8890_clk_names[] = {"aclk", "sclk",
 				"phyclock", "pipe_pclk", NULL};
 static const char *dwc2_exynos8890_clk_names[] = {"aclk", "sclk",
 				"phyclock", "phy_ref", NULL};
+static const char *dwc2_exynos7570_clk_names[] = {"usbdrd20", NULL};
 
 static int dwc3_exynos_clk_get(struct dwc3_exynos *exynos)
 {
@@ -147,6 +156,10 @@ static int dwc3_exynos_clk_get(struct dwc3_exynos *exynos)
 	case TYPE_EXYNOS8895:
 		clk_ids = dwc3_exynos8895_clk_names;
 		clk_count = ARRAY_SIZE(dwc3_exynos8895_clk_names);
+		break;
+	case TYPE_EXYNOS7570:
+		clk_ids = dwc2_exynos7570_clk_names;
+		clk_count = ARRAY_SIZE(dwc2_exynos7570_clk_names);
 		break;
 	default:
 		dev_err(exynos->dev, "couldn't get clock : unknown cpu type\n");
