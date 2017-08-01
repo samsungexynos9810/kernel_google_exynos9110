@@ -429,6 +429,71 @@ static const struct rtc_class_ops s2m_rtc_ops = {
 	.alarm_irq_enable = s2m_rtc_alarm_irq_enable,
 };
 
+static bool s2m_is_jigonb_low(struct s2m_rtc_info *info)
+{
+	int ret, reg;
+	u8 val, mask;
+
+	switch (info->iodev->device_type) {
+	case S2MPW01X:
+		reg = S2MPW01_PMIC_REG_STATUS1;
+		mask = BIT(1);
+		break;
+	default:
+		BUG();
+	}
+
+	ret = s2mpw01_read_reg(info->i2c, reg, &val);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: fail to read status1 reg(%d)\n",
+			__func__, ret);
+		return false;
+	}
+
+	return !(val & mask);
+}
+
+static void s2m_rtc_enable_wtsr_smpl(struct s2m_rtc_info *info,
+						struct s2mpw01_platform_data *pdata)
+{
+	u8 val;
+	int ret;
+
+	if (pdata->wtsr_smpl->check_jigon && s2m_is_jigonb_low(info))
+		pdata->wtsr_smpl->smpl_en = false;
+
+	val = (pdata->wtsr_smpl->wtsr_en << WTSR_EN_SHIFT)
+		| (pdata->wtsr_smpl->smpl_en << SMPL_EN_SHIFT)
+		| WTSR_TIMER_BITS(pdata->wtsr_smpl->wtsr_timer_val)
+		| SMPL_TIMER_BITS(pdata->wtsr_smpl->smpl_timer_val);
+
+	dev_info(info->dev, "%s: WTSR: %s, SMPL: %s\n", __func__,
+			pdata->wtsr_smpl->wtsr_en ? "enable" : "disable",
+			pdata->wtsr_smpl->smpl_en ? "enable" : "disable");
+
+	ret = s2mpw01_write_reg(info->i2c, S2MP_RTC_REG_WTSR_SMPL, val);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: fail to write WTSR/SMPL reg(%d)\n",
+				__func__, ret);
+		return;
+	}
+	info->wtsr_en = pdata->wtsr_smpl->wtsr_en;
+	info->smpl_en = pdata->wtsr_smpl->smpl_en;
+}
+
+static void s2m_rtc_disable_wtsr_smpl(struct s2m_rtc_info *info,
+					struct s2mpw01_platform_data *pdata)
+{
+	int ret;
+
+	dev_info(info->dev, "%s: disable WTSR\n", __func__);
+	ret = s2mpw01_update_reg(info->i2c, S2MP_RTC_REG_WTSR_SMPL, 0,
+			WTSR_EN_MASK | SMPL_EN_MASK);
+	if (ret < 0)
+		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
+				__func__, ret);
+}
+
 static int s2m_rtc_init_reg(struct s2m_rtc_info *info,
 				struct s2mpw01_platform_data *pdata)
 {
@@ -513,6 +578,8 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 	int irq_base;
 	int ret = 0;
 
+	pr_info("S2MPW01 RTC probe start\n");
+
 	info = devm_kzalloc(&pdev->dev, sizeof(struct s2m_rtc_info),
 				GFP_KERNEL);
 
@@ -551,6 +618,8 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 	}
 
 	/* enable wtsrm smpl */
+	if (pdata->wtsr_smpl)
+		s2m_rtc_enable_wtsr_smpl(info, pdata);
 
 	device_init_wakeup(&pdev->dev, true);
 	rtc_ws = wakeup_source_register("rtc-s2mp");
@@ -576,6 +645,7 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 	s2mpw01_update_reg(info->i2c, S2MP_RTC_REG_CAPSEL, 0x01, 0x03);
 	s2mpw01_write_reg(info->i2c, 0x19, 0xB9);
 
+	pr_info("S2MPW01 RTC probe end\n");
 	return 0;
 
 err_rtc_dev_register:
@@ -604,6 +674,12 @@ static int s2m_rtc_remove(struct platform_device *pdev)
 static void s2m_rtc_shutdown(struct platform_device *pdev)
 {
 	/*disable wtsr, smpl */
+	struct s2m_rtc_info *info = platform_get_drvdata(pdev);
+	struct s2mpw01_platform_data *pdata =
+			dev_get_platdata(info->iodev->dev);
+
+	if (info->wtsr_en || info->smpl_en)
+		s2m_rtc_disable_wtsr_smpl(info, pdata);
 }
 
 static const struct platform_device_id s2m_rtc_id[] = {

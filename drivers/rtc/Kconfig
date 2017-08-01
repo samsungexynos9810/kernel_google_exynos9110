@@ -1200,10 +1200,10 @@ config RTC_DRV_S2MPW01
 	tristate "Samsung PMIC S2MPW01 RTC"
 	depends on MFD_S2MPW01
 	help
-	  If you say yes here you will get support for the
-	  RTC of Samsung PMIC series.
-	  This driver can also be built as a module. If so, the module
-	  will be called rtc-sec.
+		if you say yes here you ill get support for the
+		RTC of Samsung PMIC series.
+		This driver can also be built as a module. If so, the module
+		will be called rtc-s2mpw01.
 
 config RTC_DRV_EP93XX
 	tristate "Cirrus Logic EP93XX"
