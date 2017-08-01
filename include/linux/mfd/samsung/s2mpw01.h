@@ -79,6 +79,7 @@ enum sec_opmode {
 	SEC_OPMODE_SUSPEND,
 	SEC_OPMODE_LOWPOWER,
 	SEC_OPMODE_ON,
+	SEC_OPMODE_TCXO = 0x2,
 };
 
 /**

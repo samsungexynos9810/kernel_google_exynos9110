@@ -63,6 +63,19 @@ static char *rdev_name(struct regulator_dev *rdev)
 }
 #endif
 
+static unsigned int s2m_of_map_mode(unsigned int val) {
+	switch(val) {
+	case SEC_OPMODE_SUSPEND:	/* ON in Standby Mode*/
+		return 0x1;
+	case SEC_OPMODE_TCXO:		/* ON in PWREN_MIF mode */
+		return 0x2;
+	case SEC_OPMODE_ON:			/* ON in Normal Mode */
+		return 0x3;
+	default:
+		return 0x3;
+	}
+}
+
 /* Some LDOs supports [LPM/Normal]ON mode during suspend state */
 static int s2m_set_mode(struct regulator_dev *rdev,
 				     unsigned int mode)
@@ -106,10 +119,10 @@ static int s2m_enable(struct regulator_dev *rdev)
 	case S2MPW01_LDO19:
 		val = mask = 1;
 		break;
-	case S2MPW01_LDO8:
+	case S2MPW01_LDO9:
 		val = mask = 2;
 		break;
-	case S2MPW01_LDO9:
+	case S2MPW01_LDO8:
 		val = mask = 4;
 		break;
 	default:
@@ -132,10 +145,10 @@ static int s2m_disable_regmap(struct regulator_dev *rdev)
 	case S2MPW01_LDO19:
 		mask = 1;
 		break;
-	case S2MPW01_LDO8:
+	case S2MPW01_LDO9:
 		mask = 2;
 		break;
-	case S2MPW01_LDO9:
+	case S2MPW01_LDO8:
 		mask = 4;
 		break;
 	default:
@@ -159,10 +172,10 @@ static int s2m_is_enabled_regmap(struct regulator_dev *rdev)
 	case S2MPW01_LDO19:
 		mask = 1;
 		break;
-	case S2MPW01_LDO8:
+	case S2MPW01_LDO9:
 		mask = 2;
 		break;
-	case S2MPW01_LDO9:
+	case S2MPW01_LDO8:
 		mask = 4;
 		break;
 	default:
@@ -377,7 +390,8 @@ static struct regulator_ops s2mpw01_buck_ops = {
 	.vsel_mask	= S2MPW01_BUCK_VSEL_MASK,		\
 	.enable_reg	= e,					\
 	.enable_mask	= S2MPW01_ENABLE_MASK,			\
-	.enable_time	= t					\
+	.enable_time	= t,					\
+	.of_map_mode	= s2m_of_map_mode				\
 }
 
 #define LDO_DESC(_name, _id, _ops, m, s, v, e, t)	{	\
@@ -393,7 +407,8 @@ static struct regulator_ops s2mpw01_buck_ops = {
 	.vsel_mask	= S2MPW01_LDO_VSEL_MASK,		\
 	.enable_reg	= e,					\
 	.enable_mask	= S2MPW01_ENABLE_MASK,			\
-	.enable_time	= t					\
+	.enable_time	= t,				\
+	.of_map_mode	= s2m_of_map_mode				\
 }
 
 static struct regulator_desc regulators[S2MPW01_REGULATOR_MAX] = {
