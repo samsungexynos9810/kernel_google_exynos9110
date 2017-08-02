@@ -64,8 +64,8 @@
 		mshc2 = &dwmmc_2;
 		dsim0 = &dsim_0;
 		decon0 = &decon_0;
-		//tmuctrl0 = &tmuctrl_0;
-		//tmuctrl1 = &tmuctrl_1;
+		tmuctrl0 = &tmuctrl_0;
+		tmuctrl1 = &tmuctrl_1;
 		//scaler0 = &scaler_0;
 		//mfc0 = &mfc_0;
 	};
@@ -84,7 +84,7 @@
 		#address-cells = <2>;
 		#size-cells = <0>;
 
-		cpu@0 {
+		cpu0: cpu@0 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x0>;
@@ -1282,6 +1282,208 @@
 		compatible = "samsung,exynos-pwm-clock";
 		reg = <0x0 0x13970000 0x50>;
 		#clock-cells = <1>;
+	};
+
+	tmuctrl_0: CPUCL0@10130000 {
+		compatible = "samsung,exynos7270-tmu";
+		reg = <0x0 0x10130000 0x200>;
+		interrupts = <0 435 0>;
+		tmu_name = "APL";
+		id = <0>;
+		hotplug_enable = <1>;
+		hotplug_in_threshold = <91>;
+		hotplug_out_threshold = <96>;
+		#include "exynos7270-tmu-sensor-conf.dtsi"
+        };
+
+        tmuctrl_1: GPU@10130000 {
+		compatible = "samsung,exynos7270-tmu";
+		reg = <0x0 0x10130000 0x200>;
+		interrupts = <0 435 0>;
+		tmu_name = "GPU";
+		id = <1>;
+		/* gpu cooling related table */
+		/* flags, driver_data(index), frequency */
+		gpu_idx_num = <6>;
+		gpu_cooling_table = < 0 0 546000
+				      0 1 455000
+				      0 2 385000
+				      0 3 338000
+				      0 4 260000
+				      0 5 TABLE_END>;
+		#include "exynos7270-tmu-sensor-conf.dtsi"
+	};
+
+	thermal-zones {
+		cpucl0_thermal: CPUCL0 {
+			zone_name  = "APO_THERMAL";
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&tmuctrl_0>;
+
+			trips {
+				apo_alert0: apo-alert0 {
+					temperature = <20000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				apo_alert1: apo-alert1 {
+					temperature = <76000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				apo_alert2: apo-alert2 {
+					temperature = <81000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				apo_alert3: apo-alert3 {
+					temperature = <86000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				apo_alert4: apo-alert4 {
+					temperature = <91000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				apo_alert5: apo-alert5 {
+					temperature = <96000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				apo_alert6: apo-alert6 {
+					temperature = <101000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				apo_hot: apo-hot {
+					temperature = <115000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "hot";
+				};
+			};
+
+			cooling-maps {
+				map0 {
+				     trip = <&apo_alert0>;
+				     cooling-device = <&cpu0 0 0>;
+				};
+				map1 {
+				     trip = <&apo_alert1>;
+				     cooling-device = <&cpu0 0 0>;
+			       };
+				map2 {
+				     trip = <&apo_alert2>;
+				     cooling-device = <&cpu0 0 0>;
+				};
+				map3 {
+				     trip = <&apo_alert3>;
+				     cooling-device = <&cpu0 0 0>;
+				};
+				map4 {
+				     trip = <&apo_alert4>;
+				     cooling-device = <&cpu0 0 0>;
+				};
+				map5 {
+				     trip = <&apo_alert5>;
+				     cooling-device = <&cpu0 0 0>;
+			       };
+				map6 {
+				     trip = <&apo_alert6>;
+				     cooling-device = <&cpu0 0 0>;
+				};
+				map7 {
+				     trip = <&apo_hot>;
+				     cooling-device = <&cpu0 0 0>;
+				};
+			};
+		};
+
+		gpu_thermal: GPU {
+			zone_name  = "GPU_THERMAL";
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&tmuctrl_1>;
+
+			trips {
+				gpu_alert0: gpu-alert0 {
+					temperature = <20000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				gpu_alert1: gpu-alert1 {
+					temperature = <76000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				gpu_alert2: gpu-alert2 {
+					temperature = <81000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				gpu_alert3: gpu-alert3 {
+					temperature = <86000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				gpu_alert4: gpu-alert4 {
+					temperature = <91000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				gpu_alert5: gpu-alert5 {
+					temperature = <96000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				gpu_alert6: gpu-alert6 {
+					temperature = <101000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "active";
+				};
+				gpu_hot: gpu-hot {
+					temperature = <115000>; /* millicelsius */
+					hysteresis = <5000>; /* millicelsius */
+					type = "hot";
+				};
+			};
+
+			cooling-maps {
+				map0 {
+				     trip = <&gpu_alert0>;
+				     cooling-device = <&mali 0 0>;
+				};
+				map1 {
+				     trip = <&gpu_alert1>;
+				     cooling-device = <&mali 0 0>;
+				};
+				map2 {
+				     trip = <&gpu_alert0>;
+				     cooling-device = <&mali 0 0>;
+				};
+				map3 {
+				     trip = <&gpu_alert1>;
+				     cooling-device = <&mali 0 0>;
+				};
+				map4 {
+				     trip = <&gpu_alert1>;
+				     cooling-device = <&mali 0 0>;
+				};
+				map5 {
+				     trip = <&gpu_alert1>;
+				     cooling-device = <&mali 0 0>;
+				};
+				map6 {
+				     trip = <&gpu_alert1>;
+				     cooling-device = <&mali 0 0>;
+				};
+				map7 {
+				     trip = <&gpu_alert1>;
+				     cooling-device = <&mali 0 0>;
+				};
+			};
+		};
 	};
 
 	mipi_phy_csis: phy_phy_csis@144F1040 {

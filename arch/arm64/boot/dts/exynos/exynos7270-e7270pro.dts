@@ -162,13 +162,6 @@
 		udc = <&udc>;
 	};
 
-	tmuctrl_0: tmuctrl_CPUCL0@10130000 {
-		compatible = "samsung,exynos7570-tmu";
-		reg = <0x0 0x10130000 0x200>;
-		interrupts = <0 435 0>;
-		default_ptat_cont = <0x1>;
-	};
-
 	pinctrl@139F0000 {
 		if_irq: if-irq {
 			samsung,pins = "gpa0-5";
