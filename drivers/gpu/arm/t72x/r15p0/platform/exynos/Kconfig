@@ -54,7 +54,7 @@ config MALI_RT_PM
     bool "Enable EXYNOS Runtime power management"
     depends on MALI_T72X
     depends on PM
-    default y
+    default n
     help
       Choose this option to enable runtime power management in the Mali Midgard DDK.
 

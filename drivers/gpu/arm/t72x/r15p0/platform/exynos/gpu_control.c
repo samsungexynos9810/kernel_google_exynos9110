@@ -57,10 +57,12 @@ static struct exynos_pm_domain *gpu_get_pm_domain(void)
 
 		pdev = of_find_device_by_node(np);
 		pd_temp = platform_get_drvdata(pdev);
+#ifdef CONFIG_EXYNOS_PD
 		if (!strcmp("pd-g3d", pd_temp->genpd.name)) {
 			pd = pd_temp;
 			break;
 		}
+#endif
 	}
 
 	return pd;
