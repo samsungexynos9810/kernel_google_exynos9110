@@ -89,30 +89,14 @@
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x0>;
 			enable-method = "psci";
-		//	cpu-idle-states = <&CPU_SLEEP>;
 		};
-/*
 		cpu@1 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53", "arm,armv8";
 			reg = <0x0 0x1>;
 			enable-method = "psci";
-			cpu-idle-states = <&CPU_SLEEP>;
 		};
-*//*		idle-states {
-			entry-method = "arm,psci";
-
-			CPU_SLEEP: cpu-sleep {
-				desc = "cpu sleep";
-				compatible = "exynos,idle-state";
-				arm,psci-suspend-param = <0x0010000>;
-				entry-latency-us = <35>;
-				exit-latency-us = <90>;
-				min-residency-us = <750>;
-				status = "okay";
-			};
-		};
-*/	};
+	};
 
 	psci {
                 compatible = "arm,psci";
