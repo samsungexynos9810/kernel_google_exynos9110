@@ -16,52 +16,43 @@
 #include "../../../drivers/soc/samsung/pwrcal/pmucal_mod/pmucal_system.h"
 #endif
 
-#if !defined(CONFIG_PMUCAL_MOD)
 /**
  * System power down mode
  */
-
-#if defined(CONFIG_SOC_EXYNOS7570)
-enum sys_powerdown {
-	SYS_SICD,
-	SYS_AFTR,
-	SYS_STOP,
-	SYS_LPD,
-	SYS_LPA,
-	SYS_DSTOP,
-	SYS_SLEEP,
-	NUM_SYS_POWERDOWN,
-};
-#else
 enum sys_powerdown {
         SYS_SICD,
-#if !defined(CONFIG_SOC_EXYNOS7870)
-        SYS_SICD_CPD,
-#endif
         SYS_AFTR,
         SYS_STOP,
-#if !defined(CONFIG_SOC_EXYNOS7870)
-        SYS_DSTOP,
-#endif
         SYS_LPD,
-#if !defined(CONFIG_SOC_EXYNOS7870)
-        SYS_ALPA,
-#endif
+        SYS_LPA,
+        SYS_DSTOP,
         SYS_SLEEP,
         NUM_SYS_POWERDOWN,
 };
-#endif
-#endif
+
+static char *sys_powerdown_str[NUM_SYS_POWERDOWN] = {
+        "SICD",
+        "AFTR",
+        "STOP",
+        "LPD",
+        "LPA",
+        "DSTOP",
+        "SLEEP",
+};
+
+static inline char* get_sys_powerdown_str(int mode)
+{
+	return sys_powerdown_str[mode];
+}
 
 extern void exynos_prepare_sys_powerdown(enum sys_powerdown mode, bool is_suspend);
 extern void exynos_wakeup_sys_powerdown(enum sys_powerdown mode, bool early_wakeup);
-extern int determine_lpm(void);
 
 /**
  * Functions for cpuidle driver
  */
-extern int enter_c2(unsigned int cpu, int index);
-extern void wakeup_from_c2(unsigned int cpu, int early_wakeup);
+extern int exynos_cpu_pm_enter(unsigned int cpu, int index);
+extern void exynos_cpu_pm_exit(unsigned int cpu, int early_wakeup);
 
 /**
  * Cluster power down blocker

@@ -870,6 +870,13 @@ ktime_t tick_nohz_get_sleep_length(void)
 	return ts->sleep_length;
 }
 
+ktime_t tick_nohz_get_sleep_length_cpu(int cpu)
+{
+	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+
+	return ts->sleep_length;
+}
+
 /**
  * tick_nohz_get_idle_calls - return the current idle calls counter value
  *

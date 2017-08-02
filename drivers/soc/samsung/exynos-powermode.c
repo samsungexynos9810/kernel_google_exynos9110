@@ -327,9 +327,7 @@ static void update_c2_state(bool down, unsigned int cpu)
 
 static s64 get_next_event_time_us(unsigned int cpu)
 {
-	struct clock_event_device *dev = per_cpu(tick_cpu_device, cpu).evtdev;
-
-	return ktime_to_us(ktime_sub(dev->next_event, ktime_get()));
+	return ktime_to_us(tick_nohz_get_sleep_length_cpu(cpu));
 }
 
 static int is_cpus_busy(unsigned int target_residency,
@@ -429,12 +427,9 @@ static void update_cluster_idle_state(int idle, unsigned int cpu)
 /**
  * If AP put into SICD, console cannot work normally. For development,
  * support sysfs to enable or disable SICD.
- * And It is possible to use console by SICD factory mode.
  * Refer below :
  *
  * echo 0/1 > /sys/power/sicd (0:disable, 1:enable)
- * or
- * echo 0/1 > /sys/power/sicd_factory_mode (0:disable, 1:enable)
  */
 static int is_sicd_available(unsigned int cpu)
 {
@@ -469,7 +464,7 @@ static int is_sicd_available(unsigned int cpu)
  * specific configuration to power off the cpu power domain. It handles not only
  * cpu power control, but also power mode subordinate to C2.
  */
-int enter_c2(unsigned int cpu, int index)
+int exynos_cpu_pm_enter(unsigned int cpu, int index)
 {
 	unsigned int cluster = get_cluster_id(cpu);
 #ifdef CONFIG_PMUCAL_MOD
@@ -501,15 +496,8 @@ int enter_c2(unsigned int cpu, int index)
 	}
 
 	if (is_sicd_available(cpu)) {
-		if (check_cluster_idle_state(cpu)) {
-#if defined(CONFIG_SOC_EXYNOS8890)
-			exynos_prepare_sys_powerdown(SYS_SICD_CPD, false);
-			index = PSCI_SYSTEM_IDLE_CLUSTER_SLEEP;
-#endif
-		} else {
-			exynos_prepare_sys_powerdown(SYS_SICD, false);
-			index = PSCI_SYSTEM_IDLE;
-		}
+		exynos_prepare_sys_powerdown(SYS_SICD, false);
+		index = PSCI_SYSTEM_IDLE;
 
 		s3c24xx_serial_fifo_wait();
 		powermode_info->sicd_entered = SYS_SICD;
@@ -522,7 +510,7 @@ out:
 	return index;
 }
 
-void wakeup_from_c2(unsigned int cpu, int early_wakeup)
+void exynos_cpu_pm_exit(unsigned int cpu, int early_wakeup)
 {
 	if (early_wakeup)
 #ifdef CONFIG_PMUCAL_MOD
@@ -590,38 +578,11 @@ __ATTR(_name, 0644, show_##_name, store_##_name)
 
 show_one(blocking_cpd, cpd_blocked);
 show_one(sicd, sicd_enabled);
-show_one(sicd_factory_mode, sicd_factory);
 store_one(blocking_cpd, cpd_blocked);
 store_one(sicd, sicd_enabled);
-store_one(sicd_factory_mode, sicd_factory);
 
 attr_rw(blocking_cpd);
 attr_rw(sicd);
-attr_rw(sicd_factory_mode);
-
-/**
- * To determine which power mode system enter, check clock or power
- * registers and other devices by notifier.
- */
-int determine_lpm(void)
-{
-#if !defined(CONFIG_SOC_EXYNOS7870) && !defined(CONFIG_SOC_EXYNOS7570)
-	int index;
-#endif
-
-	if (!exynos_check_cp_status())
-		return SYS_AFTR;
-
-#if !defined(CONFIG_SOC_EXYNOS7870) && !defined(CONFIG_SOC_EXYNOS7570)
-	for_each_idle_ip(index) {
-		if (exynos_check_idle_ip_stat(SYS_ALPA, index))
-			return SYS_AFTR;
-	}
-	return SYS_ALPA;
-#else
-	return SYS_AFTR;
-#endif
-}
 
 /*
  * In case of non-boot cluster, CPU sequencer should be disabled
@@ -833,9 +794,6 @@ int __init exynos_powermode_init(void)
 
 	if (sysfs_create_file(power_kobj, &sicd.attr))
 		pr_err("%s: failed to create sysfs to control CPD\n", __func__);
-
-	if (sysfs_create_file(power_kobj, &sicd_factory_mode.attr))
-		pr_err("%s: failed to create sysfs to control SICD Factory mode\n", __func__);
 
 	register_hotcpu_notifier(&cpuidle_hotcpu_notifier);
 #endif
