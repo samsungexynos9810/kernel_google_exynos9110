@@ -24,6 +24,15 @@ config ARM_VEXPRESS_SPC_CPUFREQ
           This add the CPUfreq driver support for Versatile Express
 	  big.LITTLE platforms using SPC for power management.
 
+config ARM_EXYNOS_SC_CPUFREQ
+	bool "SAMSUNG EXYNOS SoC for single cluster"
+	depends on ARCH_EXYNOS
+	help
+	  This add the single cluster CPUFreq driver for samsung
+	  EXYNOS SoCs.
+
+	  If in doubt, say N.
+
 config ARM_EXYNOS5440_CPUFREQ
 	tristate "SAMSUNG EXYNOS5440"
 	depends on SOC_EXYNOS5440
