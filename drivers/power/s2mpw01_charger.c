@@ -32,19 +32,7 @@ struct s2mpw01_charger_data {
 	struct i2c_client       *client;
 	struct device *dev;
 	struct s2mpw01_platform_data *s2mpw01_pdata;
-	struct delayed_work	charger_work;
 	struct delayed_work init_work;
-	struct delayed_work usb_work;
-	struct delayed_work rid_work;
-	struct delayed_work ta_work;
-	struct delayed_work tx_pad_work;
-	struct delayed_work ac_ok_work;
-
-	struct wake_lock ta_work_lock;
-	struct wake_lock ta_pad_lock;
-	struct wake_lock ac_ok_lock;
-
-	struct workqueue_struct *charger_wqueue;
 	struct power_supply	*psy_chg;
 	struct power_supply_desc psy_chg_desc;
 	s2mpw01_charger_platform_data_t *pdata;
@@ -68,10 +56,6 @@ struct s2mpw01_charger_data {
 	int status;
 	int onoff;
 
-	int tx_type;
-	int retail_mode;
-	int extreme_mode;
-
 	/* charger enable, disable data */
 	u8 chg_en_data;
 
@@ -79,20 +63,6 @@ struct s2mpw01_charger_data {
 	int irq_det_bat;
 	int irq_chg;
 	int irq_tmrout;
-
-	int irq_uart_off;
-	int irq_uart_on;
-	int irq_usb_off;
-	int irq_usb_on;
-	int irq_uart_cable;
-	int irq_fact_leakage;
-	int irq_jigon;
-	int irq_acokf;
-	int irq_acokr;
-	int irq_rid_attach;
-#if defined(CONFIG_MUIC_NOTIFIER)
-	muic_attached_dev_t	muic_dev;
-#endif
 };
 
 static enum power_supply_property s2mpw01_charger_props[] = {
@@ -104,8 +74,6 @@ static enum power_supply_property s2mpw01_charger_props[] = {
 	POWER_SUPPLY_PROP_CURRENT_AVG,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_USB_OTG,
-/* 	POWER_SUPPLY_PROP_CHARGE_ENABLED,
-	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX, */  /* TODO: need to sysfs debugging */
 };
 
 unsigned int batt_booting_chk;  /* TODO: check to remove */
@@ -383,13 +351,6 @@ static void s2mpw01_set_charging_current(struct s2mpw01_charger_data *charger)
 	pr_err("[DEBUG]%s: charger->siop_level  %d\n", __func__, charger->siop_level);
 	adj_current = charger->charging_current * charger->siop_level / 100;
 
-	if (charger->retail_mode) {
-		pr_err("[DEBUG]%s: retail_mode %d\n", __func__, charger->retail_mode);
-		if (batt_booting_chk == 1) {
-			adj_current = 75;
-		}
-	}
-
 	/* When SOC is higher than 96%, then Current must be set to 75 mA */
 	value.intval = 0;
 	psy_do_property("s2mpw01-fuelgauge", get, POWER_SUPPLY_PROP_CAPACITY, value);
@@ -400,43 +361,12 @@ static void s2mpw01_set_charging_current(struct s2mpw01_charger_data *charger)
 		adj_current = 75;
 	}
 
-#if !defined(CONFIG_TIZEN_SEC_KERNEL_ENG)
-	if ((charger->cable_type == POWER_SUPPLY_TYPE_WPC) &&
-		(charger->tx_type == 0) && (system_rev >= 13) && (batt_booting_chk == 1)) {
-			pr_err("[DEBUG]%s: No S3 TX pad\n", __func__);
-			adj_current = 75;
-	}
-#endif
-
-	if (charger->extreme_mode) {
-		pr_err("[DEBUG]%s: extreme_mode %d\n", __func__, charger->extreme_mode);
-		adj_current = 250;
-	}
-
-	s2mpw01_set_fast_charging_current(charger->client, adj_current);
+	s2mpw01_set_fast_charging_current(charger->client, charger->charging_current);
 
 	if (batt_booting_chk == 0)
 		s2mpw01_set_additional(charger, 7, 1);
 	else 
 		s2mpw01_set_additional(charger, 0, 0);
-
-	/*
-	* For retail mode, when we turn on charger with 85 mA
-	* So we must turn on additional path at attaching
-	* condition
-	*/
-	if (charger->retail_mode) {
-		if (batt_booting_chk == 1)
-			s2mpw01_set_additional(charger, 2, 1);
-	} else {
-#if !defined(CONFIG_TIZEN_SEC_KERNEL_ENG)
-		if ((charger->cable_type == POWER_SUPPLY_TYPE_WPC) &&
-			(charger->tx_type == 0) && (system_rev >= 13) && (batt_booting_chk == 1)) {
-				pr_err("[DEBUG]%s: No S3 TX pad. additional path\n", __func__);
-				s2mpw01_set_additional(charger, 1, 1);
-		}
-#endif
-	}
 }
 
 enum {
@@ -517,11 +447,6 @@ static void s2mpw01_configure_charger(struct s2mpw01_charger_data *charger)
 					[charger->cable_type].full_check_current_1st;
 			}
 		s2mpw01_set_topoff_current(charger->client, eoc);
-
-		wake_lock_timeout(&charger->ta_work_lock, HZ);
-
-		/* use TOP-OFF interrupt */
-		schedule_delayed_work(&charger->ta_work, msecs_to_jiffies(200));
 	}
 	s2mpw01_enable_charger_switch(charger, 1);
 }
@@ -602,8 +527,6 @@ static int s2mpw01_get_charge_type(struct i2c_client *iic)
 		status = POWER_SUPPLY_CHARGE_TYPE_FAST;
 		break;
 	default:
-		/* 005 does not need to do this */
-		/* pre-charge mode */
 		status = POWER_SUPPLY_CHARGE_TYPE_TRICKLE;
 		break;
 	}
@@ -698,9 +621,6 @@ static int s2mpw01_chg_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_USB_OTG:
 		val->intval = 0;
-		break;
-	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX:
-		val->intval = charger->tx_type;
 		break;
 	default:
 		return -EINVAL;
@@ -797,19 +717,6 @@ static int s2mpw01_chg_set_property(struct power_supply *psy,
 		/* charger->is_charging = val->intval; */
 		s2mpw01_enable_charger_switch(charger, val->intval);
 		break;
-	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX:
-		dev_info(dev, "%s() CHARGE_CONTROL_LIMIT_MAX[%d]\n", __func__, val->intval);
-		charger->tx_type = val->intval;
-		s2mpw01_set_charging_current(charger);
-		break;
-	case POWER_SUPPLY_PROP_CHARGE_AVG:
-		dev_info(dev, "%s() POWER_SUPPLY_PROP_CHARGE_AVG[%d]\n", __func__, val->intval);
-		charger->retail_mode = val->intval;
-		break;
-	case POWER_SUPPLY_PROP_POWER_AVG:
-		dev_info(dev, "%s() POWER_SUPPLY_PROP_POWER_AVG[%d]\n", __func__, val->intval);
-		charger->extreme_mode = val->intval;
-		break;
 	default:
 		return -EINVAL;
 	}
@@ -868,447 +775,6 @@ static irqreturn_t s2mpw01_tmrout_isr(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-#if defined(CONFIG_S2MPW01_RID_DETECT)
-static void s2mpw01_muic_init_detect(struct work_struct *work)
-{
-	struct s2mpw01_charger_data *charger =
-		container_of(work, struct s2mpw01_charger_data, init_work.work);
-
-	int ret;
-	unsigned char status, chg_sts2, chg_sts3;
-
-	/* check when booting after USB connected */
-	ret = s2mpw01_read_reg(charger->iodev->pmic, S2MPW01_PMIC_REG_STATUS1, &status);
-	if (ret < 0)
-		pr_err("{DEBUG] %s : pm status read fail\n", __func__);
-
-	ret = s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS2, &chg_sts2);
-	if (ret < 0)
-		pr_err("{DEBUG] %s : chg status2 read fail\n", __func__);
-
-	ret = s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS3, &chg_sts3);
-	if (ret < 0)
-		pr_err("{DEBUG] %s : chg status3 read fail\n", __func__);
-
-	pr_info("%s: pm status, chg status3: 0x%x,0x%x,0x%x\n", __func__, status, chg_sts2, chg_sts3);
-	if (status & ACOK_STATUS_MASK) {
-		charger->onoff = 1;
-		if (chg_sts3 & UART_CABLE_STATUS_MASK) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-			/* if (charger->is_usb_ready) */
-			{
-				charger->muic_dev = ATTACHED_DEV_USB_MUIC;
-				muic_notifier_attach_attached_dev(charger->muic_dev);
-			}
-#endif
-			pr_info("%s: USB connected\n", __func__);
-		} else {
-			if (!(chg_sts2 & JIGON_STATUS_MASK)) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-				if (chg_sts2 & CHGIN_INPUT_STATUS_MASK) {
-					pr_info("%s: Wired TA connected\n", __func__);
-					charger->muic_dev = ATTACHED_DEV_TA_MUIC;
-				} else {
-					pr_info("%s: Wireless TA connected\n", __func__);
-					charger->muic_dev = ATTACHED_DEV_WIRELESS_TA_MUIC;
-				}
-				muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-			} else {
-				if (chg_sts2 & UART_BOOT_OFF_STATUS_MASK) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-					charger->muic_dev = ATTACHED_DEV_JIG_UART_OFF_MUIC;
-					muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-					pr_info("%s: JIG_ID UART OFF ( 523K ) connected VBUS ON\n", __func__);
-				} else if (chg_sts3 & UART_BOOT_ON_STATUS_MASK) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-					charger->muic_dev = ATTACHED_DEV_JIG_UART_ON_MUIC;
-					muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-					pr_info("%s: JIG_ID UART ON ( 619K ) connected\n", __func__);
-				}
-			}
-		}
-	} else {
-		if (chg_sts2 & UART_BOOT_OFF_STATUS_MASK) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-			charger->muic_dev = ATTACHED_DEV_JIG_UART_OFF_MUIC;
-			muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-			pr_info("%s: JIG_ID UART OFF ( 523K ) connected VBUS OFF\n", __func__);
-		}
-	}
-}
-
-static void s2mpw01_ta_detect(struct work_struct *work)
-{
-	struct s2mpw01_charger_data *charger =
-		container_of(work, struct s2mpw01_charger_data, ta_work.work);
-
-	if (charger->is_charging) {
-		if (batt_booting_chk) {
-			s2mpw01_topoff_interrupt_onoff(charger, 1);
-		} else {
-			pr_err("[DEBUG]%s: batt_booting_chk:0, Use top-off interrupt: 0x%x, 0x%x\n", __func__,
-				charger->iodev->irq_masks_cur[3], charger->iodev->irq_masks_cache[3]);
-		}
-	}
-
-	wake_unlock(&charger->ta_work_lock);
-}
-
-static void s2mpw01_tx_pad_detect(struct work_struct *work)
-{
-	struct s2mpw01_charger_data *charger =
-		container_of(work, struct s2mpw01_charger_data, tx_pad_work.work);
-
-	pr_err("{DEBUG] %s\n", __func__);
-	s2mpw01_set_charging_current(charger);
-
-	wake_unlock(&charger->ta_pad_lock);
-}
-
-static void s2mpw01_muic_usb_detect(struct work_struct *work)
-{
-	struct s2mpw01_charger_data *charger =
-		container_of(work, struct s2mpw01_charger_data, usb_work.work);
-
-	int ret;
-	unsigned char status, chg_sts2, chg_sts3;
-
-	charger->is_usb_ready = true;
-	/* check when booting after USB connected */
-	ret = s2mpw01_read_reg(charger->iodev->pmic, S2MPW01_PMIC_REG_STATUS1, &status);
-	if (ret < 0)
-		pr_err("{DEBUG] %s : pm status read fail\n", __func__);
-
-	ret = s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS2, &chg_sts2);
-	if (ret < 0)
-		pr_err("{DEBUG] %s : chg status2 read fail\n", __func__);
-
-	ret = s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS3, &chg_sts3);
-	if (ret < 0)
-		pr_err("{DEBUG] %s : chg status3 read fail\n", __func__);
-
-	pr_info("%s: pm status, chg status2 status3: 0x%x,0x%x,0x%x\n", __func__, status, chg_sts2, chg_sts3);
-	if (status & ACOK_STATUS_MASK) {
-		charger->onoff = 1;
-		if (chg_sts3 & UART_CABLE_STATUS_MASK) {
-			if (charger->is_usb_ready) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-				charger->muic_dev = ATTACHED_DEV_USB_MUIC;
-				muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-			}
-			pr_info("%s: USB connected\n", __func__);
-		} else if (chg_sts2 & USB_BOOT_ON_STATUS_MASK) {
-			if (charger->is_usb_ready) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-				charger->muic_dev = ATTACHED_DEV_JIG_USB_ON_MUIC;
-				muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-			}
-			pr_info("%s: JIG_ID USB ON ( 301K ) connected\n", __func__);
-		} else if (chg_sts2 & USB_BOOT_OFF_STATUS_MASK) {
-			if (charger->is_usb_ready) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-				charger->muic_dev = ATTACHED_DEV_JIG_USB_OFF_MUIC;
-				muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-			}
-			pr_info("%s: JIG_ID USB OFF ( 255K ) connected\n", __func__);
-		}
-	}
-}
-
-static void s2mpw01_muic_rid_check(struct work_struct *work)
-{
-	struct s2mpw01_charger_data *charger =
-		container_of(work, struct s2mpw01_charger_data, rid_work.work);
-	unsigned char chg_sts2, chg_sts3;
-
-	s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS2, &chg_sts2);
-	s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS3, &chg_sts3);
-	pr_info("%s: acokr irq stat2: 0x%x stat3: 0x%x\n", __func__, chg_sts2, chg_sts3);
-
-	if (!((chg_sts2 & USB_BOOT_ON_STATUS_MASK) || (chg_sts2 & USB_BOOT_OFF_STATUS_MASK) ||
-		(chg_sts3 & UART_BOOT_ON_STATUS_MASK) || (chg_sts2 & UART_BOOT_OFF_STATUS_MASK) ||
-		(chg_sts3 & UART_CABLE_STATUS_MASK))) {
-		charger->factory_mode = false;
-		pr_err("%s: factory mode[%d]\n", __func__, charger->factory_mode);
-	}
-}
-
-static void s2mpw01_muic_detect_handler(struct s2mpw01_charger_data *charger, bool is_on)
-{
-	unsigned char chg_sts2, chg_sts3;
-	unsigned char stat_val;
-
-	if (is_on) {
-		charger->onoff = 1;
-
-		/*
-		 * W/A in case of the chip revision is under EVT 3
-		 * enables charging before reading the rid.
-		 */
-		if ((!charger->factory_mode) && (charger->dev_id < EVT_3)) {
-			stat_val = charger->chg_en_data;
-			stat_val |= 0x40;
-			s2mpw01_write_reg(charger->client, 0x2E, stat_val);
-		}
-
-		s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS2, &chg_sts2);
-		s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS3, &chg_sts3);
-		pr_info("%s: rid irq stat2: 0x%x stat3: 0x%x\n", __func__, chg_sts2, chg_sts3);
-
-		if (chg_sts3 & UART_CABLE_STATUS_MASK) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-			if (charger->is_usb_ready) {
-				charger->muic_dev = ATTACHED_DEV_USB_MUIC;
-				muic_notifier_attach_attached_dev(charger->muic_dev);
-			}
-#endif
-			pr_info("%s: USB connected. status3: 0x%x\n", __func__, chg_sts3);
-		} else {
-			if (!(chg_sts2 & JIGON_STATUS_MASK) && !(chg_sts2 & USB_BOOT_ON_STATUS_MASK) &&
-				!(chg_sts2 & USB_BOOT_OFF_STATUS_MASK) && !(chg_sts3 & UART_BOOT_ON_STATUS_MASK)
-				&& !(chg_sts2 & UART_BOOT_OFF_STATUS_MASK)) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-				if (chg_sts2 & CHGIN_INPUT_STATUS_MASK) {
-					pr_info("%s: Wired TA connected\n", __func__);
-					charger->muic_dev = ATTACHED_DEV_TA_MUIC;
-				} else {
-					pr_info("%s: Wireless TA connected\n", __func__);
-					charger->muic_dev = ATTACHED_DEV_WIRELESS_TA_MUIC;
-					wake_lock(&charger->ta_pad_lock);
-					schedule_delayed_work(&charger->tx_pad_work, msecs_to_jiffies(3000));
-				}
-				muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-			} else {
-				if ((chg_sts2 & USB_BOOT_ON_STATUS_MASK) || (chg_sts2 & USB_BOOT_OFF_STATUS_MASK) ||
-					(chg_sts3 & UART_BOOT_ON_STATUS_MASK) || (chg_sts2 & UART_BOOT_OFF_STATUS_MASK)) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-					charger->muic_dev = ATTACHED_DEV_JIG_UART_OFF_MUIC;
-					muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-					pr_info(" USB_BOOT_ON_STATUS_MASK USB_BOOT_OFF_STATUS_MASK.\n");
-					pr_info(" UART_BOOT_ON_STATUS_MASK UART_BOOT_OFF_STATUS_MASK.\n");
-					pr_info("%s: JIG_ID UART OFF ( 523K ) connected\n", __func__);
-				}
-				if ((chg_sts2 & USB_BOOT_ON_STATUS_MASK) ||
-					(chg_sts2 & USB_BOOT_OFF_STATUS_MASK)) {
-#if defined(CONFIG_MUIC_NOTIFIER)
-					if (charger->is_usb_ready)
-						charger->muic_dev = ATTACHED_DEV_JIG_USB_ON_MUIC;
-						muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-					pr_info(" USB_BOOT_ON_STATUS_MASK USB_BOOT_OFF_STATUS_MASK.\n");
-					pr_info("%s: JIG_ID USB ON ( 301K ) connected\n", __func__);
-				}
-				pr_info("%s: JIG_ID connected.\n", __func__);
-			}
-		}
-	} else {
-		charger->onoff = 0;
-
-		/*
-		 * For retail mode and non S3 pad, when we turn on charger with 85 mA
-		 * So we must turn off additional path at detaching
-		 * condition
-		 */
-		s2mpw01_set_additional(charger, 0, 0);
-
-		/*
-		 * RID is detached.
-		 * W/A when the chip revision is under EVT 3.
-		 */
-		if (charger->dev_id < EVT_3) {
-			stat_val = charger->chg_en_data;
-			s2mpw01_write_reg(charger->client, 0x2E, stat_val);
-		}
-
-		s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS2, &chg_sts2);
-		s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS3, &chg_sts3);
-		pr_info("%s: acokf irq:sts2[0x%x],sts3[0x%x]\n", __func__, chg_sts2, chg_sts3);
-
-#if defined(CONFIG_MUIC_NOTIFIER)
-		charger->muic_dev = ATTACHED_DEV_USB_MUIC;
-		muic_notifier_detach_attached_dev(charger->muic_dev);
-#endif
-
-		/* TOP-OFF interrupt masking */
-		s2mpw01_topoff_interrupt_onoff(charger, 0);
-
-#if defined(CONFIG_MUIC_NOTIFIER)
-		charger->muic_dev = ATTACHED_DEV_JIG_UART_OFF_MUIC;
-		muic_notifier_detach_attached_dev(charger->muic_dev);
-#endif
-		charger->tx_type = 0;
-	}
-}
-
-static irqreturn_t s2mpw01_muic_isr(int irq, void *data)
-{
-	struct s2mpw01_charger_data *charger = data;
-	int i;
-	u8 acok_stat = 0;
-
-	pr_info("%s: irq:%d\n", __func__, irq);
-
-	if (irq == charger->irq_acokr) {
-		s2mpw01_muic_detect_handler(charger, true);
-	} else if (irq == charger->irq_acokf) {
-		/* W/A : Preventing V drop issue when Charger on time */
-		for (i = 0; i < 5; i++) {
-			s2mpw01_read_reg(charger->iodev->pmic, S2MPW01_PMIC_REG_STATUS1, &acok_stat);
-			pr_err("[DEBUG]%s: acok[0x%x]\n", __func__, acok_stat);
-			if (acok_stat & ACOK_STATUS_MASK) {
-				pr_err("[DEBUG]%s: skip_irq : acok[0x%x] count %d\n", __func__, acok_stat, i);
-				goto skip_irq;
-			}
-			msleep(100);
-		}
-		/* Add this W/A for fixing vdrop issue */
-		/* batt_booting_chk = 1; */
-
-		s2mpw01_muic_detect_handler(charger, false);
-	} else if (irq == charger->irq_usb_on) {
-		/* usb boot on */
-		pr_info("%s: usb boot on irq\n", __func__);
-		if (charger->onoff == 1) {
-			pr_info("%s: usb boot on notify done\n", __func__);
-
-#if defined(CONFIG_MUIC_NOTIFIER)
-			charger->muic_dev = ATTACHED_DEV_JIG_USB_ON_MUIC;
-			muic_notifier_attach_attached_dev(charger->muic_dev);
-
-			if (charger->is_usb_ready) {
-				charger->muic_dev = ATTACHED_DEV_JIG_USB_ON_MUIC;
-				pr_info("%s: [attach] muic_dev [0x%x]\n", __func__, charger->muic_dev);
-				muic_notifier_attach_attached_dev(charger->muic_dev);
-			}
-		}
-#endif
-		s2mpw01_factory_mode_setting(charger);
-	} else if (irq == charger->irq_uart_off) {
-		/* uart boot off */
-		pr_info("%s: uart boot off irq:%d\n", __func__, irq);
-		if (charger->onoff == 1) {
-			pr_info("%s: uart boot off notify done\n", __func__);
-			s2mpw01_factory_mode_setting(charger);
-#if defined(CONFIG_MUIC_NOTIFIER)
-			charger->muic_dev = ATTACHED_DEV_JIG_UART_OFF_MUIC;
-			muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-		}
-	} else if (irq == charger->irq_uart_on) {
-		/* uart boot on */
-		pr_info("%s: uart boot on irq:%d\n", __func__, irq);
-		pr_info("%s: JIG_ID UART ON ( 619K ) connected\n", __func__);
-		s2mpw01_factory_mode_setting(charger);
-	} else if (irq == charger->irq_usb_off) {
-		/* usb boot off */
-		pr_info("%s: usb boot off irq:%d\n", __func__, irq);
-		if (charger->onoff == 1) {
-			pr_info("%s: usb boot off notify done\n", __func__);
-			pr_info("%s: JIG_ID USB OFF ( 255K ) connected \n", __func__);
-			s2mpw01_factory_mode_setting(charger);
-#if defined(CONFIG_MUIC_NOTIFIER)
-			charger->muic_dev = ATTACHED_DEV_JIG_USB_OFF_MUIC;
-			muic_notifier_attach_attached_dev(charger->muic_dev);
-#endif
-		}
-	} else if (irq == charger->irq_jigon) {
-		schedule_delayed_work(&charger->rid_work, msecs_to_jiffies(200));
-
-		/* jigon */
-		pr_info("%s: jigon irq:%d\n", __func__, irq);
-	}
-
-skip_irq:
-	return IRQ_HANDLED;
-}
-
-#define REQUEST_IRQ(_irq, _dev_id, _name)				\
-	do {									\
-		ret = request_threaded_irq(_irq, NULL, s2mpw01_muic_isr,	\
-				0, _name, _dev_id);	\
-		if (ret < 0) {							\
-			pr_err("%s: Failed to request s2mpw01 muic IRQ #%d: %d\n",		\
-					__func__, _irq, ret);	\
-			_irq = 0;						\
-		}								\
-	} while (0)
-
-static int s2mpw01_muic_irq_init(struct s2mpw01_charger_data *charger)
-{
-	int ret = 0;
-
-	if (charger->iodev && (charger->iodev->irq_base > 0)) {
-		int irq_base = charger->iodev->irq_base;
-
-		/* request MUIC IRQ */
-#if 0
-		charger->irq_fact_leakage = irq_base + S2MPW01_CHG_IRQ_FACT_LEAKAGE_INT3;
-		REQUEST_IRQ(charger->irq_fact_leakage, charger, "muic-fact_leakage");
-
-		charger->irq_uart_cable = irq_base + S2MPW01_CHG_IRQ_UART_CABLE_INT3;
-		REQUEST_IRQ(charger->irq_uart_cable, charger, "muic-uart_cable");
-#endif
-		charger->irq_jigon = irq_base + S2MPW01_CHG_IRQ_JIGON_INT2;
-		REQUEST_IRQ(charger->irq_jigon, charger, "muic-jigon");
-
-		charger->irq_usb_off = irq_base + S2MPW01_CHG_IRQ_USB_BOOT_OFF_INT2;
-		REQUEST_IRQ(charger->irq_usb_off, charger, "muic-usb_off");
-
-		charger->irq_usb_on = irq_base + S2MPW01_CHG_IRQ_USB_BOOT_ON_INT2;
-		REQUEST_IRQ(charger->irq_usb_on, charger, "muic-usb_on");
-
-		charger->irq_uart_off = irq_base + S2MPW01_CHG_IRQ_UART_BOOT_OFF_INT2;
-		REQUEST_IRQ(charger->irq_uart_off, charger, "muic-uart_off");
-
-		charger->irq_uart_on = irq_base + S2MPW01_CHG_IRQ_UART_BOOT_ON_INT3;
-		REQUEST_IRQ(charger->irq_uart_on, charger, "muic-uart_on");
-
-		charger->irq_acokf = irq_base + S2MPW01_PMIC_IRQ_ACOKBF_INT1;
-		REQUEST_IRQ(charger->irq_acokf, charger, "muic-acokf");
-
-		charger->irq_acokr = irq_base + S2MPW01_PMIC_IRQ_ACOKBR_INT1;
-		REQUEST_IRQ(charger->irq_acokr, charger, "muic-acokr");
-	}
-
-	pr_err("%s:usb_off(%d), usb_on(%d), uart_off(%d), uart_on(%d), jig_on(%d), muic-acokf(%d), muic-acokr(%d)\n",
-		__func__, charger->irq_usb_off, charger->irq_usb_on, charger->irq_uart_off, charger->irq_uart_on,
-		charger->irq_jigon, charger->irq_acokf, charger->irq_acokr);
-
-	return ret;
-}
-
-#define FREE_IRQ(_irq, _dev_id, _name)					\
-do {									\
-	if (_irq) {							\
-		free_irq(_irq, _dev_id);				\
-		pr_info("%s: IRQ(%d):%s free done\n",	\
-				__func__, _irq, _name);			\
-	}								\
-} while (0)
-
-static void s2mpw01_muic_free_irqs(struct s2mpw01_charger_data *charger)
-{
-	pr_info("%s\n", __func__);
-
-	/* free MUIC IRQ */
-	FREE_IRQ(charger->irq_uart_off, charger, "muic-uart_off");
-	FREE_IRQ(charger->irq_uart_on, charger, "muic-uart_on");
-	FREE_IRQ(charger->irq_usb_off, charger, "muic-usb_off");
-	FREE_IRQ(charger->irq_usb_on, charger, "muic-usb_on");
-	FREE_IRQ(charger->irq_uart_cable, charger, "muic-uart_cable");
-	FREE_IRQ(charger->irq_fact_leakage, charger, "muic-fact_leakage");
-	FREE_IRQ(charger->irq_jigon, charger, "muic-jigon");
-}
-#endif
 
 #ifdef CONFIG_OF
 static int s2mpw01_charger_parse_dt(struct device *dev,
@@ -1428,17 +894,10 @@ static int s2mpw01_charger_probe(struct platform_device *pdev)
 	charger->psy_chg_desc.num_properties = ARRAY_SIZE(s2mpw01_charger_props);
 
 	charger->dev_id = s2mpw01->pmic_rev;
-
-#if defined(CONFIG_MUIC_NOTIFIER)
-	charger->muic_dev = ATTACHED_DEV_NONE_MUIC;
-#endif
 	charger->onoff = 0;
 
 	/* need to check siop level */
 	charger->siop_level = 100;
-	charger->tx_type = 0;
-	charger->retail_mode = 0;
-	charger->extreme_mode = 0;
 
 	s2mpw01_chg_init(charger);
 
@@ -1452,13 +911,6 @@ static int s2mpw01_charger_probe(struct platform_device *pdev)
 		ret = PTR_ERR(charger->psy_chg);
 		goto err_power_supply_register;
 	}
-
-	wake_lock_init(&charger->ta_work_lock, WAKE_LOCK_SUSPEND,
-		"sec-chg-ta-work");
-	wake_lock_init(&charger->ta_pad_lock, WAKE_LOCK_SUSPEND,
-		"sec-chg-ta-pad");
-	wake_lock_init(&charger->ac_ok_lock, WAKE_LOCK_SUSPEND,
-		"sec-chg-ac-ok");
 
 	charger->irq_chg = pdata->irq_base + S2MPW01_CHG_IRQ_TOPOFF_INT1;
 	ret = request_threaded_irq(charger->irq_chg, NULL,
@@ -1480,31 +932,13 @@ static int s2mpw01_charger_probe(struct platform_device *pdev)
 
 	s2mpw01_test_read(charger->client);
 
-#if defined(CONFIG_S2MPW01_RID_DETECT)
-	INIT_DELAYED_WORK(&charger->rid_work, s2mpw01_muic_rid_check);
-	/* charger topoff on/off work */
-	INIT_DELAYED_WORK(&charger->ta_work, s2mpw01_ta_detect);
-
-	ret = s2mpw01_muic_irq_init(charger);
-	if (ret) {
-		pr_err("[muic] %s: failed to init muic irq(%d)\n", __func__, ret);
-		goto fail_init_irq;
-	}
-
-	INIT_DELAYED_WORK(&charger->init_work, s2mpw01_muic_init_detect);
-	schedule_delayed_work(&charger->init_work, msecs_to_jiffies(3000));
-
-	charger->is_usb_ready = false;
-	INIT_DELAYED_WORK(&charger->usb_work, s2mpw01_muic_usb_detect);
-	schedule_delayed_work(&charger->usb_work, msecs_to_jiffies(13000));
-#endif
 	/* initially TOP-OFF interrupt masking */
 	s2mpw01_topoff_interrupt_onoff(charger, 0);
 
 	ret = s2mpw01_read_reg(charger->iodev->pmic, 0x41, &charger->chg_en_data);
 	if (ret < 0) {
 		pr_err("%s: failed to read PM addr 0x41(%d)\n", __func__, ret);
-		goto fail_init_irq;
+		goto err_power_supply_register;
 	}
 
 	/* factory_mode setting */
@@ -1531,7 +965,7 @@ static int s2mpw01_charger_probe(struct platform_device *pdev)
 	ret = s2mpw01_read_reg(charger->iodev->pmic, S2MPW01_PMIC_REG_STATUS1, &acok_stat);
 	if (ret < 0) {
 		pr_err("%s: failed to read S2MPW01_PMIC_REG_STATUS1(%d)\n", __func__, ret);
-		goto fail_init_irq;
+		goto err_power_supply_register;
 	}
 
 	data = charger->chg_en_data;
@@ -1545,15 +979,7 @@ static int s2mpw01_charger_probe(struct platform_device *pdev)
 
 	return 0;
 
-fail_init_irq:
-#if defined(CONFIG_S2MPW01_RID_DETECT)
-	s2mpw01_muic_free_irqs(charger);
-#endif
 err_power_supply_register:
-	wake_lock_destroy(&charger->ac_ok_lock);
-	wake_lock_destroy(&charger->ta_pad_lock);
-	wake_lock_destroy(&charger->ta_work_lock);
-	destroy_workqueue(charger->charger_wqueue);
 	power_supply_unregister(charger->psy_chg);
 err_parse_dt:
 err_parse_dt_nomem:
@@ -1566,10 +992,6 @@ static int s2mpw01_charger_remove(struct platform_device *pdev)
 {
 	struct s2mpw01_charger_data *charger =
 		platform_get_drvdata(pdev);
-
-	wake_lock_destroy(&charger->ac_ok_lock);
-	wake_lock_destroy(&charger->ta_pad_lock);
-	wake_lock_destroy(&charger->ta_work_lock);
 
 	power_supply_unregister(charger->psy_chg);
 	mutex_destroy(&charger->io_lock);
@@ -1590,12 +1012,6 @@ static int s2mpw01_charger_resume(struct device *dev)
 
 	s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_INT1M, &val);
 	pr_info("%s : CHG_INT1 ---> 0x%x\n", __func__, val);
-#if 0
-	if (charger->iodev->topoff_mask_status > 0)
-		s2mpw01_update_reg(charger->client, S2MPW01_CHG_REG_INT1M, 0x00, 0x04);
-	else
-		s2mpw01_update_reg(charger->client, S2MPW01_CHG_REG_INT1M, 0x04, 0x04);
-#endif
 	pr_err("[DEBUG]%s: Top-off interrupt Masking : 0x%x, topoff status %d\n", __func__,
 		charger->iodev->irq_masks_cur[3], charger->iodev->topoff_mask_status);
 
