@@ -14,7 +14,9 @@
 #include <linux/list.h>
 #include <linux/dma-mapping.h>
 #include <linux/pm_runtime.h>
+#ifdef CONFIG_PM_DEVFREQ
 #include <linux/pm_qos.h>
+#endif
 #include <linux/suspend.h>
 #include <linux/debugfs.h>
 #include <linux/clk-provider.h>
@@ -103,8 +105,10 @@ struct clk_info {
 	struct bts_info *bts;
 };
 
+#ifdef CONFIG_PM_DEVFREQ
 static struct pm_qos_request exynos7_mif_bts_qos;
 static struct pm_qos_request exynos7_int_bts_qos;
+#endif
 static DEFINE_MUTEX(media_mutex);
 static void __iomem *base_drex;
 
@@ -605,7 +609,9 @@ void exynos_update_media_scenario(enum bts_media_type media_type,
 			total_bw, decon_bw, cam_bw);
 	BTS_DBG("[BTS FREQ] mif_freq: %uKhz\n", mif_freq);
 
+#ifdef CONFIG_PM_DEVFREQ
 	pm_qos_update_request(&exynos7_mif_bts_qos, mif_freq);
+#endif
 out:
 	mutex_unlock(&media_mutex);
 }
@@ -658,10 +664,10 @@ static int __init exynos7_bts_init(void)
 	exynos7_init_bts_ioremap();
 	bts_drex_init(base_drex);
 	bts_initialize_domains();
-
+#ifdef CONFIG_PM_DEVFREQ
 	pm_qos_add_request(&exynos7_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, 0);
 	pm_qos_add_request(&exynos7_int_bts_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
-
+#endif
 	register_pm_notifier(&exynos_bts_notifier);
 	bts_debugfs();
 	return 0;
