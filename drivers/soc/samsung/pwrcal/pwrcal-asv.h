@@ -10,7 +10,6 @@ struct cal_asv_ops {
 	int (*get_tablever)(void);
 	int (*set_rcc_table)(void);
 	int (*asv_init)(void);
-	unsigned int (*asv_pmic_info)(void);
 	int (*get_ids_info)(unsigned int domain);
 	void (*set_ssa0)(unsigned int id, unsigned int ssa0);
 	void (*set_ssa1)(unsigned int id, unsigned int gnum, unsigned int ssa1);

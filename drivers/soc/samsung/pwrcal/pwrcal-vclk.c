@@ -913,16 +913,18 @@ static int d1_set(struct vclk *vclk, unsigned long freq_to)
 		parent = pwrcal_clk_get_parent(d1->div);
 		parent_freq = pwrcal_clk_get_rate(parent);
 
-		if (parent_freq < temp_freq)
-			goto out;
-
-		parent_temp = parent_freq;
-		do_div(parent_temp, temp_freq);
-		if (parent_freq > parent_temp * temp_freq)
-			parent_temp += 1;
-		ratio = (unsigned int)parent_temp;
-		if (pwrcal_div_set_ratio(d1->div, ratio))
-			goto out;
+		if (parent_freq < temp_freq) {
+			if (pwrcal_div_set_ratio(d1->div, 1))
+				goto out;
+		} else {
+			parent_temp = parent_freq;
+			do_div(parent_temp, temp_freq);
+			if (parent_freq > parent_temp * temp_freq)
+				parent_temp += 1;
+			ratio = (unsigned int)parent_temp;
+			if (pwrcal_div_set_ratio(d1->div, ratio))
+				goto out;
+		}
 	}
 
 	ret = 0;
@@ -989,9 +991,10 @@ struct pwrcal_vclk_none vclk_0;
 int vclk_setrate(struct vclk *vclk, unsigned long rate)
 {
 	int ret = 0;
-#ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
+#if defined(CONFIG_EXYNOS_SNAPSHOT_CLK)
 	const char *name = "vclk_setrate";
 #endif
+
 	if (!vclk->ref_count && vclk->ops->set_rate) {
 		vclk->vfreq = rate;
 		goto out;
@@ -1015,7 +1018,7 @@ out:
 unsigned long vclk_getrate(struct vclk *vclk)
 {
 	int ret = 0;
-#ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
+#if defined(CONFIG_EXYNOS_SNAPSHOT_CLK)
 	const char *name = "vclk_getrate";
 #endif
 
@@ -1039,9 +1042,10 @@ int vclk_enable(struct vclk *vclk)
 {
 	int ret = 0;
 	unsigned int tmp;
-#ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
+#if defined(CONFIG_EXYNOS_SNAPSHOT_CLK)
 	const char *name = "vclk_enable";
 #endif
+
 	if (vclk->ref_count++)
 		goto out;
 
@@ -1065,6 +1069,9 @@ int vclk_enable(struct vclk *vclk)
 		pr_warn("vclk retenction fail (%s) (%ld)\n",
 				vclk->name, vclk->vfreq);
 
+	if (vclk->type == vclk_group_dfs)
+		vclk->vfreq = tmp;
+
 out:
 	if (!ret) {
 		exynos_ss_clk(vclk, name, ESS_FLAG_OUT);
@@ -1077,9 +1084,10 @@ int vclk_disable(struct vclk *vclk)
 {
 	int ret = 0;
 	int parent_disable = 0;
-#ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
+#if defined(CONFIG_EXYNOS_SNAPSHOT_CLK)
 	const char *name = "vclk_disable";
 #endif
+
 	if (vclk->ref_count)
 		parent_disable = 1;
 

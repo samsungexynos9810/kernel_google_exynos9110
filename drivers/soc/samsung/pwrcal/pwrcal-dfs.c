@@ -33,7 +33,19 @@ unsigned int dfs_set_rate_switch(unsigned int rate_from,
 		}
 	}
 
-	return table->switches[table->num_of_switches - 1].switch_rate;
+	if (is_div(table->switch_src_div))
+		if (pwrcal_div_set_ratio(
+			table->switch_src_div,
+			table->switches[i - 1].div_value + 1))
+			goto errorout;
+
+	if (is_mux(table->switch_src_mux))
+		if (pwrcal_mux_set_src(
+			table->switch_src_mux,
+			table->switches[i - 1].mux_value))
+			goto errorout;
+
+	return table->switches[i - 1].switch_rate;
 errorout:
 	return 0;
 }

@@ -9,7 +9,7 @@
 #include <linux/math64.h>
 #include <linux/smc.h>
 #include <linux/delay.h>
-#include <linux/io.h>
+#include <soc/samsung/ect_parser.h>
 
 #else
 
@@ -23,6 +23,7 @@
 #include <kernel/timer.h>
 #include <kernel/panic.h>
 #include <compat.h>
+#include <mach/ect_parser.h>
 
 #define pr_err(_msg, args...)	\
 	console_printf(0, "\033[1;31;5merror::func=%s, "_msg"\033[0m\n", \

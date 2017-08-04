@@ -124,8 +124,10 @@ int pwrcal_mux_set_src(struct pwrcal_clk *clk, unsigned int src)
 	unsigned int mux_stat;
 	int muxgate = 1;
 
-	if (src >= (unsigned int)(mux->num_parents))
-		return -1;
+	if (!_pwrcal_is_private_mux_set_src(clk)) {
+		if (src >= (unsigned int)(mux->num_parents))
+			return -1;
+	}
 
 	if (_pwrcal_is_private_mux_set_src(clk))
 		return _pwrcal_private_mux_set_src(clk, src);

@@ -1,6 +1,5 @@
 #ifndef __PWRCAL_H__
 #define __PWRCAL_H__
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,6 +22,14 @@ extern int cal_pm_enter(int mode);
 extern int cal_pm_exit(int mode);
 extern int cal_pm_earlywakeup(int mode);
 
+#ifdef CONFIG_PMUCAL_MOD
+extern int cal_cpu_enable(unsigned int cpu);
+extern int cal_cpu_disable(unsigned int cpu);
+extern int cal_cpu_status(unsigned int cpu);
+extern int cal_cluster_enable(unsigned int cluster);
+extern int cal_cluster_disable(unsigned int cluster);
+extern int cal_cluster_status(unsigned int cluster);
+#endif
 
 extern unsigned int cal_dfs_get(char *name);
 extern unsigned long cal_dfs_get_max_freq(unsigned int id);
@@ -33,8 +40,6 @@ extern unsigned long cal_dfs_cached_get_rate(unsigned int id);
 extern unsigned long cal_dfs_get_rate(unsigned int id);
 extern int cal_dfs_get_rate_table(unsigned int id, unsigned long *table);
 extern int cal_dfs_get_asv_table(unsigned int id, unsigned int *table);
-extern unsigned int cal_asv_pmic_info(void);
-extern int cal_asv_get_ids_info(unsigned int domain);
 
 
 struct dvfs_rate_volt {
@@ -53,7 +58,6 @@ enum cal_dfs_ext_ops {
 	cal_dfs_initsmpl		= 0,
 	cal_dfs_setsmpl		= 1,
 	cal_dfs_get_smplstatus	= 2,
-	cal_dfs_deinitsmpl	= 3,
 
 	cal_dfs_dvs = 30,
 
@@ -61,8 +65,6 @@ enum cal_dfs_ext_ops {
 	cal_dfs_mif_is_dll_on	= 50,
 
 	cal_dfs_cpu_idle_clock_down = 60,
-
-	cal_dfs_ctrl_clk_gate	= 70,
 };
 
 extern int cal_dfs_ext_ctrl(unsigned int id,
@@ -81,6 +83,7 @@ extern void cal_asv_set_ssa0(unsigned int id, unsigned int ssa0);
 
 
 extern int cal_init(void);
+extern int is_sicd_factory(void);
 
 /* It is for debugging. */
 extern void cal_vclk_dbg_info(unsigned int id);

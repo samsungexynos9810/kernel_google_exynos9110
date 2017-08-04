@@ -8,6 +8,13 @@
 #include "pwrcal-asv.h"
 #include <linux/exynos-ss.h>
 
+#ifdef CONFIG_PMUCAL_MOD
+#include "./pmucal_mod/pmucal_system.h"
+#include "./pmucal_mod/pmucal_local.h"
+#include "./pmucal_mod/pmucal_cpu.h"
+#include "./pmucal_mod/pmucal_rae.h"
+#endif
+
 #define MARGIN_UNIT 6250
 
 int offset_percent;
@@ -182,6 +189,19 @@ int cal_clk_disable(unsigned int id)
 
 int cal_pd_control(unsigned int id, int on)
 {
+#ifdef CONFIG_PMUCAL_MOD
+	unsigned int index;
+
+	if ((id & 0xFFFF0000) != BLKPWR_MAGIC)
+		return -1;
+
+	index = id & 0x0000FFFF;
+
+	if (on)
+		return pmucal_local_enable(index);
+	else
+		return pmucal_local_disable(index);
+#else
 	struct cal_pd *pd;
 	unsigned int index;
 
@@ -199,10 +219,21 @@ int cal_pd_control(unsigned int id, int on)
 		return cal_pd_ops.pd_control(pd, on);
 
 	return -1;
+#endif
 }
 
 int cal_pd_status(unsigned int id)
 {
+#ifdef CONFIG_PMUCAL_MOD
+	unsigned int index;
+
+	if ((id & 0xFFFF0000) != BLKPWR_MAGIC)
+		return -1;
+
+	index = id & 0x0000FFFF;
+
+	return pmucal_local_is_enabled(index);
+#else
 	struct cal_pd *pd;
 	unsigned int index;
 
@@ -220,34 +251,78 @@ int cal_pd_status(unsigned int id)
 		return cal_pd_ops.pd_status(pd);
 
 	return -1;
+#endif
 }
 
 
 
 int cal_pm_enter(int mode)
 {
+#ifdef CONFIG_PMUCAL_MOD
+	return pmucal_system_enter(mode);
+#else
 	if (cal_pm_ops.pm_enter)
 		cal_pm_ops.pm_enter(mode);
 
 	return 0;
+#endif
 }
 
 int cal_pm_exit(int mode)
 {
+#ifdef CONFIG_PMUCAL_MOD
+	return pmucal_system_exit(mode);
+#else
 	if (cal_pm_ops.pm_exit)
 		cal_pm_ops.pm_exit(mode);
 
 	return 0;
+#endif
 }
 
 int cal_pm_earlywakeup(int mode)
 {
+#ifdef CONFIG_PMUCAL_MOD
+	return pmucal_system_earlywakeup(mode);
+#else
 	if (cal_pm_ops.pm_earlywakeup)
 		cal_pm_ops.pm_earlywakeup(mode);
 
 	return 0;
+#endif
 }
 
+#ifdef CONFIG_PMUCAL_MOD
+int cal_cpu_enable(unsigned int cpu)
+{
+	return pmucal_cpu_enable(cpu);
+}
+
+int cal_cpu_disable(unsigned int cpu)
+{
+	return pmucal_cpu_disable(cpu);
+}
+
+int cal_cpu_status(unsigned int cpu)
+{
+	return pmucal_cpu_is_enabled(cpu);
+}
+
+int cal_cluster_enable(unsigned int cluster)
+{
+	return pmucal_cpu_cluster_enable(cluster);
+}
+
+int cal_cluster_disable(unsigned int cluster)
+{
+	return pmucal_cpu_cluster_disable(cluster);
+}
+
+int cal_cluster_status(unsigned int cluster)
+{
+	return pmucal_cpu_cluster_is_enabled(cluster);
+}
+#endif
 
 unsigned int cal_dfs_get(char *name)
 {
@@ -288,9 +363,10 @@ int cal_dfs_set_rate(unsigned int id, unsigned long rate)
 	struct vclk *vclk;
 	unsigned long flag;
 	int ret = 0;
-#ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
+#if defined(CONFIG_EXYNOS_SNAPSHOT_CLK)
 	const char *name = "cal_dfs_set_rate";
 #endif
+
 	vclk = cal_get_vclk(id);
 	if (!vclk)
 		return -1;
@@ -363,9 +439,10 @@ unsigned long cal_dfs_cached_get_rate(unsigned int id)
 	struct vclk *vclk;
 	unsigned long flag;
 	unsigned long ret = 0;
-#ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
+#if defined(CONFIG_EXYNOS_SNAPSHOT_CLK)
 	const char *name = "cal_dfs_get_rate";
 #endif
+
 	vclk = cal_get_vclk(id);
 	if (!vclk)
 		return 0;
@@ -396,9 +473,10 @@ unsigned long cal_dfs_get_rate(unsigned int id)
 	struct vclk *vclk;
 	unsigned long flag;
 	unsigned long ret = 0;
-#ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
+#if defined(CONFIG_EXYNOS_SNAPSHOT_CLK)
 	const char *name = "cal_dfs_get_rate";
 #endif
+
 	vclk = cal_get_vclk(id);
 	if (!vclk)
 		return 0;
@@ -414,7 +492,6 @@ unsigned long cal_dfs_get_rate(unsigned int id)
 		exynos_ss_clk(vclk, name, ESS_FLAG_ON);
 		goto out;
 	}
-
 	if (dfs->table->private_getrate)
 		ret = dfs->table->private_getrate(dfs->table);
 	else
@@ -460,21 +537,23 @@ int cal_dfs_get_asv_table(unsigned int id, unsigned int *table)
 	int volt_offset = 0;
 	int org_volt, percent_volt;
 
-	if (dfsops->get_margin_param)
-		volt_offset = dfsops->get_margin_param(id);
+	if (dfsops) {
+		if (dfsops->get_margin_param)
+			volt_offset = dfsops->get_margin_param(id);
 
-	if (dfsops->get_asv_table) {
-		num_of_entry = dfsops->get_asv_table(table);
+		if (dfsops->get_asv_table) {
+			num_of_entry = dfsops->get_asv_table(table);
 
-		for (i = 0; i < num_of_entry; i++) {
-			org_volt = (int)table[i];
-			percent_volt = set_percent_offset(org_volt);
-			table[i] = (unsigned int)(percent_volt + volt_offset);
-			pr_info("L%2d: %7d uV, percent_offset(%d)-> %7d uV, volt_offset(%d uV)-> %7duV\n",
-						i, org_volt, offset_percent,
-						percent_volt, volt_offset, table[i]);
+			for (i = 0; i < num_of_entry; i++) {
+				org_volt = (int)table[i];
+				percent_volt = set_percent_offset(org_volt);
+				table[i] = (unsigned int)(percent_volt + volt_offset);
+				pr_info("L%2d: %7d uV, percent_offset(%d)-> %7d uV, volt_offset(%d uV)-> %7duV\n",
+							i, org_volt, offset_percent,
+							percent_volt, volt_offset, table[i]);
+			}
+			return num_of_entry;
 		}
-		return num_of_entry;
 	}
 
 	return 0;
@@ -527,10 +606,6 @@ int cal_dfs_ext_ctrl(unsigned int id,
 			if (dfsops->init_smpl)
 				return dfsops->init_smpl();
 			break;
-		case cal_dfs_deinitsmpl:
-			if (dfsops->deinit_smpl)
-				return dfsops->deinit_smpl();
-			break;
 		case cal_dfs_setsmpl:
 			if (dfsops->set_smpl)
 				return dfsops->set_smpl();
@@ -550,10 +625,6 @@ int cal_dfs_ext_ctrl(unsigned int id,
 		case cal_dfs_cpu_idle_clock_down:
 			if (dfsops->cpu_idle_clock_down)
 				return dfsops->cpu_idle_clock_down(para);
-			break;
-		case cal_dfs_ctrl_clk_gate:
-			if (dfsops->ctrl_clk_gate)
-				return dfsops->ctrl_clk_gate(para);
 			break;
 		default:
 			return -1;
@@ -594,14 +665,6 @@ int cal_dfs_get_rate_asv_table(unsigned int id,
 	}
 
 	return num_of_entry;
-}
-
-unsigned int cal_asv_pmic_info(void)
-{
-	if (cal_asv_ops.asv_pmic_info)
-		return cal_asv_ops.asv_pmic_info();
-
-	return -1;
 }
 
 void cal_asv_print_info(void)
@@ -657,17 +720,12 @@ void cal_asv_set_ssa0(unsigned int id, unsigned int ssa0)
 		cal_asv_ops.set_ssa0(id, ssa0);
 }
 
-int cal_asv_get_ids_info(unsigned int domain)
-{
-	if (cal_asv_ops.get_ids_info)
-		return cal_asv_ops.get_ids_info(domain);
-
-	return -1;
-}
-
-int cal_init(void)
+int __init cal_init(void)
 {
 	static int pwrcal_vclk_initialized;
+#ifdef CONFIG_PMUCAL_MOD
+	int ret;
+#endif
 
 	if (pwrcal_vclk_initialized == 1)
 		return 0;
@@ -686,14 +744,35 @@ int cal_init(void)
 #endif
 	}
 
+#ifdef CONFIG_PMUCAL_MOD
+	ret = pmucal_rae_init();
+	if (ret < 0)
+		return ret;
+
+	ret = pmucal_system_init();
+	if (ret < 0)
+		return ret;
+#else
 	if (cal_pm_ops.pm_init)
 		cal_pm_ops.pm_init();
+#endif
 
+	vclk_unused_disable();
+
+#ifdef CONFIG_PMUCAL_MOD
+	ret = pmucal_local_init();
+	if (ret < 0)
+		return ret;
+
+	ret = pmucal_cpu_init();
+	if (ret < 0)
+		return ret;
+#else
 	if (cal_pd_ops.pd_init)
 		if (cal_pd_ops.pd_init())
 			return -1;
+#endif
 
-	vclk_unused_disable();
 
 	pwrcal_vclk_initialized = 1;
 

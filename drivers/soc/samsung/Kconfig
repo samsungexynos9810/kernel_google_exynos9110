@@ -24,6 +24,12 @@ config PWRCAL
 	help
 	Support Power CAL for Exynos SoC.
 
+config PMUCAL_MOD
+	bool "PMUCAL modification of Exynos Power Chip Abstraction Layer"
+	depends on PWRCAL
+	help
+	Support PMUCAL for Exynos SoC.
+
 config ECT
 	bool "Enable Exynos Characteristic Table File"
 	default n

@@ -13,10 +13,6 @@ static int blkpwr_enable(struct cal_pd *pd)
 	if (!pd || !pd->offset)
 		goto out;
 
-	/* Skip enabling power domain which is already on. */
-	if (blkpwr_status(pd) == 1)
-		return 0;
-
 	if (pd->prev)
 		pd->prev(1);
 
@@ -44,7 +40,7 @@ static int blkpwr_enable(struct cal_pd *pd)
 
 out:
 	if (pd && ret)
-		pr_err("BLKPWR enable Fail (%s)\n", pd->name);
+		pr_err("BLKPWR enable Fail (%s) STATUS : 0x%08X\n", pd->name, pwrcal_readl(pd->status));
 
 	return 0;
 }
@@ -57,10 +53,6 @@ static int blkpwr_disable(struct cal_pd *pd)
 
 	if (!pd || !pd->offset)
 		goto out;
-
-	/* Skip disabling power domain which is already off. */
-	if (blkpwr_status(pd) == 0)
-		return 0;
 
 	if (pd->prev)
 		pd->prev(0);
@@ -89,7 +81,7 @@ static int blkpwr_disable(struct cal_pd *pd)
 
 out:
 	if (pd && ret)
-		pr_err("BLKPWR disable Fail (%s)\n", pd->name);
+		pr_err("BLKPWR disable Fail (%s) STATUS : 0x%08X\n", pd->name, pwrcal_readl(pd->status));
 
 	return 0;
 }
