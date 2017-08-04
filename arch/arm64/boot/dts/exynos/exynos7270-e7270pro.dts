@@ -606,7 +606,7 @@
 		num-eint = <24>;
 		num-gic = <16>;
 		suspend_mode_idx = <8>;		/* SYS_SLEEP */
-		suspend_psci_idx = <131>;	/* PSCI_SYSTEM_SLEEP */
+		suspend_psci_idx = <133>;	/* PSCI_SYSTEM_SLEEP */
 		cp_call_mode_idx = <4>;		/* SYS_LPD */
 		cp_call_psci_idx = <132>;	/* PSCI_SYSTEM_CP_CALL */
 	};
