@@ -115,6 +115,11 @@
 #define EXYNOS_TMU_T_BUF_SLOPE_SEL_SHIFT	(18)
 #define EXYNOS_TMU_T_BUF_SLOPE_SEL_MASK		(0xF)
 
+#define EXYNOS_TMU_T_TRIM0_SHIFT		(18)
+#define EXYNOS_TMU_T_TRIM0_MASK			(0x7)
+#define EXYNOS_TMU_T_TRIM1_SHIFT		(18)
+#define EXYNOS_TMU_T_TRIM1_MASK			(0xF)
+
 #define EXYNOS_TMU_REG_INTPEND0			(0x118)
 #define EXYNOS_TMU_REG_INTPEND5			(0x318)
 #define EXYNOS_TMU_REG_INTPEN_OFFSET		(0x10)
@@ -334,6 +339,141 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
 	mutex_lock(&data->lock);
 	data->tmu_control(pdev, on);
 	mutex_unlock(&data->lock);
+}
+
+static int exynos7270_tmu_initialize(struct platform_device *pdev)
+{
+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+	struct thermal_zone_device *tz = data->tzd;
+	struct exynos_tmu_platform_data *pdata = data->pdata;
+	unsigned int rising_threshold = 0, falling_threshold = 0;
+	int temp, temp_hist;
+	unsigned int trim_info;
+	unsigned int reg_off, bit_off;
+	int threshold_code, i;
+
+	/* Check tmu core ready status */
+	trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
+
+	/* Check thermal calibration type */
+	pdata->cal_type = (trim_info >> EXYNOS_TMU_CALIB_SEL_SHIFT)
+			& EXYNOS_TMU_CALIB_SEL_MASK;
+
+	/* Check temp_error1 and error2 value */
+	data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
+	data->temp_error2 = (trim_info >> EXYNOS_TMU_TRIMINFO_85_P0_SHIFT)
+				& EXYNOS_TMU_TEMP_MASK;
+
+	if (!data->temp_error1)
+		data->temp_error1 = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
+	if (!data->temp_error2)
+		data->temp_error2 = (pdata->efuse_value >>
+					EXYNOS_TMU_TRIMINFO_85_P0_SHIFT)
+					& EXYNOS_TMU_TEMP_MASK;
+	/* Write temperature code for rising and falling threshold */
+	for (i = (of_thermal_get_ntrips(tz) - 1); i >= 0; i--) {
+		/*
+		 * On exynos7 there are 4 rising and 4 falling threshold
+		 * registers (0x50-0x5c and 0x60-0x6c respectively). Each
+		 * register holds the value of two threshold levels (at bit
+		 * offsets 0 and 16). Based on the fact that there are atmost
+		 * eight possible trigger levels, calculate the register and
+		 * bit offsets where the threshold levels are to be written.
+		 *
+		 * e.g. EXYNOS_THD_TEMP_RISE7_6 (0x50)
+		 * [24:16] - Threshold level 7
+		 * [8:0] - Threshold level 6
+		 * e.g. EXYNOS_THD_TEMP_RISE5_4 (0x54)
+		 * [24:16] - Threshold level 5
+		 * [8:0] - Threshold level 4
+		 *
+		 * and similarly for falling thresholds.
+		 *
+		 * Based on the above, calculate the register and bit offsets
+		 * for rising/falling threshold levels and populate them.
+		 */
+		reg_off = ((7 - i) / 2) * 4;
+		bit_off = ((8 - i) % 2);
+
+		tz->ops->get_trip_temp(tz, i, &temp);
+		temp /= MCELSIUS;
+
+		tz->ops->get_trip_hyst(tz, i, &temp_hist);
+		temp_hist = temp - (temp_hist / MCELSIUS);
+
+		/* Set 9-bit temperature code for rising threshold levels */
+		threshold_code = temp_to_code(data, temp);
+		rising_threshold = readl(data->base +
+			EXYNOS_THD_TEMP_RISE7_6 + reg_off);
+		rising_threshold &= ~(EXYNOS_TMU_TEMP_MASK << (16 * bit_off));
+		rising_threshold |= threshold_code << (16 * bit_off);
+		writel(rising_threshold,
+		       data->base + EXYNOS_THD_TEMP_RISE7_6 + reg_off);
+
+		/* Set 9-bit temperature code for falling threshold levels */
+		threshold_code = temp_to_code(data, temp_hist);
+		falling_threshold &= ~(EXYNOS_TMU_TEMP_MASK << (16 * bit_off));
+		falling_threshold |= threshold_code << (16 * bit_off);
+		writel(falling_threshold,
+		       data->base + EXYNOS_THD_TEMP_FALL7_6 + reg_off);
+	}
+
+	data->tmu_clear_irqs(data);
+
+	return 0;
+}
+
+static void exynos7270_tmu_control(struct platform_device *pdev, bool on)
+{
+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+	struct thermal_zone_device *tz = data->tzd;
+	unsigned int con, interrupt_en, trim_info, trim_info1;
+	unsigned int t_trim0_sel, t_trim1_sel;
+
+	trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
+	trim_info1 = readl(data->base + EXYNOS_TMU_REG_TRIMINFO1);
+
+	/* Save fuse buf_vref_sel, calib_sel value to TRIMINFO and 1 register */
+	t_trim0_sel = (trim_info >> EXYNOS_TMU_T_TRIM0_SHIFT)
+				& (EXYNOS_TMU_T_TRIM0_MASK);
+	t_trim1_sel = (trim_info1 >> EXYNOS_TMU_T_TRIM1_SHIFT)
+				& (EXYNOS_TMU_T_TRIM1_MASK);
+
+	con = get_con_reg(data, readl(data->base + EXYNOS_TMU_REG_CONTROL));
+
+	if (on) {
+		con |= (t_trim0_sel << EXYNOS_TMU_REF_VOLTAGE_SHIFT);
+		con |= (t_trim1_sel << EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT);
+		con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
+		con |= (1 << EXYNOS_TMU_THERM_TRIP_EN_SHIFT);
+		interrupt_en =
+			(of_thermal_is_trip_valid(tz, 7)
+			<< EXYNOS_TMU_INTEN_RISE7_SHIFT) |
+			(of_thermal_is_trip_valid(tz, 6)
+			<< EXYNOS_TMU_INTEN_RISE6_SHIFT) |
+			(of_thermal_is_trip_valid(tz, 5)
+			<< EXYNOS_TMU_INTEN_RISE5_SHIFT) |
+			(of_thermal_is_trip_valid(tz, 4)
+			<< EXYNOS_TMU_INTEN_RISE4_SHIFT) |
+			(of_thermal_is_trip_valid(tz, 3)
+			<< EXYNOS_TMU_INTEN_RISE3_SHIFT) |
+			(of_thermal_is_trip_valid(tz, 2)
+			<< EXYNOS_TMU_INTEN_RISE2_SHIFT) |
+			(of_thermal_is_trip_valid(tz, 1)
+			<< EXYNOS_TMU_INTEN_RISE1_SHIFT) |
+			(of_thermal_is_trip_valid(tz, 0)
+			<< EXYNOS_TMU_INTEN_RISE0_SHIFT);
+
+		interrupt_en |=
+			interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
+	} else {
+		con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
+		con &= ~(1 << EXYNOS_TMU_THERM_TRIP_EN_SHIFT);
+		interrupt_en = 0; /* Disable all interrupts */
+	}
+
+	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN0);
+	writel(con, data->base + EXYNOS_TMU_REG_CONTROL);
 }
 
 static int exynos8890_tmu_initialize(struct platform_device *pdev)
@@ -784,6 +924,19 @@ static u32 get_emul_con_reg(struct exynos_tmu_data *data, unsigned int val,
 	return val;
 }
 
+static void exynos7270_tmu_set_emulation(struct exynos_tmu_data *data,
+					 int temp)
+{
+	unsigned int val;
+	u32 emul_con;
+
+	emul_con = EXYNOS_TMU_REG_EMUL_CON;
+
+	val = readl(data->base + emul_con);
+	val = get_emul_con_reg(data, val, temp);
+	writel(val, data->base + emul_con);
+}
+
 static void exynos8890_tmu_set_emulation(struct exynos_tmu_data *data,
 					 int temp)
 {
@@ -835,11 +988,18 @@ out:
 	return ret;
 }
 #else
+#define exynos7270_tmu_set_emulation NULL
 #define exynos8890_tmu_set_emulation NULL
 #define exynos8895_tmu_set_emulation NULL
 static int exynos_tmu_set_emulation(void *drv_data, int temp)
 	{ return -EINVAL; }
 #endif /* CONFIG_THERMAL_EMULATION */
+
+static int exynos7270_tmu_read(struct exynos_tmu_data *data)
+{
+	return readw(data->base + EXYNOS_TMU_REG_CURRENT_TEMP1_0) &
+		EXYNOS_TMU_TEMP_MASK;
+}
 
 static int exynos8890_tmu_read(struct exynos_tmu_data *data)
 {
@@ -919,6 +1079,14 @@ static void exynos_tmu_work(struct work_struct *work)
 	enable_irq(data->irq);
 }
 
+static void exynos7270_tmu_clear_irqs(struct exynos_tmu_data *data)
+{
+	unsigned int val_irq;
+
+	val_irq = readl(data->base + EXYNOS_TMU_REG_INTPEND0);
+	writel(val_irq, data->base + EXYNOS_TMU_REG_INTPEND0);
+}
+
 static void exynos8890_tmu_clear_irqs(struct exynos_tmu_data *data)
 {
 	unsigned int val_irq;
@@ -994,6 +1162,7 @@ static struct notifier_block exynos_tmu_pm_notifier = {
 };
 
 static const struct of_device_id exynos_tmu_match[] = {
+	{ .compatible = "samsung,exynos7270-tmu", },
 	{ .compatible = "samsung,exynos8890-tmu", },
 	{ .compatible = "samsung,exynos8895-tmu", },
 	{ /* sentinel */ },
@@ -1002,6 +1171,8 @@ MODULE_DEVICE_TABLE(of, exynos_tmu_match);
 
 static int exynos_of_get_soc_type(struct device_node *np)
 {
+	if (of_device_is_compatible(np, "samsung,exynos7270-tmu"))
+		return SOC_ARCH_EXYNOS7270;
 	if (of_device_is_compatible(np, "samsung,exynos8890-tmu"))
 		return SOC_ARCH_EXYNOS8890;
 	if (of_device_is_compatible(np, "samsung,exynos8895-tmu"))
@@ -1131,6 +1302,13 @@ static int exynos_map_dt_data(struct platform_device *pdev)
 	data->soc = exynos_of_get_soc_type(pdev->dev.of_node);
 
 	switch (data->soc) {
+	case SOC_ARCH_EXYNOS7270:
+		data->tmu_initialize = exynos7270_tmu_initialize;
+		data->tmu_control = exynos7270_tmu_control;
+		data->tmu_read = exynos7270_tmu_read;
+		data->tmu_set_emulation = exynos7270_tmu_set_emulation;
+		data->tmu_clear_irqs = exynos7270_tmu_clear_irqs;
+		break;
 	case SOC_ARCH_EXYNOS8890:
 		data->tmu_initialize = exynos8890_tmu_initialize;
 		data->tmu_control = exynos8890_tmu_control;
