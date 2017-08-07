@@ -31,7 +31,7 @@
 #include <S5E7270/S5E7270-vclk.h>
 #include <S5E7270/S5E7270-vclk-internal.h>
 #ifdef CONFIG_EXYNOS_PD
-#include <soc/samsung/eynos-pd.h>
+#include <soc/samsung/exynos-pd.h>
 #endif
 #endif /* LINUX_VERSION */
 #endif /* CONFIG_SOC_EXYNOS7570 && CONFIG_PWRCAL */
