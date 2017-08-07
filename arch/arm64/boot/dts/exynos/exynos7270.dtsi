@@ -981,7 +981,7 @@
 		interrupt-names = "JOB", "MMU", "GPU";
 		clocks = <&clock 203>;
 		clock-names = "vclk_g3d";
-//		samsung,power-domain = <&pd_g3d>;
+		samsung,power-domain = <&pd_g3d>;
 	};
 
 	mfc_0: mfc0@12C30000 {
