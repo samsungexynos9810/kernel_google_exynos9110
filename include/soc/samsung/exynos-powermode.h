@@ -16,6 +16,7 @@
 #include "../../../drivers/soc/samsung/pwrcal/pmucal_mod/pmucal_system.h"
 #endif
 
+#ifndef CONFIG_PMUCAL_MOD
 /**
  * System power down mode
  */
@@ -29,6 +30,7 @@ enum sys_powerdown {
         SYS_SLEEP,
         NUM_SYS_POWERDOWN,
 };
+#endif
 
 static char *sys_powerdown_str[NUM_SYS_POWERDOWN] = {
         "SICD",
