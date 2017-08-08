@@ -161,6 +161,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(input_current_max),
 	POWER_SUPPLY_ATTR(current_now),
 	POWER_SUPPLY_ATTR(current_avg),
+	POWER_SUPPLY_ATTR(current_full),
 	POWER_SUPPLY_ATTR(current_boot),
 	POWER_SUPPLY_ATTR(power_now),
 	POWER_SUPPLY_ATTR(power_avg),
@@ -209,16 +210,12 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(charge_term_current),
 	POWER_SUPPLY_ATTR(calibrate),
 	/* Local extensions */
-	POWER_SUPPLY_ATTR(usb_hc),
 	POWER_SUPPLY_ATTR(usb_otg),
 	POWER_SUPPLY_ATTR(charge_enabled),
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
-	POWER_SUPPLY_ATTR(manufacturer),
-	POWER_SUPPLY_ATTR(serial_number),
-	POWER_SUPPLY_ATTR(afc_charger_mode),
 };
 
 static struct attribute *

@@ -76,8 +76,7 @@ static enum power_supply_property s2mpw01_charger_props[] = {
 	POWER_SUPPLY_PROP_USB_OTG,
 };
 
-unsigned int batt_booting_chk;  /* TODO: check to remove */
-unsigned int system_rev; /* TODO: check to remove */
+extern unsigned int batt_booting_chk;
 
 static int s2mpw01_get_charging_health(struct s2mpw01_charger_data *charger);
 
@@ -551,7 +550,6 @@ static int s2mpw01_get_charging_health(struct s2mpw01_charger_data *charger)
 	int ret;
 	u8 data, data1;
 
-	pr_info("[%s]\n", __func__);
 	ret = s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS1, &data);
 	s2mpw01_read_reg(charger->iodev->pmic, S2MPW01_PMIC_REG_STATUS1, &data1);
 

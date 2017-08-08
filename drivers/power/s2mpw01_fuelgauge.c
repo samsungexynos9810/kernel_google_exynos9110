@@ -20,7 +20,9 @@
 #include <linux/of_gpio.h>
 #include <linux/mfd/samsung/s2mpw01.h>
 
-#define FG_CFG_FILE_PATH "/opt/etc/.fg_scaled_capacity_max"
+#ifdef USE_FG_CFG_FILE
+#define FG_CFG_FILE_PATH "/sdcard/.fg_scaled_capacity_max"
+#endif
 
 static enum power_supply_property s2mpw01_fuelgauge_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
@@ -475,6 +477,7 @@ static int s2mpw01_get_avgvbat(struct s2mpw01_fuelgauge_data *fuelgauge)
 #if defined(CONFIG_PREVENT_SOC_JUMP)
 static int s2mpw01_fg_set_scaled_capacity_max(struct s2mpw01_fuelgauge_data *fuelgauge)
 {
+#ifdef USE_FG_CFG_FILE
 	struct file *fp;
 	mm_segment_t old_fs;
 	char buf[5] = {0, };
@@ -507,6 +510,9 @@ static int s2mpw01_fg_set_scaled_capacity_max(struct s2mpw01_fuelgauge_data *fue
 open_err:
 	set_fs(old_fs);
 	return error;
+#else
+	return 0;
+#endif
 }
 #endif
 
@@ -514,7 +520,7 @@ static void s2mpw01_fg_get_scaled_capacity_max(struct work_struct *work)
 {
 	struct s2mpw01_fuelgauge_data *fuelgauge =
 		container_of(work, struct s2mpw01_fuelgauge_data, scaled_work.work);
-
+#ifdef USE_FG_CFG_FILE
 	struct file *fp;
 	mm_segment_t old_fs;
 	int fw_size, nread;
@@ -558,6 +564,9 @@ static void s2mpw01_fg_get_scaled_capacity_max(struct work_struct *work)
 
 open_err:
 	set_fs(old_fs);
+#else
+	fuelgauge->scaled_capacity_max = SCALED_VAL_NO_EXIST;
+#endif
 }
 
 /* capacity is  0.1% unit */
@@ -1090,23 +1099,11 @@ static int s2mpw01_fuelgauge_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&fuelgauge->scaled_work, s2mpw01_fg_get_scaled_capacity_max);
 	schedule_delayed_work(&fuelgauge->scaled_work, msecs_to_jiffies(3000));
 	raw_soc_val.intval = s2mpw01_get_rawsoc(fuelgauge);
-#if 0 /* Fix me */
-	s2mpw01_init_regs(fuelgauge);
-	if (raw_soc_val.intval == 0)
-		raw_soc_val.intval = s2mpw01_get_rawsoc(fuelgauge);
-#endif
 	raw_soc_val.intval = raw_soc_val.intval / 10;
 
 	if (raw_soc_val.intval > fuelgauge->capacity_max)
 		s2mpw01_fg_calculate_dynamic_scale(fuelgauge, 100);
 
-#if 0
-	ret = power_supply_register(&pdev->dev, &fuelgauge->psy_fg);
-	if (ret) {
-		pr_err("%s: Failed to Register psy_fg\n", __func__);
-		goto err_data_free;
-	}
-#endif
 	psy_cfg.drv_data = fuelgauge;
 	fuelgauge->psy_fg = power_supply_register(&pdev->dev, &fuelgauge->psy_fg_desc, &psy_cfg);
 	if (IS_ERR(fuelgauge->psy_fg)) {
