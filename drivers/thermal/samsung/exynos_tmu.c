@@ -145,6 +145,11 @@
 #define EXYNOS_TMU_NUM_PROBE_SHIFT		(16)
 #define EXYNOS_TMU_NUM_PROBE_MASK		(0x7)
 
+#define PTAT_CONT_MASK				(0x7)
+#define PTAT_CONT_SHIFT				(20)
+#define BUF_CONT_MASK				(0xF)
+#define BUF_CONT_SHIFT				(12)
+
 #define TOTAL_SENSORS	8
 #define DEFAULT_BALANCE_OFFSET	20
 
@@ -425,7 +430,7 @@ static void exynos7270_tmu_control(struct platform_device *pdev, bool on)
 {
 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
 	struct thermal_zone_device *tz = data->tzd;
-	unsigned int con, interrupt_en, trim_info, trim_info1;
+	unsigned int con, con1, interrupt_en, trim_info, trim_info1;
 	unsigned int t_trim0_sel, t_trim1_sel;
 
 	trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
@@ -438,10 +443,9 @@ static void exynos7270_tmu_control(struct platform_device *pdev, bool on)
 				& (EXYNOS_TMU_T_TRIM1_MASK);
 
 	con = get_con_reg(data, readl(data->base + EXYNOS_TMU_REG_CONTROL));
+	con1 = get_con_reg(data, readl(data->base + EXYNOS_TMU_REG_CONTROL1));
 
 	if (on) {
-		con |= (t_trim0_sel << EXYNOS_TMU_REF_VOLTAGE_SHIFT);
-		con |= (t_trim1_sel << EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT);
 		con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
 		con |= (1 << EXYNOS_TMU_THERM_TRIP_EN_SHIFT);
 		interrupt_en =
@@ -470,7 +474,18 @@ static void exynos7270_tmu_control(struct platform_device *pdev, bool on)
 		interrupt_en = 0; /* Disable all interrupts */
 	}
 
+	/* If sensor type is TEM1455X, MUX_ADDR value should be 0x0. (Its reset value is 0x6) */
+	con &= ~(EXYNOS_TMU_MUX_ADDR_MASK << EXYNOS_TMU_MUX_ADDR_SHIFT);
+
+	/* Set PTAT_CONT */
+	con1 &= ~(PTAT_CONT_MASK << PTAT_CONT_SHIFT);
+	con1 |= (t_trim0_sel << PTAT_CONT_SHIFT);
+	/* Set BUF_CONT */
+	con1 &= ~(BUF_CONT_MASK << BUF_CONT_SHIFT);
+	con1 |= (t_trim1_sel << BUF_CONT_SHIFT);
+
 	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN0);
+	writel(con1, data->base + EXYNOS_TMU_REG_CONTROL1);
 	writel(con, data->base + EXYNOS_TMU_REG_CONTROL);
 }
 
