@@ -36,7 +36,7 @@
 #include <soc/samsung/cpufreq.h>
 #include <soc/samsung/exynos-powermode.h>
 //#include <soc/samsung/asv-exynos.h>
-//#include <soc/samsung/tmu.h>
+#include <soc/samsung/tmu.h>
 #include <soc/samsung/ect_parser.h>
 
 #define FREQ_OSCCLK                     26000

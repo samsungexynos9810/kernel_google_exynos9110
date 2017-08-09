@@ -35,7 +35,9 @@
 #include <trace/events/thermal.h>
 
 #include <soc/samsung/tmu.h>
+#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
 #include <soc/samsung/cal-if.h>
+#endif
 #include <soc/samsung/ect_parser.h>
 
 #if defined(CONFIG_SOC_EXYNOS8895) && defined(CONFIG_SOC_EMULATOR8895)
@@ -320,6 +322,7 @@ free_power_table:
 	return ret;
 }
 
+#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
 static int build_static_power_table(struct cpufreq_cooling_device *cpufreq_device)
 {
 	int i, j;
@@ -403,6 +406,7 @@ free_var_coeff:
 err_mem:
 	return -ENOMEM;
 }
+#endif
 
 static int lookup_static_power(struct cpufreq_cooling_device *cpufreq_device,
 		unsigned long voltage, int temperature, u32 *power)
@@ -990,11 +994,13 @@ __cpufreq_cooling_register(struct device_node *np,
 			goto free_table;
 		}
 
+#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
 		ret = build_static_power_table(cpufreq_dev);
 		if (ret) {
 			cool_dev = ERR_PTR(ret);
 			goto free_table;
 		}
+#endif
 	}
 
 	ret = get_idr(&cpufreq_idr, &cpufreq_dev->id);

@@ -43,10 +43,8 @@
 #include <linux/slab.h>
 #include <linux/exynos-ss.h>
 #include <linux/cpu.h>
-#include <linux/exynos-cpufreq.h>
 #include <soc/samsung/tmu.h>
 #include <soc/samsung/ect_parser.h>
-#include <soc/samsung/exynos-mcinfo.h>
 #include <dt-bindings/thermal/thermal_exynos.h>
 
 #include "exynos_tmu.h"
@@ -857,11 +855,13 @@ static int exynos_get_temp(void *p, int *temp)
 {
 	struct exynos_tmu_data *data = p;
 	struct thermal_cooling_device *cdev;
+#ifdef EXYNOS_MCINFO
 	unsigned int mcinfo_count;
 	unsigned int mcinfo_result[4] = {0, 0, 0, 0};
 	unsigned int mcinfo_logging = 0;
 	unsigned int mcinfo_temp = 0;
 	unsigned int i;
+#endif
 
 	if (!data || !data->tmu_read)
 		return -EINVAL;
@@ -889,6 +889,7 @@ static int exynos_get_temp(void *p, int *temp)
 
 	exynos_ss_thermal(data->pdata, *temp / 1000, data->tmu_name, 0);
 
+#ifdef EXYNOS_MCINFO
 	if (data->id == 0) {
 		mcinfo_count = get_mcinfo_base_count();
 		get_refresh_rate(mcinfo_result);
@@ -903,6 +904,7 @@ static int exynos_get_temp(void *p, int *temp)
 		if (mcinfo_logging == 1)
 			exynos_ss_thermal(NULL, mcinfo_temp, "MCINFO", 0);
 	}
+#endif
 	return 0;
 }
 

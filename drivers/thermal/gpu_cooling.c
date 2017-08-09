@@ -30,7 +30,9 @@
 #include <soc/samsung/tmu.h>
 #include <trace/events/thermal.h>
 
+#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
 #include <soc/samsung/cal-if.h>
+#endif
 #include <soc/samsung/ect_parser.h>
 
 #if defined(CONFIG_SOC_EXYNOS8895) && defined(CONFIG_SOC_EMULATOR8895)
@@ -307,6 +309,7 @@ static int build_dyn_power_table(struct gpufreq_cooling_device *gpufreq_device,
 	return 0;
 }
 
+#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
 static int build_static_power_table(struct gpufreq_cooling_device *gpufreq_device)
 {
 	int i, j;
@@ -390,6 +393,7 @@ free_var_coeff:
 err_mem:
 	return -ENOMEM;
 }
+#endif
 
 static int lookup_static_power(struct gpufreq_cooling_device *gpufreq_device,
 		unsigned long voltage, int temperature, u32 *power)
@@ -828,9 +832,11 @@ __gpufreq_cooling_register(struct device_node *np,
 		if (ret)
 			return ERR_PTR(ret);
 
+#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
 		ret = build_static_power_table(gpufreq_dev);
 		if (ret)
 			return ERR_PTR(ret);
+#endif
 	}
 
 	snprintf(dev_name, sizeof(dev_name), "thermal-gpufreq-%d",
