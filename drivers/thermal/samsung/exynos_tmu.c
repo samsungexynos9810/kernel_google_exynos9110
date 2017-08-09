@@ -1596,41 +1596,6 @@ static int exynos_isp_cooling_register(struct exynos_tmu_data *data)
 static int exynos_isp_cooling_register(struct exynos_tmu_data *data) {return 0;}
 #endif
 
-extern struct cpumask hmp_fast_cpu_mask;
-static int exynos_tmu_cpus_notifier(struct notifier_block *nb,
-				    unsigned long event, void *data)
-{
-	struct exynos_tmu_data *tmudata = container_of(nb, struct exynos_tmu_data, nb);
-	struct thermal_zone_device *tz = tmudata->tzd;
-	struct cpumask mask;
-	int big_cpu_cnt;
-	int count;
-	struct cpufreq_cooling_device *cpufreq_device = (struct cpufreq_cooling_device *)tmudata->cool_dev->devdata;
-
-
-	cpumask_copy(&mask, data);
-	cpumask_and(&mask, &mask, &hmp_fast_cpu_mask);
-	big_cpu_cnt = cpumask_weight(&mask);
-
-	cpumask_copy(&cpufreq_device->target_cpus, &mask);
-
-	switch (event) {
-	case CPUS_DOWN_COMPLETE:
-		if (big_cpu_cnt == DUAL_CPU) {
-			for (count = 0; count < tz->trips; count++)
-				thermal_notify_framework(tz, count);
-		}
-		break;
-	case CPUS_UP_PREPARE:
-		if (big_cpu_cnt == DUAL_CPU || big_cpu_cnt == QUAD_CPU) {
-			for (count = 0; count < tz->trips; count++)
-				thermal_notify_framework(tz, count);
-		}
-		break;
-	}
-	return NOTIFY_OK;
-}
-
 static ssize_t
 balance_offset_show(struct device *dev, struct device_attribute *devattr,
 		       char *buf)
@@ -1879,9 +1844,6 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 
 	if (list_is_singular(&dtm_dev_list)) {
 		register_pm_notifier(&exynos_tmu_pm_notifier);
-		data->nb.notifier_call = exynos_tmu_cpus_notifier;
-		register_cpus_notifier(&data->nb);
-		exynos_cpufreq_reset_boot_qos();
 	}
 
 	if (!IS_ERR(data->tzd))
@@ -1903,7 +1865,6 @@ static int exynos_tmu_remove(struct platform_device *pdev)
 
 	if (list_is_singular(&dtm_dev_list)) {
 		unregister_pm_notifier(&exynos_tmu_pm_notifier);
-		unregister_cpus_notifier(&data->nb);
 	}
 
 	thermal_zone_of_sensor_unregister(&pdev->dev, tzd);
