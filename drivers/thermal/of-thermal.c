@@ -578,9 +578,11 @@ thermal_zone_of_sensor_register(struct device *dev, int sensor_id, void *data,
 						level = cpufreq_cooling_get_level(4, freq);
 						break;
 					case APOLLO :
+					case CPUCL0 :
 						level = cpufreq_cooling_get_level(0, freq);
 						break;
 					case GPU :
+					case G3D :
 						level = gpufreq_cooling_get_level(0, freq);
 						break;
 					case ISP :

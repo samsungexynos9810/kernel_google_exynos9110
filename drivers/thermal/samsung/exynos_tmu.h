@@ -92,6 +92,8 @@ enum thermal_zone_name {
 	GPU,
 	ISP,
 	MNGS_DUAL,
+	CPUCL0,
+	G3D,
 	END_ZONE_NAME,
 };
 
@@ -104,6 +106,8 @@ static const char * const tz_zone_names[] = {
 	[GPU] = "GPU",
 	[ISP] = "ISP",
 	[MNGS_DUAL]= "MNGS_DUAL",
+	[CPUCL0] = "CPUCL0",
+	[G3D]= "G3D",
 };
 
 struct sensor_info {
