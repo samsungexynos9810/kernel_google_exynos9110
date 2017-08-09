@@ -25,11 +25,10 @@
 
 #include <soc/samsung/exynos-devfreq.h>
 #include <soc/samsung/bts.h>
-#include <linux/apm-exynos.h>
-#include <soc/samsung/asv-exynos.h>
+//#include <soc/samsung/asv-exynos.h>
 
 #include "../../../drivers/soc/samsung/pwrcal/pwrcal.h"
-#include "../../../drivers/soc/samsung/pwrcal/S5E7570/S5E7570-vclk.h"
+#include "../../../drivers/soc/samsung/pwrcal/S5E7270/S5E7270-vclk.h"
 #include "../governor.h"
 
 #ifdef CONFIG_SHARE_MIF_FREQ_INFO

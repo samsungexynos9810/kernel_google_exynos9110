@@ -24,7 +24,7 @@
 #include <soc/samsung/exynos-devfreq.h>
 
 #include "../../../drivers/soc/samsung/pwrcal/pwrcal.h"
-#include "../../../drivers/soc/samsung/pwrcal/S5E7570/S5E7570-vclk.h"
+#include "../../../drivers/soc/samsung/pwrcal/S5E7270/S5E7270-vclk.h"
 #include "../governor.h"
 
 static int exynos7570_devfreq_cam_cmu_dump(struct exynos_devfreq_data *data)
