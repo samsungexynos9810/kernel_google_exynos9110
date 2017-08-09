@@ -100,8 +100,8 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
 		stat->total_time >>= 7;
 	}
 
-	stat.busy_time *= dfso_multiplication_weight;
-	stat.busy_time = div64_u64(stat.busy_time, 100);
+	stat->busy_time *= dfso_multiplication_weight;
+	stat->busy_time = div64_u64(stat.busy_time, 100);
 
 	/* Set MAX if it's busy enough */
 	if (stat->busy_time * 100 >
