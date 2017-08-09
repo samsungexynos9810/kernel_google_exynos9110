@@ -7,7 +7,7 @@ obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-pm.o
 
 obj-$(CONFIG_ARM64_EXYNOS_CPUIDLE)	+= cpuidle_profiler.o
 
-#obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-smc.o
+obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-smc.o
 obj-$(CONFIG_EXYNOS_RGT)	+= exynos-rgt.o
 
 # CAL
