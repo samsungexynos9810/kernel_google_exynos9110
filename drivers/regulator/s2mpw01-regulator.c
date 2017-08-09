@@ -65,6 +65,8 @@ static char *rdev_name(struct regulator_dev *rdev)
 
 static unsigned int s2m_of_map_mode(unsigned int val) {
 	switch(val) {
+	case SEC_OPMODE_OFF:
+		return 0x0;
 	case SEC_OPMODE_SUSPEND:	/* ON in Standby Mode*/
 		return 0x1;
 	case SEC_OPMODE_TCXO:		/* ON in PWREN_MIF mode */
@@ -85,6 +87,9 @@ static int s2m_set_mode(struct regulator_dev *rdev,
 	int ret, id = rdev_get_id(rdev);
 
 	switch (mode) {
+	case SEC_OPMODE_OFF:
+		val = 0x0 << S2MPW01_ENABLE_SHIFT;
+		break;
 	case SEC_OPMODE_SUSPEND:		/* ON in Standby Mode */
 		val = 0x1 << S2MPW01_ENABLE_SHIFT;
 		break;
