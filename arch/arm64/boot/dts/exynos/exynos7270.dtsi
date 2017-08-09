@@ -90,6 +90,7 @@
 			reg = <0x0 0x0>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP>;
+			#cooling-cells = <2>;
 		};
 		cpu@1 {
 			device_type = "cpu";
@@ -982,6 +983,7 @@
 		clocks = <&clock 203>;
 		clock-names = "vclk_g3d";
 		samsung,power-domain = <&pd_g3d>;
+		#cooling-cells = <2>;
 	};
 
 	mfc_0: mfc0@12C30000 {
@@ -1290,9 +1292,8 @@
 		interrupts = <0 435 0>;
 		tmu_name = "APL";
 		id = <0>;
-		hotplug_enable = <1>;
-		hotplug_in_threshold = <91>;
-		hotplug_out_threshold = <96>;
+		sensing_mode = "MAX";
+		sensors = <1>;
 		#include "exynos7270-tmu-sensor-conf.dtsi"
         };
 
@@ -1301,16 +1302,17 @@
 		reg = <0x0 0x10130000 0x200>;
 		interrupts = <0 435 0>;
 		tmu_name = "GPU";
-		id = <1>;
+		id = <2>;
+		sensors = <1>;
+		sensing_mode = "MAX";
 		/* gpu cooling related table */
 		/* flags, driver_data(index), frequency */
-		gpu_idx_num = <6>;
-		gpu_cooling_table = < 0 0 546000
-				      0 1 455000
-				      0 2 385000
-				      0 3 338000
-				      0 4 260000
-				      0 5 TABLE_END>;
+		gpu_idx_num = <5>;
+		gpu_cooling_table = < 0 0 420000
+				      0 1 350000
+				      0 2 169000
+				      0 3 97000
+				      0 4 TABLE_END>;
 		#include "exynos7270-tmu-sensor-conf.dtsi"
 	};
 
@@ -1459,27 +1461,27 @@
 				     cooling-device = <&mali 0 0>;
 				};
 				map2 {
-				     trip = <&gpu_alert0>;
+				     trip = <&gpu_alert2>;
 				     cooling-device = <&mali 0 0>;
 				};
 				map3 {
-				     trip = <&gpu_alert1>;
+				     trip = <&gpu_alert3>;
 				     cooling-device = <&mali 0 0>;
 				};
 				map4 {
-				     trip = <&gpu_alert1>;
+				     trip = <&gpu_alert4>;
 				     cooling-device = <&mali 0 0>;
 				};
 				map5 {
-				     trip = <&gpu_alert1>;
+				     trip = <&gpu_alert5>;
 				     cooling-device = <&mali 0 0>;
 				};
 				map6 {
-				     trip = <&gpu_alert1>;
+				     trip = <&gpu_alert6>;
 				     cooling-device = <&mali 0 0>;
 				};
 				map7 {
-				     trip = <&gpu_alert1>;
+				     trip = <&gpu_hot>;
 				     cooling-device = <&mali 0 0>;
 				};
 			};
