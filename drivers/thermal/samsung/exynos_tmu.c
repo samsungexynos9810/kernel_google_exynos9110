@@ -1801,11 +1801,6 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	 * data->tzd must be registered before calling exynos_tmu_initialize(),
 	 * requesting irq and calling exynos_tmu_control().
 	 */
-	if(data->hotplug_enable)
-		pm_qos_add_request(&thermal_cpu_hotplug_request,
-					PM_QOS_CPU_ONLINE_MAX,
-					PM_QOS_CPU_ONLINE_MAX_DEFAULT_VALUE);
-
 	data->tzd = thermal_zone_of_sensor_register(&pdev->dev, 0, data,
 						    data->hotplug_enable ?
 						    &exynos_hotplug_sensor_ops :
