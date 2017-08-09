@@ -883,10 +883,7 @@ static int exynos_get_temp(void *p, int *temp)
 
 	mutex_lock(&data->lock);
 
-	if (data->num_of_sensors)
-		*temp = data->tmu_read(data) * MCELSIUS;
-	else
-		*temp = code_to_temp(data, data->tmu_read(data)) * MCELSIUS;
+	*temp = code_to_temp(data, data->tmu_read(data)) * MCELSIUS;
 
 	mutex_unlock(&data->lock);
 
@@ -1014,7 +1011,7 @@ static int exynos_tmu_set_emulation(void *drv_data, int temp)
 
 static int exynos7270_tmu_read(struct exynos_tmu_data *data)
 {
-	return readw(data->base + EXYNOS_TMU_REG_CURRENT_TEMP1_0) &
+	return readl(data->base + EXYNOS_TMU_REG_CURRENT_TEMP1_0) &
 		EXYNOS_TMU_TEMP_MASK;
 }
 
