@@ -1748,10 +1748,11 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 		if (ourport->mif_qos_val)
 			pm_qos_add_request(&ourport->s3c24xx_uart_mif_qos,
 						PM_QOS_BUS_THROUGHPUT, 0);
-
+#if 0
 		if (ourport->cpu_qos_val)
 			pm_qos_add_request(&ourport->s3c24xx_uart_cpu_qos,
 						PM_QOS_CLUSTER1_FREQ_MIN, 0);
+#endif
 	}
 #endif
 	if (of_get_property(pdev->dev.of_node, "samsung,in-band-wakeup", NULL))
