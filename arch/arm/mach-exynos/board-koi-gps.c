@@ -31,6 +31,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <linux/pinctrl/consumer.h>
+#include <linux/pinctrl/pinconf-koi.h>
 
 struct gps_info {
 	int nr_gpio;
@@ -113,6 +114,30 @@ static struct platform_driver koi_gps_platform_driver = {
 };
 
 module_platform_driver(koi_gps_platform_driver);
+
+int get_product_id(void);	/* defined in arch/arm/mach-exynos/exynos.c */
+
+static int __init koi_gps_optimize_uart(void)
+{
+	/* optimize pull setting */
+	/* UART1_TX */
+	pin_config_set("11400000.pinctrl", "gpa0-5", 0x0002);// pud		:NoPull
+	pin_config_set("11400000.pinctrl", "gpa0-5", 0x0005);// pudpdn	:NoPull
+	/* UART1_RTS */
+	pin_config_set("11400000.pinctrl", "gpa0-7", 0x0002);// pud:	:NoPull
+	pin_config_set("11400000.pinctrl", "gpa0-7", 0x0005);// pudpdn	:NoPull
+	if (get_product_id()) {	/* ayu */
+		/* UART1_RX */
+		pin_config_set("11400000.pinctrl", "gpa0-4", 0x0002);// pud		:NoPull
+		pin_config_set("11400000.pinctrl", "gpa0-4", 0x0005);// pudpdn	:NoPull
+		/* UART1_CTS */
+		pin_config_set("11400000.pinctrl", "gpa0-6", 0x0002);// pud		:NoPull
+		pin_config_set("11400000.pinctrl", "gpa0-6", 0x0005);// pudpdn	:NoPull
+	}
+	return 0;
+}
+
+late_initcall(koi_gps_optimize_uart);
 
 MODULE_ALIAS("platform:koi-gps");
 MODULE_DESCRIPTION("koi_gps");

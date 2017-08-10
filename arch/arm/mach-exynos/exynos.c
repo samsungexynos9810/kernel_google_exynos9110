@@ -228,6 +228,16 @@ static void exynos_restart(enum reboot_mode mode, const char *cmd)
 
 	__raw_writel(0x1, pmu_base_addr + EXYNOS_SWRESET);
 }
+
+/*
+ * return: 0 = koi, 1 = ayu
+ */
+int get_product_id(void)
+{
+	int product_id = readl(pmu_base_addr + S5P_INFORM7);
+	return product_id;
+}
+
 #else
 static void exynos_restart(enum reboot_mode mode, const char *cmd)
 {

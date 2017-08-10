@@ -60,8 +60,8 @@
 
 #define BT_GPIO_POWER	    (0x5b)
 
-#define GPIO_ON			1
-#define GPIO_OFF		0
+#define	POWER_ON		1
+#define	POWER_OFF		0
 
 #define DEBUG_PRINT
 #ifdef DEBUG_PRINT
@@ -204,87 +204,162 @@ unsigned int wcf_status(struct device *dev)
 	return g_wifi_detect;
 }
 
-static void bcm_wifi_set_pincntl(int en_wifi) {
-	int ret;
-	if(en_wifi == GPIO_ON) {
-		ret = pin_config_set("11000000.pinctrl", "gpk1-0", 0x0002);/* 1byte:disable 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-1", 0x0302);/* 1byte:pull up 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-3", 0x0302);/* 1byte:pull up 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-4", 0x0302);/* 1byte:pull up 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-5", 0x0302);/* 1byte:pull up 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-6", 0x0302);/* 1byte:pull up 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-3", 0x0002);/* 1byte:disable 0byte:pud */
+/* cf. arch\arm\mach-exynos\include\mach\pinctrl-samsung.h */
+static void bcm_wifi_set_pinctrl(int wl_power) {
+	int bt_power = gpio_get_value(BT_GPIO_POWER);
 
-		ret = pin_config_set("11000000.pinctrl", "gpk1-0", 0x0200);/* 1byte:SDIO 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-1", 0x0200);/* 1byte:SDIO 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-3", 0x0200);/* 1byte:SDIO 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-4", 0x0200);/* 1byte:SDIO 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-5", 0x0200);/* 1byte:SDIO 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-6", 0x0200);/* 1byte:SDIO 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-3", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
+	PR_INFO("%s():WiFi=%d, BT=%d\n", __func__, wl_power, bt_power);
+	if(wl_power == POWER_ON) { // WLAN ON
+		// SDIO1_CLK
+		pin_config_set("11000000.pinctrl", "gpk1-0", 0x0002);// pud		:NoPull
+		pin_config_set("11000000.pinctrl", "gpk1-0", 0x0200);// con		:SDIO
+		pin_config_set("11000000.pinctrl", "gpk1-0", 0x0005);// pudpdn	:NoPull
+		pin_config_set("11000000.pinctrl", "gpk1-0", 0x0304);// conpdn	:Previous
+		// SDIO1_CMD
+		pin_config_set("11000000.pinctrl", "gpk1-1", 0x0302);// pud		:PU
+		pin_config_set("11000000.pinctrl", "gpk1-1", 0x0200);// con		:SDIO
+		pin_config_set("11000000.pinctrl", "gpk1-1", 0x0305);// pudpdn	:PU
+		pin_config_set("11000000.pinctrl", "gpk1-1", 0x0304);// conpdn	:Previous
+		// SDIO1_DATA0
+		pin_config_set("11000000.pinctrl", "gpk1-3", 0x0302);// pud		:PU
+		pin_config_set("11000000.pinctrl", "gpk1-3", 0x0200);// con		:SDIO
+		pin_config_set("11000000.pinctrl", "gpk1-3", 0x0305);// pudpdn	:PU
+		pin_config_set("11000000.pinctrl", "gpk1-3", 0x0304);// conpdn	:Previous
+		// SDIO1_DATA1
+		pin_config_set("11000000.pinctrl", "gpk1-4", 0x0302);// pud		:PU
+		pin_config_set("11000000.pinctrl", "gpk1-4", 0x0200);// con		:SDIO
+		pin_config_set("11000000.pinctrl", "gpk1-4", 0x0305);// pudpdn	:PU
+		pin_config_set("11000000.pinctrl", "gpk1-4", 0x0304);// conpdn	:Previous
+		// SDIO1_DATA2
+		pin_config_set("11000000.pinctrl", "gpk1-5", 0x0302);// pud		:PU
+		pin_config_set("11000000.pinctrl", "gpk1-5", 0x0200);// con		:SDIO
+		pin_config_set("11000000.pinctrl", "gpk1-5", 0x0305);// pudpdn	:PU
+		pin_config_set("11000000.pinctrl", "gpk1-5", 0x0304);// conpdn	:Previous
+		// SDIO1_DATA3
+		pin_config_set("11000000.pinctrl", "gpk1-6", 0x0302);// pud		:PU
+		pin_config_set("11000000.pinctrl", "gpk1-6", 0x0200);// con		:SDIO
+		pin_config_set("11000000.pinctrl", "gpk1-6", 0x0305);// pudpdn	:PU
+		pin_config_set("11000000.pinctrl", "gpk1-6", 0x0304);// conpdn	:Previous
+		// WLAN_MAIN_WKUP
+		pin_config_set("11000000.pinctrl", "gpx2-3", 0x0002);// pud		:NoPull
+		pin_config_set("11000000.pinctrl", "gpx2-3", 0x0F00);// con		:EXT_INT42
 
-		if(gpio_get_value(BT_GPIO_POWER) == GPIO_OFF) { // BT OFF
-			PR_INFO("%s():set WiFi ON, BT OFF\n", __func__);
-
-			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0002);/* 1byte:disable 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0002);/* 1byte:disable 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0002);/* 1byte:disable 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);/* 1byte:pull down 0byte:pud */
-
-			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
-			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0100);/* 1byte:output 0byte:func */
-		} else { // BT ON
-			PR_INFO("%s():set WiFi ON, BT ON\n", __func__);
-			// no need to switch pins because they were already set when BT up.
+		if(bt_power == POWER_OFF) { // WLAN ON, BT OFF
+			// UART0_RX
+			pin_config_set("11400000.pinctrl", "gpa0-0", 0x0102);// pud		:PD
+			pin_config_set("11400000.pinctrl", "gpa0-0", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpa0-0", 0x0105);// pudpdn	:PD
+			pin_config_set("11400000.pinctrl", "gpa0-0", 0x0304);// conpdn	:Previous
+			// UART0_TX
+			pin_config_set("11400000.pinctrl", "gpa0-1", 0x0302);// pud		:PU... BT_UART_RXD is pulled up if BT or WiFi ON
+			pin_config_set("11400000.pinctrl", "gpa0-1", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpa0-1", 0x0305);// pudpdn	:PU
+			pin_config_set("11400000.pinctrl", "gpa0-1", 0x0304);// conpdn	:Previous
+			// UART0_CTS
+			pin_config_set("11400000.pinctrl", "gpa0-2", 0x0102);// pud		:PD
+			pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpa0-2", 0x0105);// pudpdn	:PD
+			pin_config_set("11400000.pinctrl", "gpa0-2", 0x0304);// conpdn	:Previous
+			// UART0_RTS
+			pin_config_set("11400000.pinctrl", "gpa0-3", 0x0102);// pud		:PD
+			pin_config_set("11400000.pinctrl", "gpa0-3", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpa0-3", 0x0105);// pudpdn	:PD
+			pin_config_set("11400000.pinctrl", "gpa0-3", 0x0304);// conpdn	:Previous
+			// MAIN_BT_WKUP
+			pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);// pud		:PD
+			pin_config_set("11400000.pinctrl", "gpc0-3", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpc0-3", 0x0105);// pudpdn	:PD
+			pin_config_set("11400000.pinctrl", "gpc0-3", 0x0304);// conpdn	:Previous
+			// BT_MAIN_WKUP
+			pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpx2-6", 0x0000);// con		:In
 		}
-	} else { // wlan off
-		ret = pin_config_set("11000000.pinctrl", "gpk1-0", 0x0102);/* 1byte:pull down 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-1", 0x0102);/* 1byte:pull down 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-3", 0x0102);/* 1byte:pull down 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-4", 0x0102);/* 1byte:pull down 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-5", 0x0102);/* 1byte:pull down 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-6", 0x0102);/* 1byte:pull down 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-3", 0x0102);/* 1byte:pull down 0byte:pud */
+	} else { // WLAN OFF
+		if(bt_power == POWER_OFF) { // WLAN OFF, BT OFF
+			// UART0_RX
+			pin_config_set("11400000.pinctrl", "gpa0-0", 0x0102);// pud		:PD
+			pin_config_set("11400000.pinctrl", "gpa0-0", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpa0-0", 0x0105);// pudpdn	:PD
+			pin_config_set("11400000.pinctrl", "gpa0-0", 0x0304);// conpdn	:Previous
+			// UART0_TX
+			pin_config_set("11400000.pinctrl", "gpa0-1", 0x0302);// pud		:PU... BT_UART_RXD is pulled up if BT or WiFi ON
+			pin_config_set("11400000.pinctrl", "gpa0-1", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpa0-1", 0x0305);// pudpdn	:PU
+			pin_config_set("11400000.pinctrl", "gpa0-1", 0x0304);// conpdn	:Previous
+			// UART0_CTS
+			pin_config_set("11400000.pinctrl", "gpa0-2", 0x0102);// pud		:PD
+			pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpa0-2", 0x0105);// pudpdn	:PD
+			pin_config_set("11400000.pinctrl", "gpa0-2", 0x0304);// conpdn	:Previous
+			// UART0_RTS
+			pin_config_set("11400000.pinctrl", "gpa0-3", 0x0102);// pud		:PD
+			pin_config_set("11400000.pinctrl", "gpa0-3", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpa0-3", 0x0105);// pudpdn	:PD
+			pin_config_set("11400000.pinctrl", "gpa0-3", 0x0304);// conpdn	:Previous
+			// MAIN_BT_WKUP
+			pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);// pud		:PD
+			pin_config_set("11400000.pinctrl", "gpc0-3", 0x0000);// con		:In
+			pin_config_set("11400000.pinctrl", "gpc0-3", 0x0105);// pudpdn	:PD
+			pin_config_set("11400000.pinctrl", "gpc0-3", 0x0304);// conpdn	:Previous
+			// BT_MAIN_WKUP
+			pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpx2-6", 0x0000);// con		:In
 
-		ret = pin_config_set("11000000.pinctrl", "gpk1-0", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-1", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-3", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-4", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-5", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpk1-6", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-3", 0x0100);/* 1byte:output 0xyte:func */
-
-		if(gpio_get_value(BT_GPIO_POWER) == GPIO_OFF) { // BT OFF
-			PR_INFO("%s():set WiFi OFF, BT OFF\n", __func__);
-
-			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);/* 1byte:pull down 0byte:pud */
-
-			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0100);/* 1byte:output 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0100);/* 1byte:output 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0100);/* 1byte:output 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0100);/* 1byte:output 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
-			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0100);/* 1byte:output 0byte:func */
-		} else { // BT ON
-			PR_INFO("%s():set WiFi OFF, BT ON\n", __func__);
-			// no need to switch pins because they were already set when BT up.
+			// SDIO1_CLK
+			pin_config_set("11000000.pinctrl", "gpk1-0", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpk1-0", 0x0000);// con		:In
+			pin_config_set("11000000.pinctrl", "gpk1-0", 0x0105);// pudpdn	:PD
+			pin_config_set("11000000.pinctrl", "gpk1-0", 0x0304);// conpdn	:Previous
+			// SDIO1_CMD
+			pin_config_set("11000000.pinctrl", "gpk1-1", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpk1-1", 0x0000);// con		:In
+			pin_config_set("11000000.pinctrl", "gpk1-1", 0x0105);// pudpdn	:PD
+			pin_config_set("11000000.pinctrl", "gpk1-1", 0x0304);// conpdn	:Previous
+			// SDIO1_DATA0
+			pin_config_set("11000000.pinctrl", "gpk1-3", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpk1-3", 0x0000);// con		:In
+			pin_config_set("11000000.pinctrl", "gpk1-3", 0x0105);// pudpdn	:PD
+			pin_config_set("11000000.pinctrl", "gpk1-3", 0x0304);// conpdn	:Previous
+			// SDIO1_DATA1
+			pin_config_set("11000000.pinctrl", "gpk1-4", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpk1-4", 0x0000);// con		:In
+			pin_config_set("11000000.pinctrl", "gpk1-4", 0x0105);// pudpdn	:PD
+			pin_config_set("11000000.pinctrl", "gpk1-4", 0x0304);// conpdn	:Previous
+			// SDIO1_DATA2
+			pin_config_set("11000000.pinctrl", "gpk1-5", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpk1-5", 0x0000);// con		:In
+			pin_config_set("11000000.pinctrl", "gpk1-5", 0x0105);// pudpdn	:PD
+			pin_config_set("11000000.pinctrl", "gpk1-5", 0x0304);// conpdn	:Previous
+			// SDIO1_DATA3
+			pin_config_set("11000000.pinctrl", "gpk1-6", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpk1-6", 0x0000);// con		:In
+			pin_config_set("11000000.pinctrl", "gpk1-6", 0x0105);// pudpdn	:PD
+			pin_config_set("11000000.pinctrl", "gpk1-6", 0x0304);// conpdn	:Previous
+			// WLAN_MAIN_WKUP
+			pin_config_set("11000000.pinctrl", "gpx2-3", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpx2-3", 0x0000);// con		:In
+		} else { // WLAN OFF, BT ON
+			// WLAN_MAIN_WKUP
+			pin_config_set("11000000.pinctrl", "gpx2-3", 0x0102);// pud		:PD
+			pin_config_set("11000000.pinctrl", "gpx2-3", 0x0000);// con		:In
 		}
 	}
 
 	return;
 }
 
+static void bcm_wifi_set_pinctrl_post_reset(int wl_power) {
+	int bt_power = gpio_get_value(BT_GPIO_POWER);
+	if(bt_power == POWER_OFF && wl_power == POWER_OFF) {
+		PR_INFO("%s():WiFi=%d, BT=%d\n", __func__, wl_power, bt_power);
+		// UART0_TX
+		pin_config_set("11400000.pinctrl", "gpa0-1", 0x0102);// pud		:PD
+		pin_config_set("11400000.pinctrl", "gpa0-1", 0x0000);// con		:In
+		pin_config_set("11400000.pinctrl", "gpa0-1", 0x0105);// pudpdn	:PD
+		pin_config_set("11400000.pinctrl", "gpa0-1", 0x0304);// conpdn	:Previous
+	}
+	return;
+}
 
 int bcm_wifi_set_power(int enable)
 {
@@ -296,10 +371,11 @@ int bcm_wifi_set_power(int enable)
 
 	int lock_cookie_wifi = 'W' | 'i'<<8 | 'F'<<16 | 'i'<<24;    /* cookie "WiFi" */
 
+	bcm_power_lock(lock_cookie_wifi);
 	regulator = regulator_get(NULL, "vdd_bt_dual_1v8");
 	if(regulator == NULL) {
  		pr_err("wifi regulator get error\n");
- 		return ret;
+		goto err_regulator;
  	}
 	rdev = regulator->rdev;
 	pre_use_count = rdev->use_count;
@@ -319,10 +395,9 @@ int bcm_wifi_set_power(int enable)
 		pr_err("%s: btlock acquired\n",__FUNCTION__);
 #endif /* CONFIG_BCM4335BT */
 
-		bcm_power_lock(lock_cookie_wifi);
-		bcm_wifi_set_pincntl(enable);
-
+		bcm_wifi_set_pinctrl(enable);
 		ret = gpio_direction_output(gpio_power, 1);
+		bcm_wifi_set_pinctrl_post_reset(enable);
 
 #ifdef CONFIG_BCM4335BT
 		bcm_bt_unlock(lock_cookie_wifi);
@@ -330,17 +405,12 @@ int bcm_wifi_set_power(int enable)
 		if (ret) {
 			pr_err("%s: WL_REG_ON  failed to pull up (%d)\n",
 					__func__, ret);
-			return ret;
+			goto err_gpio;
 		}
 		/* WLAN chip to reset */
-		mdelay(200); /* wait at least 150ms before transmitting */
-		bcm_power_unlock(lock_cookie_wifi);
+		msleep(200); /* wait at least 150ms before transmitting */
 		pr_info("%s: wifi power successed to pull up\n", __func__);
 	} else { // OFF
-		ret = regulator_disable(regulator);
-		if(rdev->use_count == 0) {
-			regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x00); /* 32kHzBT_EN OFF */
-		}
 #ifdef CONFIG_BCM4335BT
 		int lock_cookie_wifi = 'W' | 'i'<<8 | 'F'<<16 | 'i'<<24;	/* cookie is "WiFi" */
 		printk("WiFi: trying to acquire BT lock\n");
@@ -348,10 +418,15 @@ int bcm_wifi_set_power(int enable)
 			printk("** WiFi: timeout in acquiring bt lock**\n");
 		pr_err("%s: btlock acquired\n",__FUNCTION__);
 #endif /* CONFIG_BCM4335BT */
-		bcm_power_lock(lock_cookie_wifi);
-		bcm_wifi_set_pincntl(enable);
 
+		bcm_wifi_set_pinctrl(enable);
 		ret = gpio_direction_output(gpio_power, 0);
+		bcm_wifi_set_pinctrl_post_reset(enable);
+
+		ret = regulator_disable(regulator);
+		if(rdev->use_count == 0) {
+			regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x00); /* 32kHzBT_EN OFF */
+		}
 
 #ifdef CONFIG_BCM4335BT
 		bcm_bt_unlock(lock_cookie_wifi);
@@ -359,16 +434,22 @@ int bcm_wifi_set_power(int enable)
 		if (ret) {
 			pr_err("%s:  WL_REG_ON  failed to pull down (%d)\n",
 					__func__, ret);
-			return ret;
+			goto err_gpio;
 		}
 
 		/* WLAN chip down */
-		mdelay(100);
-		bcm_power_unlock(lock_cookie_wifi);
+		msleep(100);
 		pr_info("%s: wifi power successed to pull down\n", __func__);
 	}
 
 	regulator_put(regulator);
+	bcm_power_unlock(lock_cookie_wifi);
+	return ret;
+
+err_gpio:
+	regulator_put(regulator);
+err_regulator:
+	bcm_power_unlock(lock_cookie_wifi);
 	return ret;
 }
 
@@ -376,19 +457,22 @@ static int __init bcm_wifi_init_gpio_mem(struct platform_device *pdev)
 {
 	int rc = 0;
 
+	int lock_cookie_wifi = 'W' | 'i'<<8 | 'F'<<16 | 'i'<<24;    /* cookie "WiFi" */
+	bcm_power_lock(lock_cookie_wifi);
+
 	/* WLAN_POWER */
 	rc = gpio_request_one(gpio_power, GPIOF_OUT_INIT_LOW, "WL_REG_ON");
 	if (rc < 0) {
 		pr_err("%s: Failed to request gpio %d for WL_REG_ON\n",
                                 __func__, gpio_power);
-                return rc;
+                goto err_gpio_wifi_power;
 	}
 
 	rc = pin_config_set("11000000.pinctrl", "gpx3-2", 0x0100);
 	rc = pin_config_set("11000000.pinctrl", "gpx3-2", 0x0002);
 	if (rc < 0) { 
 		pr_err("%s: Failed to configure WLAN_POWER\n", __func__);
-		return rc;
+		goto err_gpio_wifi_power;
 	}
 
 	/* HOST_WAKEUP */
@@ -418,12 +502,15 @@ static int __init bcm_wifi_init_gpio_mem(struct platform_device *pdev)
 		goto err_alloc_wifi_mem_array;
 
 	pr_info("%s: wifi gpio and mem initialized\n", __func__);
+	bcm_power_unlock(lock_cookie_wifi);
 	return 0;
 
 err_alloc_wifi_mem_array:
 	gpio_free(gpio_hostwake);
 err_gpio_tlmm_wakes_msm:
 	gpio_free(gpio_power);
+err_gpio_wifi_power:
+	bcm_power_unlock(lock_cookie_wifi);
 	return rc;
 }
 
