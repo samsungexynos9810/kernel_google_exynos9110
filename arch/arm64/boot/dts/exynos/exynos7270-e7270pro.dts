@@ -706,11 +706,11 @@
 		battery,full_check_type = <7>;
 		/* SEC_BATTERY_FULLCHARGED_CHGPSY */
 		battery,full_check_type_2nd = <7>;
-		battery,full_check_count = <1>;
+		battery,full_check_count = <3>;
 		battery,chg_gpio_full_check = <0>;
 		battery,chg_polarity_full_check = <1>;
-		battery,chg_full_vcell = <4330>;
-		battery,chg_recharge_vcell = <4300>;
+		battery,chg_full_vcell = <4310>;
+		battery,chg_recharge_vcell = <4100>;
 
 		battery,temp_check_type = <2>;
 		battery,temp_check_count = <1>;

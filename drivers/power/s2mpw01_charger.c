@@ -38,7 +38,6 @@ struct s2mpw01_charger_data {
 	s2mpw01_charger_platform_data_t *pdata;
 	int dev_id;
 	int charging_current;
-	int siop_level;
 	int cable_type;
 	bool is_charging;
 	bool is_usb_ready;
@@ -80,12 +79,6 @@ extern unsigned int batt_booting_chk;
 
 static int s2mpw01_get_charging_health(struct s2mpw01_charger_data *charger);
 
-/* Add for charger debugging */
-int s2mpw01_charger_en;
-int s2mpw01_charger_current;
-int s2mpw01_charger_float;
-int s2mpw01_charger_topoff;
-
 static char *s2mpw01_supplied_to[] = {
 	"s2mu00x-battery",
 };
@@ -122,13 +115,10 @@ static void s2mpw01_enable_charger_switch(struct s2mpw01_charger_data *charger,
 
 	if (onoff > 0) {
 		pr_err("[DEBUG]%s: turn on charger\n", __func__);
-		s2mpw01_charger_en = 1;
 		s2mpw01_update_reg(charger->client, S2MPW01_CHG_REG_CTRL1, EN_CHG_MASK, EN_CHG_MASK);
 	} else {
 		charger->full_charged = false;
 		pr_err("[DEBUG] %s: turn off charger\n", __func__);
-
-		s2mpw01_charger_en = 0;
 
 		if (charger->dev_id < EVT_3) {
 			if (!charger->factory_mode) {
@@ -184,8 +174,6 @@ static void s2mpw01_set_regulation_voltage(struct s2mpw01_charger_data *charger,
 
 	pr_err("[DEBUG]%s: float_voltage %d\n", __func__, float_voltage);
 
-	s2mpw01_charger_float = float_voltage;
-
 	if (float_voltage <= 4200)
 		data = 0;
 	else if (float_voltage > 4200 && float_voltage <= 4550)
@@ -203,8 +191,6 @@ static void s2mpw01_set_fast_charging_current(struct i2c_client *i2c,
 	int data;
 
 	pr_err("[DEBUG]%s: fast charge current  %d\n", __func__, charging_current);
-
-	s2mpw01_charger_current = charging_current;
 
 	if (charging_current <= 75)
 		data = 0x6;
@@ -282,7 +268,6 @@ static void s2mpw01_set_topoff_current(struct i2c_client *i2c, int current_limit
 		data = 0x0F;
 
 	pr_err("[DEBUG]%s: top-off current	%d, data=0x%x\n", __func__, current_limit, data);
-	s2mpw01_charger_topoff = current_limit;
 
 	s2mpw01_update_reg(i2c, S2MPW01_CHG_REG_CTRL4, data << FIRST_TOPOFF_CURRENT_SHIFT,
 			FIRST_TOPOFF_CURRENT_MASK);
@@ -344,27 +329,11 @@ static void s2mpw01_set_additional(struct s2mpw01_charger_data *charger, int n, 
 /* eoc reset */
 static void s2mpw01_set_charging_current(struct s2mpw01_charger_data *charger)
 {
-	int adj_current = 0;
-	union power_supply_propval value;
-
-	pr_err("[DEBUG]%s: charger->siop_level  %d\n", __func__, charger->siop_level);
-	adj_current = charger->charging_current * charger->siop_level / 100;
-
-	/* When SOC is higher than 96%, then Current must be set to 75 mA */
-	value.intval = 0;
-	psy_do_property("s2mpw01-fuelgauge", get, POWER_SUPPLY_PROP_CAPACITY, value);
-	if ((charger->cable_type == POWER_SUPPLY_TYPE_WPC) &&
-		(value.intval >= 96)) {
-		pr_err("[DEBUG]%s: SOC(%d) is Higher 96 set to 75 mA\n", __func__,
-			value.intval);
-		adj_current = 75;
-	}
-
 	s2mpw01_set_fast_charging_current(charger->client, charger->charging_current);
 
 	if (batt_booting_chk == 0)
 		s2mpw01_set_additional(charger, 7, 1);
-	else 
+	else
 		s2mpw01_set_additional(charger, 0, 0);
 }
 
@@ -396,7 +365,7 @@ static void s2mpw01_configure_charger(struct s2mpw01_charger_data *charger)
 	int eoc = 0;
 	union power_supply_propval chg_mode;
 
-	dev_err(dev, "%s() set configure charger \n", __func__);
+	dev_err(dev, "%s() set configure charger\n", __func__);
 
 	if (charger->charging_current < 0) {
 		dev_info(dev, "%s() OTG is activated. Ignore command!\n",
@@ -677,18 +646,16 @@ static int s2mpw01_chg_set_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		dev_info(dev, "%s() is_charging %d\n", __func__, charger->is_charging);
 		/* set charging current */
+		pr_info("[DEBUG] %s: is_charging %d\n", __func__, charger->is_charging);
 		if (charger->is_charging) {
-			/* decrease the charging current according to siop level */
-			charger->siop_level = val->intval;
-			dev_info(dev, "%s() SIOP level = %d, chg current = %d\n", __func__,
-					val->intval, charger->charging_current);
-			eoc = s2mpw01_get_current_eoc_setting(charger);
+			charger->charging_current = val->intval;
 			s2mpw01_set_charging_current(charger);
 		}
+#if EN_TEST_READ
+		s2mpw01_test_read(charger->client);
+#endif
 		break;
-	/* val->intval : charging current */
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
 		dev_info(dev, "%s() set current[%d]\n", __func__, val->intval);
 		charger->charging_current = val->intval;
@@ -894,9 +861,6 @@ static int s2mpw01_charger_probe(struct platform_device *pdev)
 	charger->dev_id = s2mpw01->pmic_rev;
 	charger->onoff = 0;
 
-	/* need to check siop level */
-	charger->siop_level = 100;
-
 	s2mpw01_chg_init(charger);
 
 	psy_cfg.drv_data = charger;
@@ -941,9 +905,9 @@ static int s2mpw01_charger_probe(struct platform_device *pdev)
 
 	/* factory_mode setting */
 	ret = s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS2, &chg_sts2);
-	if (ret < 0) {
+	if (ret < 0)
 		pr_err("{DEBUG] %s : chg status2 read fail\n", __func__);
-	}
+
 	ret = s2mpw01_read_reg(charger->client, S2MPW01_CHG_REG_STATUS3, &chg_sts3);
 	if (ret < 0)
 		pr_err("{DEBUG] %s : chg status3 read fail\n", __func__);

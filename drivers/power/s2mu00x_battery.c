@@ -187,28 +187,7 @@ static char *s2mu00x_supplied_to[] = {
 
 unsigned int batt_booting_chk;
 
-static int set_charging_current(struct s2mu00x_battery_info *battery)
-{
-	union power_supply_propval value;
-	int input_current = battery->pdata->charging_current[battery->cable_type].input_current_limit,
-		charging_current = battery->pdata->charging_current[battery->cable_type].fast_charging_current,
-		topoff_current = battery->pdata->charging_current[battery->cable_type].full_check_current;
-
-	pr_info("%s: cable_type(%d), current(%d, %d, %d)\n", __func__,
-			battery->cable_type, input_current, charging_current, topoff_current);
-	mutex_lock(&battery->iolock);
-	/* set fast charging current */
-	if (battery->charging_current != charging_current) {
-		value.intval = charging_current;
-		psy_do_property(battery->pdata->charger_name, set,
-				POWER_SUPPLY_PROP_CURRENT_AVG, value);
-		battery->charging_current = charging_current;
-	}
-	mutex_unlock(&battery->iolock);
-	return 0;
-}
-
-static int sec_bat_set_charge(
+static int set_charge(
 		struct s2mu00x_battery_info *battery,
 		bool enable)
 {
@@ -217,10 +196,6 @@ static int sec_bat_set_charge(
 	pr_info("%s: battery status[%d]\n", __func__, battery->status);
 	if (battery->cable_type == POWER_SUPPLY_TYPE_OTG)
 		return 0;
-
-	val.intval = battery->status;
-	psy_do_property(battery->pdata->charger_name, set,
-			POWER_SUPPLY_PROP_STATUS, val);
 
 	if (enable)
 		val.intval = battery->cable_type;
@@ -249,31 +224,25 @@ static void set_battery_status(struct s2mu00x_battery_info *battery,
 	switch (status) {
 	case POWER_SUPPLY_STATUS_CHARGING:
 		/* charger on */
-		sec_bat_set_charge(battery, true);
-
+		set_charge(battery, true);
 		battery->charging_status = SEC_BATTERY_CHARGING_PROGRESS;
 		break;
 
 	case POWER_SUPPLY_STATUS_DISCHARGING:
 		/* charger off */
-		sec_bat_set_charge(battery, false);
+		set_charge(battery, false);
 		battery->charging_status = SEC_BATTERY_CHARGING_NONE;
 		break;
 
 	case POWER_SUPPLY_STATUS_NOT_CHARGING:
 		/* charger off */
-		sec_bat_set_charge(battery, false);
+		set_charge(battery, false);
 		battery->charging_status = SEC_BATTERY_CHARGING_NONE;
-
-		/* to recover charger configuration when health is recovered */
-		battery->input_current = 0;
-		battery->charging_current = 0;
-		battery->topoff_current = 0;
 		break;
 
 	case POWER_SUPPLY_STATUS_FULL:
 		/* charger off (charger mode update) */
-		sec_bat_set_charge(battery, false);
+		set_charge(battery, false);
 		battery->charging_status = SEC_BATTERY_CHARGING_NONE;
 		break;
 	}
@@ -289,22 +258,16 @@ static int s2mu00x_battery_get_property(struct power_supply *psy,
 		enum power_supply_property psp, union power_supply_propval *val)
 {
 	struct s2mu00x_battery_info *battery =  power_supply_get_drvdata(psy);
-	union power_supply_propval value;
 	int ret = 0;
 
 	dev_dbg(battery->dev, "prop: %d\n", psp);
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
-		psy_do_property(battery->pdata->charger_name, get,
-						POWER_SUPPLY_PROP_STATUS, value);
-		val->intval = value.intval;
-		set_battery_status(battery, value.intval);
+		val->intval = battery->status;
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
-		psy_do_property(battery->pdata->charger_name, get,
-						POWER_SUPPLY_PROP_HEALTH, value);
-		val->intval = value.intval;
+		val->intval = battery->health;
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = battery->cable_type;
@@ -315,30 +278,15 @@ static int s2mu00x_battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		if (!battery->battery_valid)
 			val->intval = FAKE_BAT_LEVEL;
-		else {
-			psy_do_property(battery->pdata->fuelgauge_name, get,
-					POWER_SUPPLY_PROP_VOLTAGE_NOW, value);
-			battery->voltage_now = value.intval;
-			dev_dbg(battery->dev,
-					"%s: voltage now(%d)\n", __func__,
-					battery->voltage_now);
+		else
 			val->intval = battery->voltage_now * 1000;
-		}
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-		value.intval = SEC_BATTERY_VOLTAGE_AVERAGE;
-		psy_do_property(battery->pdata->fuelgauge_name, get,
-				POWER_SUPPLY_PROP_VOLTAGE_AVG, value);
-		battery->voltage_avg = value.intval;
-		dev_dbg(battery->dev,
-				"%s: voltage avg(%d)\n", __func__,
-				battery->voltage_avg);
 		val->intval = battery->voltage_avg * 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = battery->temperature;
 		break;
-	/* charging mode (differ from power supply) */
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
 		val->intval = battery->charging_mode;
 		break;
@@ -419,8 +367,6 @@ static int s2mu00x_bat_cable_check(struct s2mu00x_battery_info *battery,
 		muic_attached_dev_t attached_dev)
 {
 	int current_cable_type = -1;
-
-	pr_debug("[%s]ATTACHED(%d)\n", __func__, attached_dev);
 
 	switch (attached_dev) {
 	case ATTACHED_DEV_JIG_UART_OFF_MUIC:
@@ -567,8 +513,8 @@ static int s2mu00x_battery_handle_notification(struct notifier_block *nb,
 	}
 
 	pr_info(
-			"%s: Status(%s), charging(%s), Health(%s), Cable(%d), Recharging(%d))"
-			"\n", __func__,
+			"%s: Status(%s), charging(%s), Health(%s), Cable(%d), Recharging(%d))\n",
+			__func__,
 			bat_status_str[battery->status],
 			charging_status_str[battery->charging_status],
 			health_str[battery->health],
@@ -576,7 +522,6 @@ static int s2mu00x_battery_handle_notification(struct notifier_block *nb,
 			battery->is_recharging
 		  );
 
-	power_supply_changed(battery->psy_battery);
 	cancel_delayed_work(&battery->polling_work);
 	wake_lock(&battery->monitor_wake_lock);
 	queue_delayed_work(battery->monitor_wqueue, &battery->monitor_work, 0);
@@ -613,16 +558,19 @@ static void get_battery_info(struct s2mu00x_battery_info *battery)
 			POWER_SUPPLY_PROP_TEMP, value);
 	battery->temperature = value.intval;
 
+	psy_do_property(battery->pdata->charger_name, get,
+			POWER_SUPPLY_PROP_STATUS, value);
+	if (battery->status != value.intval)
+		pr_err("%s: battery status = %d, charger status = %d\n",
+				__func__, battery->status, value.intval);
+
 	pr_info(
-			"%s:Vnow(%dmV),Inow(%dmA),SOC(%d%%),Tbat(%d)"
-			"\n", __func__,
+			"%s:Vnow(%dmV),Inow(%dmA),SOC(%d%%),Tbat(%d),Vavg(%dmV)\n",
+			__func__,
 			battery->voltage_now, battery->current_now,
-			battery->capacity, battery->temperature
+			battery->capacity, battery->temperature,
+			battery->voltage_avg
 			);
-	pr_info(
-			"%s,Vavg(%dmV)\n",
-			battery->present ? "Connected" : "Disconnected",
-			battery->voltage_avg);
 }
 
 static bool bat_health_check(struct s2mu00x_battery_info *battery)
@@ -901,7 +849,6 @@ static void bat_monitor_work(struct work_struct *work)
 	power_supply_changed(battery->psy_battery);
 
 continue_monitor:
-	set_charging_current(battery);
 	pr_err(
 		 "%s: Status(%s), charging(%s), Health(%s), Cable(%d), Recharging(%d))"
 		 "\n", __func__,
@@ -1132,14 +1079,6 @@ static int s2mu00x_battery_probe(struct platform_device *pdev)
 
 	battery->is_recharging = false;
 	battery->cable_type = POWER_SUPPLY_TYPE_BATTERY;
-
-	/* Set charger/fuelgauge driver name */
-#ifdef CONFIG_CHARGER_S2MPW01
-	battery->pdata->charger_name = "s2mpw01-charger";
-#endif
-#ifdef CONFIG_FUELGAUGE_S2MPW01
-	battery->pdata->fuelgauge_name = "s2mpw01-fuelgauge";
-#endif
 
 	psy_do_property(battery->pdata->charger_name, get,
 			POWER_SUPPLY_PROP_PRESENT, value);
