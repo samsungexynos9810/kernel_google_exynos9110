@@ -92,6 +92,8 @@
 #include <mali_kbase_tlstream.h>
 
 #include <mali_kbase_as_fault_debugfs.h>
+/* MALI_SEC_INTEGRATION */
+#include <backend/gpu/mali_kbase_pm_internal.h>
 
 /* GPU IRQ Tags */
 #define	JOB_IRQ_TAG	0
@@ -4109,6 +4111,33 @@ int kbase_device_resume(struct kbase_device *kbdev)
 	return 0;
 }
 
+/* MALI_SEC_INTEGRATION */
+extern struct kbase_device *pkbdev;
+static void kbase_platform_device_shutdown(struct platform_device *dev)
+{
+	struct kbase_device *kbdev = pkbdev;
+	struct kbase_context *kctx;
+	struct kbasep_js_kctx_info *js_kctx_info;
+	struct kbasep_kctx_list_element *element, *tmp;
+	unsigned long irq_flags;
+
+	kbase_pm_register_access_enable(kbdev);
+
+	mutex_lock(&kbdev->kctx_list_lock);
+	list_for_each_entry_safe(element, tmp, &kbdev->kctx_list, link) {
+		kctx = element->kctx;
+		js_kctx_info = &kctx->jctx.sched_info;
+		mutex_lock(&js_kctx_info->ctx.jsctx_mutex);
+		spin_lock_irqsave(&kctx->kbdev->hwaccess_lock, irq_flags);
+		kbase_ctx_flag_set(kctx, KCTX_SUBMIT_DISABLED);
+		spin_unlock_irqrestore(&kctx->kbdev->hwaccess_lock, irq_flags);
+		mutex_unlock(&js_kctx_info->ctx.jsctx_mutex);
+	}
+	mutex_unlock(&kbdev->kctx_list_lock);
+	kbase_pm_suspend(pkbdev);
+	return;
+}
+
 /** Runtime suspend callback from the OS.
  *
  * This is called by Linux when the device should prepare for a condition in which it will
@@ -4230,6 +4259,7 @@ MODULE_DEVICE_TABLE(of, kbase_dt_ids);
 static struct platform_driver kbase_platform_driver = {
 	.probe = kbase_platform_device_probe,
 	.remove = kbase_platform_device_remove,
+	.shutdown = kbase_platform_device_shutdown,
 	.driver = {
 		   .name = kbase_drv_name,
 		   .owner = THIS_MODULE,
