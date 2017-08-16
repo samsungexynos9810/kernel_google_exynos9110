@@ -122,9 +122,6 @@ int gpu_control_set_clock(struct kbase_device *kbdev, int clock)
 
 	is_up = prev_clock < clock;
 
-	if (is_up)
-		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET);
-
 	if (ctr_ops->set_clock_pre)
 		ctr_ops->set_clock_pre(platform, clock, is_up);
 
@@ -133,13 +130,6 @@ int gpu_control_set_clock(struct kbase_device *kbdev, int clock)
 
 	if (ctr_ops->set_clock_post)
 		ctr_ops->set_clock_post(platform, clock, is_up);
-
-#ifdef CONFIG_MALI_DVFS
-	if (is_up && ret)
-		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET);
-	else if (!is_up && !ret)
-		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET);
-#endif /* CONFIG_MALI_DVFS */
 
 	gpu_dvfs_update_time_in_state(prev_clock);
 	prev_clock = clock;

@@ -31,9 +31,6 @@
 #include <mach/pm_domains-cal.h>
 #endif
 #else
-#ifdef CONFIG_EXYNOS_ASV
-#include <soc/samsung/asv-exynos.h>
-#endif
 #include <S5E7270/S5E7270-vclk.h>
 #include <pwrcal.h>
 #ifdef CONFIG_EXYNOS_PD
@@ -67,7 +64,7 @@ extern int s2m_get_dvs_is_on(void);
 #endif
 
 #ifdef CONFIG_MALI_DVFS
-#define CPU_MAX PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE
+#define CPU_MAX PM_QOS_CLUSTER0_FREQ_MAX_DEFAULT_VALUE
 #else
 #define CPU_MAX -1
 #endif
@@ -133,7 +130,6 @@ static gpu_attribute gpu_config_attributes[] = {
 	{GPU_DVS, 0},
 	{GPU_PERF_GATHERING, 0},
 #ifdef MALI_SEC_HWCNT
-	{GPU_HWCNT_PROFILE, 0},
 	{GPU_HWCNT_GATHERING, 1},
 	{GPU_HWCNT_POLLING_TIME, 90},
 	{GPU_HWCNT_UP_STEP, 3},
@@ -154,21 +150,11 @@ static gpu_attribute gpu_config_attributes[] = {
 	{GPU_CL_DVFS_START_BASE, 420},
 	{GPU_DEBUG_LEVEL, DVFS_WARNING},
 	{GPU_TRACE_LEVEL, TRACE_ALL},
-#ifdef CONFIG_MALI_DVFS_USER
-	{GPU_UDVFS_ENABLE, 1},
-#endif
 	{GPU_MO_MIN_CLOCK, 420},
 	{GPU_SUSTAINABLE_GPU_CLOCK, 420},
 	{GPU_THRESHOLD_MAXLOCK, 10},
 	{GPU_LOW_POWER_CPU_MAX_LOCK, 1040000},
 };
-
-#ifdef CONFIG_MALI_DVFS_USER
-unsigned int gpu_get_config_attr_size(void)
-{
-	return sizeof(gpu_config_attributes);
-}
-#endif
 
 int gpu_dvfs_decide_max_clock(struct exynos_context *platform)
 {
@@ -425,7 +411,7 @@ static int gpu_set_voltage(struct exynos_context *platform, int vol)
 
 	return 0;
 }
-
+#if 0
 static int gpu_set_voltage_pre(struct exynos_context *platform, bool is_up)
 {
 	if (!platform)
@@ -448,13 +434,17 @@ static int gpu_set_voltage_post(struct exynos_context *platform, bool is_up)
 	return 0;
 }
 #endif
-
+#endif
 static struct gpu_control_ops ctr_ops = {
 	.is_power_on = gpu_is_power_on,
 #ifdef CONFIG_MALI_DVFS
 	.set_voltage = gpu_set_voltage,
+	.set_voltage_pre = NULL,
+	.set_voltage_post = NULL,
+#if 0
 	.set_voltage_pre = gpu_set_voltage_pre,
 	.set_voltage_post = gpu_set_voltage_post,
+#endif
 	.set_clock_to_osc = NULL,
 	.set_clock = gpu_set_clock,
 	.set_clock_pre = NULL,

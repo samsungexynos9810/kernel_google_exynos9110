@@ -20,7 +20,6 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0)
 #include <mach/pm_domains-cal.h>
 #include <../pwrcal/S5E7270/S5E7270-vclk.h>
-#include <mach/asv-exynos.h>
 #else
 #ifdef CONFIG_EXYNOS_PD
 #include <soc/samsung/exynos-pd.h>
@@ -629,4 +628,43 @@ int gpu_dvfs_get_step(void)
 	DVFS_ASSERT(platform);
 
 	return platform->table_size;
+}
+
+int gpu_dvfs_get_cur_clock(void)
+{
+	struct kbase_device *kbdev = pkbdev;
+	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
+	int clock = 0;
+
+	DVFS_ASSERT(platform);
+
+	if (gpu_control_is_power_on(pkbdev) == 1) {
+		mutex_lock(&platform->gpu_clock_lock);
+
+		if (platform->dvs_is_enabled || (platform->inter_frame_pm_status && !platform->inter_frame_pm_is_poweron)) {
+			mutex_unlock(&platform->gpu_clock_lock);
+			GPU_LOG(DVFS_INFO, DUMMY, 0u, 0u,
+					"%s: can't get dvfs cur clock\n", __func__);
+			return 0;
+		}
+		clock = gpu_get_cur_clock(platform);
+		mutex_unlock(&platform->gpu_clock_lock);
+	}
+
+
+	return clock;
+}
+
+int gpu_dvfs_get_utilization(void)
+{
+	struct kbase_device *kbdev = pkbdev;
+	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
+	int util = 0;
+
+	DVFS_ASSERT(platform);
+
+	if (gpu_control_is_power_on(pkbdev) == 1)
+		util  = platform->env_data.utilization;
+
+	return util;
 }

@@ -285,6 +285,8 @@ struct exynos_context {
 	bool early_clk_gating_status;
 	bool dvs_status;
 	bool dvs_is_enabled;
+	bool inter_frame_pm_status;
+	bool inter_frame_pm_is_poweron;
 
 	bool power_status;
 	spinlock_t power_status_spinlock;

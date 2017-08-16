@@ -47,7 +47,7 @@ int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state state)
 		if (!platform->pmqos_int_disable)
 			pm_qos_add_request(&exynos5_g3d_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
 		pm_qos_add_request(&exynos5_g3d_cpu_cluster_min_qos, PM_QOS_CLUSTER0_FREQ_MIN, 0);
-		pm_qos_add_request(&exynos5_g3d_cpu_cluster_max_qos, PM_QOS_CLUSTER1_FREQ_MAX, PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
+		pm_qos_add_request(&exynos5_g3d_cpu_cluster_max_qos, PM_QOS_CLUSTER0_FREQ_MAX, PM_QOS_CLUSTER0_FREQ_MAX_DEFAULT_VALUE);
 		break;
 	case GPU_CONTROL_PM_QOS_DEINIT:
 		pm_qos_remove_request(&exynos5_g3d_mif_min_qos);
@@ -82,7 +82,7 @@ int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state state)
 		if (!platform->pmqos_int_disable)
 			pm_qos_update_request(&exynos5_g3d_int_qos, 0);
 		pm_qos_update_request(&exynos5_g3d_cpu_cluster_min_qos, 0);
-		pm_qos_update_request(&exynos5_g3d_cpu_cluster_max_qos, PM_QOS_CLUSTER1_FREQ_MAX_DEFAULT_VALUE);
+		pm_qos_update_request(&exynos5_g3d_cpu_cluster_max_qos, PM_QOS_CLUSTER0_FREQ_MAX_DEFAULT_VALUE);
 		break;
 	case GPU_CONTROL_PM_QOS_EGL_SET:
 		pm_qos_update_request(&exynos5_g3d_cpu_cluster_min_qos, platform->boost_egl_min_lock);
