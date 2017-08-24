@@ -685,43 +685,6 @@
 		};
 	};
 
-	battery {
-		battery,charger_name = "s2mpw01-charger";
-		battery,fuelgauge_name = "s2mpw01-fuelgauge";
-		battery,vendor = "SDI SDI";
-		battery,technology = <2>;
-
-		battery,chg_eoc_dualpath = <1>;
-
-		battery,input_current_limit = <100 0 0 200 200 200 200 200 200 0 200 100 200 200 0 200 200 200 200 200 200 200 0 200 200 20 200>;
-		battery,fast_charging_current = <100 0 0 200 200 200 200 200 200 0 200 75 200 200 0 200 200 200 200 200 200 200 0 200 200 20 200>;
-		battery,full_check_current_1st = <100 0 0 30 30 30 30 30 30 0 30 30 30 30 0 30 30 30 30 30 30 30 0 30 30 20 30>;
-		battery,full_check_current_2nd = <100 0 0 20 20 20 20 20 20 0 20 20 20 20 0 20 20 20 20 20 20 20 0 20 20 20 20>;
-		battery,full_check_current = <100 0 0 20 20 20 20 20 20 0 20 20 20 20 0 20 20 20 20 20 20 20 0 20 20 20 20>;
-
-		battery,recharge_condition_vcell = <4250>;
-
-		/* Battery - Charging Scenario */
-		/* SEC_BATTERY_FULLCHARGED_CHGPSY */
-		battery,full_check_type = <7>;
-		/* SEC_BATTERY_FULLCHARGED_CHGPSY */
-		battery,full_check_type_2nd = <7>;
-		battery,full_check_count = <3>;
-		battery,chg_gpio_full_check = <0>;
-		battery,chg_polarity_full_check = <1>;
-		battery,chg_full_vcell = <4310>;
-		battery,chg_recharge_vcell = <4100>;
-
-		battery,temp_check_type = <2>;
-		battery,temp_check_count = <1>;
-
-		battery,temp_highlimit_threshold_normal = <800>;
-		battery,temp_highlimit_recovery_normal = <750>;
-		battery,temp_high_threshold_normal = <550>;
-		battery,temp_high_recovery_normal = <540>;
-		battery,temp_low_threshold_normal = <(-50)>;
-		battery,temp_low_recovery_normal = <0>;
-	};
 	/* ST HUB */
 	pinctrl@139F0000 {
 		stm_hub_int_ap: stm-hub-int-ap {
@@ -781,21 +744,6 @@
 			hub_int_ap_gpio = <&gpc4 3 0>;
 		};
 
-	};
-
-	s2mpw01-charger {
-		battery,chg_float_voltage = <4390>;
-	};
-
-	s2mpw01-fuelgauge {
-		fuelgauge,fuel_int = <&gpa0 0 0>;
-		fuelgauge,fuel_alert_soc = <1>;
-		fuelgauge,capacity_max = <1000>;
-		fuelgauge,capacity_max_margin = <70>;
-		fuelgauge,capacity_min = <0>;
-		fuelgauge,capacity_calculation_type = <28>;
-		fuelgauge,type_str = "SDI";
-		fuelgauge,model_type = <1>;
 	};
 
 	acpm: acpm@11C88000 {
