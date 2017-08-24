@@ -917,47 +917,6 @@
 		timing,dsi-escape-clk = <16>;
 	};
 
-	/* add for Broadcom bcm43438 */
-	bcmdhd_wlan {
-                compatible = "android,bcmdhd_wlan";
-
-                gpios = <&gpc7 3 1 /* WIFI_REG_ON */
-                         &gpa0 6 0xf /* WLAN_HOST_WAKE */>;
-
-                pinctrl-names = "default";
-                pinctrl-0=<&cfg_wlanen &cfg_wlanhostwake>;
-                status="okay";
-        };   
-
-	bcm43438_bluetooth {
-                 compatible = "broadcom,bcm43438";
-
-                 gpios = <&gpa1 4 1 /*BT_EN*/
-                          &gpa1 2 1 /*BT_WAKE*/
-                          &gpa1 0 0xf /*BT_HOST_WAKE*/>;
-
-                 pinctrl-names = "default";
-                 pinctrl-0=<&bcm43438_hostwake &bcm43438_btwake &bcm43438_en>;
-                 status = "okay";
-        };
-
-        gps: gps {
-                compatible = "samsung,gps-s5n6420";
-                pinctrl-names = "default";
-                pinctrl-0 = <&gps_enable &gps_reset_n>;
-                gpios = <&gpf0 1 0x1
-                         &gpc7 0 0x1>;
-        };
-
-        vibrator {
-                status = "okay";
-                compatible = "ti,vib-drv2603";
-                label = "vibrator";
-                drv2603-supply = <&ldo18_reg>;
-                ti,vib-timeout-ms = <15000>;
-        };
-
-
 	/* camera */
 	#define SENSOR_SCENARIO_NORMAL      0
 	#define SENSOR_SCENARIO_VISION      1
