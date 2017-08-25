@@ -920,6 +920,50 @@
 		};
 	};
 
+	s1403x: s1403x@14880000 {
+		pinctrl-names = "default", "idle";
+		pinctrl-0 = <&i2s_pmic_bus
+				&i2s_amp_bus
+				&i2s_codec_clk>;
+		pinctrl-1 = <&i2s_pmic_bus_idle
+				&i2s_amp_bus_idle> ;
+		status = "okay";
+	};
+
+	i2s0: i2s@148A0000 {
+		status = "okay";
+	};
+
+	audio_bt_dummy: bt_dummy {
+			compatible = "samsung,bt_dummy";
+			status = "okay";
+	};
+
+	audio_codec_dummy: dummy-codec {
+			compatible = "samsung,dummy-codec";
+			status = "okay";
+	};
+	sound {
+		compatible = "samsung,smdk7270-wm8994";
+		samsung,audio-cpu = <&i2s0	/* primary */
+			&i2s0			 /* secondary */
+			&audio_bt_dummy
+			&eax
+			&eax
+			&eax
+			&eax>;
+		samsung,audio-codec = <&audio_codec_dummy
+			&audio_codec_dummy
+			&audio_codec_dummy
+			&audio_codec_dummy
+			&audio_codec_dummy
+			&audio_codec_dummy
+			&audio_codec_dummy>;
+
+		samsung,auxdev = <&s1403x>;
+		status = "okay";
+	};
+
 	decon_fb@14830000 {
 		/* HW TE */
 		gpios = <&gpe0 2 0xf>;
