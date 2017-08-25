@@ -43,23 +43,23 @@
 		pinctrl5 = &pinctrl_5;
 		pinctrl6 = &pinctrl_6;
 		pinctrl7 = &pinctrl_7;
-		uart1 = &serial_1;
+	//	uart1 = &serial_1;
 		uart2 = &serial_2;
 		uart3 = &serial_3;
 		uart4 = &serial_4;
-		hsi2c0 = &hsi2c_0;
-		hsi2c1 = &hsi2c_1;
-		hsi2c2 = &hsi2c_2;
+	//	hsi2c0 = &hsi2c_0;
+	//	hsi2c1 = &hsi2c_1;
+	//	hsi2c2 = &hsi2c_2;
 		hsi2c3 = &hsi2c_3;
 		hsi2c4 = &hsi2c_4;
-		hsi2c5 = &hsi2c_5;
-		hsi2c6 = &hsi2c_6;
-		hsi2c7 = &hsi2c_7;
-		hsi2c8 = &hsi2c_8;
+	//	hsi2c5 = &hsi2c_5;
+	//	hsi2c6 = &hsi2c_6;
+	//	hsi2c7 = &hsi2c_7;
+	//	hsi2c8 = &hsi2c_8;
 		spi0 = &spi_0;
-		spi1 = &spi_1;
-		spi2 = &spi_2;
-		spi3 = &spi_3;
+	//	spi1 = &spi_1;
+	//	spi2 = &spi_2;
+	//	spi3 = &spi_3;
 		mshc0 = &dwmmc_0;
 		mshc2 = &dwmmc_2;
 		dsim0 = &dsim_0;
@@ -427,6 +427,7 @@
 		reg = <0x0 0x101D2000 0x100>;
 		/* usi_mode = "hsi2c0" or "hsi2c1" or "spi" or "uart"
 				or "hsi2c0_hsi2c1" or "uart_hsi2c1"  */
+		usi_mode = "uart";
 		status = "disabled";
 	};
 
@@ -439,8 +440,8 @@
 		usi_mode = "uart";
 		status = "disabled";
 	};
-
-	/* UART_SENSOR */
+#if 0
+	/* UART1 (unused) */
 	serial_1: uart@13800000 {
 		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
@@ -453,8 +454,8 @@
 		clock-names = "gate_pclk1", "gate_uart1";
 		status = "disabled";
 	};
-
-	/* UART_DEBUG */
+#endif
+	/* UART2 DEBUG */
 	serial_2: uart@13820000 {
 		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
@@ -468,7 +469,7 @@
 		status = "disabled";
 	};
 
-	/* UART_USI_0 */
+	/* UART_USI_0 SUBCPU */
 	serial_3: uart@13910000 {
 		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
@@ -483,7 +484,7 @@
 		status = "disabled";
 	};
 
-	/* UART_USI_1 */
+	/* UART_USI_1 BT */
 	serial_4: uart@13930000 {
 		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
@@ -498,17 +499,7 @@
 		status = "disabled";
 	};
 
-	/* UART SWITCH FOR CP */
-	uart_sel {
-		compatible = "samsung,exynos-uart-sel";
-
-		int_ap2cp_uart_noti = <15>;
-		mbx_ap2cp_united_status = <2>;
-		sbi_uart_noti_mask = <0x1>;
-		sbi_uart_noti_pos = <16>;
-	};
-
-	/* I2C_MUIC */
+	/* I2C1 OTS */
 	i2c_1: i2c@13880000 {
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x0 0x13880000 0x100>;
@@ -522,7 +513,7 @@
 		status = "disabled";
 	};
 
-	/* I2C_NFC */
+	/* I2C2 NFC */
 	i2c_2: i2c@13890000 {
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x0 0x13890000 0x100>;
@@ -536,7 +527,7 @@
 		status = "disabled";
 	};
 
-	/* I2C_TSP */
+	/* I2C3 Touch */
 	i2c_3: i2c@13840000 {
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x0 0x13840000 0x100>;
@@ -550,7 +541,7 @@
 		status = "disabled";
 	};
 
-	/* I2C_FUELGAUGE */
+	/* I2C4 Codec */
 	i2c_4: i2c@13830000 {
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x0 0x13830000 0x100>;
@@ -563,8 +554,8 @@
 		clock-names = "rate_i2c", "gate_i2c";
 		status = "disabled";
 	};
-
-	/* I2C_SENSOR1 */
+#if 0
+	/* I2C5 (unused) */
 	i2c_5: i2c@138D0000 {
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x0 0x138D0000 0x100>;
@@ -578,7 +569,7 @@
 		status = "disabled";
 	};
 
-	/* I2C_SENSOR2 */
+	/* I2C6 (unused) */
 	i2c_6: i2c@138E0000 {
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x0 0x138E0000 0x100>;
@@ -592,7 +583,7 @@
 		status = "disabled";
 	};
 
-	/* HSI2C_MAINCAM */
+	/* HSI2C0 (unused) */
 	hsi2c_0: hsi2c@13950000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -610,7 +601,7 @@
 		status = "disabled";
 	};
 
-	/* HSI2C_FRONTCAM */
+	/* HSI2C1 (unused) */
 	hsi2c_1: hsi2c@13960000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -628,7 +619,7 @@
 		status = "disabled";
 	};
 
-	/* HSI2C_REARSENSOR */
+	/* CAMHSI2C0 (unused) */
 	hsi2c_2: hsi2c@138A0000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -645,8 +636,8 @@
 		gpio_scl= <&gpf0 1 0x1>;
 		status = "disabled";
 	};
-
-	/* HSI2C_FRONTSENSOR */
+#endif
+	/* CAMHSI2C1 (camera) */
 	hsi2c_3: hsi2c@138C0000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -664,7 +655,7 @@
 		status = "disabled";
 	};
 
-	/* HSI2C_REARAF */
+	/* CAMHSI2C2 (ALS) */
 	hsi2c_4: hsi2c@138B0000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -758,8 +749,8 @@
 		samsung,lpass-subip;
 		status = "disabled";
 	};
-
-	/* USI_0_CH0_HSI2C */
+#if 0
+	/* USI_0_CH0_HSI2C (unused) */
 	hsi2c_5: hsi2c@13910000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -777,7 +768,7 @@
 		status = "disabled";
 	};
 
-	/* USI_0_CH1_HSI2C */
+	/* USI_0_CH1_HSI2C (unused) */
 	hsi2c_6: hsi2c@13920000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -795,7 +786,7 @@
 		status = "disabled";
 	};
 
-	/* USI_1_CH0_HSI2C */
+	/* USI_1_CH0_HSI2C (unused) */
 	hsi2c_7: hsi2c@13930000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -813,7 +804,7 @@
 		status = "disabled";
 	};
 
-	/* USI_1_CH1_HSI2C */
+	/* USI_1_CH1_HSI2C (unused) */
 	hsi2c_8: hsi2c@13940000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
@@ -830,7 +821,7 @@
 		gpio_scl= <&gpa2 7 0x1>;
 		status = "disabled";
 	};
-
+#endif
 	/* DMA */
 	amba {
 		#address-cells = <2>;
@@ -865,7 +856,7 @@
 		samsung,always-interrupt-high;
 	};
 
-	/* SPI_ESE */
+	/* SPI0 SUBCPU */
 	spi_0: spi@100C0000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x100C0000 0x100>;
@@ -886,8 +877,8 @@
 		pinctrl-0 = <&spi0_bus>;
 		status = "disabled";
 	};
-
-	/* SPI_REARFROM */
+#if 0
+	/* SPI1 (unused) */
 	spi_1: spi@13900000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x13900000 0x100>;
@@ -909,7 +900,7 @@
 		status = "disabled";
 	};
 
-	/* SPI USI0 */
+	/* SPI USI0 (unused) */
 	spi_2: spi@13910000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x13910000 0x100>;
@@ -931,7 +922,7 @@
 		status = "disabled";
 	};
 
-	/* SPI USI1 */
+	/* SPI USI1 (unused) */
 	spi_3: spi@13930000 {
 		compatible = "samsung,exynos-spi";
 		reg = <0x0 0x13930000 0x100>;
@@ -952,7 +943,7 @@
 		pinctrl-0 = <&spi3_bus>;
 		status = "disabled";
 	};
-
+#endif
 	dwmmc_0: dwmmc0@13540000 {
 		compatible = "samsung,exynos-dw-mshc";
 		reg = <0x0 0x13540000 0x2000>;
@@ -1117,7 +1108,7 @@
 			clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
 		};
 	};
-
+#if 0
 	gnss_pdata {
 		compatible = "samsung,gnss_shdmem_if";
 		shmem,name = "KEPLER";
@@ -1153,7 +1144,7 @@
 		shmem,ipc_size = <0x80000>;
 		shmem,ipc_reg_cnt = <32>;
 	};
-
+#endif
 	iommu-domain_disp {
 		compatible = "samsung,exynos-iommu-bus";
 		#address-cells = <2>;
@@ -1496,7 +1487,7 @@
 		reset = <1	0>; /* reset bit [0] */
 		#phy-cells = <1>;
 	};
-
+#if 0
 	fimc_is_sensor0: fimc_is_sensor0@14420000 {
 		 /* REAR */
 		compatible = "samsung,exynos5-fimc-is-sensor";
@@ -1530,7 +1521,7 @@
 			"mif_isp_sensor0";
 		clocks = <&clock 43>;
 	};
-
+#endif
 	fimc_is: fimc_is@14400000 {
 		compatible = "samsung,exynos5-fimc-is";
 		#pb-id-cells = <0>;
