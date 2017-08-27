@@ -62,6 +62,7 @@ extern struct mipi_dsim_lcd_driver s6e36w1x01_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e8aa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver rm69080_mipi_lcd_driver;
+extern struct mipi_dsim_lcd_driver auo_h120bln017_mipi_lcd_driver;
 
 #define PANEL_STATE_SUSPENED	0
 #define PANEL_STATE_RESUMED		1

@@ -1643,6 +1643,8 @@ static int dsim_probe(struct platform_device *pdev)
 	dsim->panel_ops = &ea8064g_mipi_lcd_driver;
 #elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_RM69080)
 	dsim->panel_ops = &rm69080_mipi_lcd_driver;
+#elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_AUO_H120BLN017)
+	dsim->panel_ops = &auo_h120bln017_mipi_lcd_driver;
 #else
 	dsim->panel_ops = &s6d78a_mipi_lcd_driver;
 #endif
