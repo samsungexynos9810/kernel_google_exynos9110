@@ -9,7 +9,7 @@
  * CYTT21XXX
  * CYTT31XXX
  *
- * Copyright (C) 2015 Parade Technologies
+ * Copyright (C) 2015 Parade Semiconductor
  * Copyright (C) 2012-2015 Cypress Semiconductor
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * Contact Parade Technologies at www.paradetech.com <ttdrivers@paradetech.com>
+ * Contact Parade Semiconductor at www.parade.com <ttdrivers@paradetech.com>
  *
  */
 
@@ -41,9 +41,9 @@
 
 #define CY_DRIVER_NAME TTDA
 #define CY_DRIVER_MAJOR 03
-#define CY_DRIVER_MINOR 07
+#define CY_DRIVER_MINOR 08
 
-#define CY_DRIVER_REVCTRL 844339
+#define CY_DRIVER_REVCTRL 874312
 
 #define CY_DRIVER_VERSION		    \
 __stringify(CY_DRIVER_NAME)		    \
@@ -51,7 +51,7 @@ __stringify(CY_DRIVER_NAME)		    \
 "." __stringify(CY_DRIVER_MINOR)	    \
 "." __stringify(CY_DRIVER_REVCTRL)
 
-#define CY_DRIVER_DATE "20150715"	/* YYYYMMDD */
+#define CY_DRIVER_DATE "20170125"
 
 /* abs settings */
 #define CY_IGNORE_VALUE             -1

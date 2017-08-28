@@ -1127,10 +1127,10 @@ config TOUCHSCREEN_MXT540E
          module will be called mxt540e.
 
 source "drivers/input/touchscreen/imagis_30xxc/Kconfig"
-source "drivers/input/touchscreen/Cyttsp5_525a/Kconfig"
 source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
 source "drivers/input/touchscreen/melfas_mms400/Kconfig"
 source "drivers/input/touchscreen/stm/Kconfig"
 source "drivers/input/touchscreen/sec_ts/Kconfig"
 source "drivers/input/touchscreen/semisens/Kconfig"
+source "drivers/input/touchscreen/cyttsp5/Kconfig"
 endif
