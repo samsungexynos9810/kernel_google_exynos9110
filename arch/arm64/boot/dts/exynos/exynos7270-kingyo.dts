@@ -851,19 +851,19 @@
 		mode = <2>;
 		/* custom (390 x 390) */
 		panel_name = "auo_h120bln017";
-		resolution = <400 400>;
-		/* DISP I/F resolution width : 390, height : 390 */
-		dispif_resol = <320 500>;
+		resolution = <390 390>;
+		/* DISP I/F resolution width : 300, height : 507 */
+		dispif_resol = <300 507>;
 		size = <32 32>;
 		timing,refresh = <45>;
 		/* dsim H porch : hbp, hfp, hsa */
 		timing,dsim_h-porch = <1 1 1>;
 		/* dsim V porch : VBP, VFP, VSA */
-		timing,dsim_v-porch = <1 1 1>;
+		timing,dsim_v-porch = <10 2 1>;
 		/* decon H porch : hbp, hfp, hsa */
-		timing,decon_h-porch = <1 1 1>;
+		timing,decon_h-porch = <7 1 1>;
 		/* decon V porch : VBP, VFP, VSA */
-		timing,decon_v-porch = <1 1 1>;
+		timing,decon_v-porch = <10 2 1>;
 		/* panel max speed : 384Mbps */
 		timing,dsi-hs-clk = <384>;
 		timing,pms = <2 118 2>;
