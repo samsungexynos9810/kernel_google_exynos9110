@@ -22,6 +22,24 @@ config TOUCHSCREEN_CYPRESS_CYTTSP5_DEVICETREE_SUPPORT
 
 	  If unsure, say N.
 
+config TOUCHSCREEN_CYPRESS_CYTTSP5_DEBUG
+	bool "Enable debug output"
+	depends on TOUCHSCREEN_CYPRESS_CYTTSP5
+	help
+	  Say Y here to enable debug output for Parade TrueTouch(tm)
+	  Standard Product Generation5 drivers set.
+
+	  If unsure, say N.
+
+config TOUCHSCREEN_CYPRESS_CYTTSP5_VDEBUG
+	bool "Enable verbose debug output"
+	depends on TOUCHSCREEN_CYPRESS_CYTTSP5_DEBUG
+	help
+	  Say Y here to enable verbose debug output for Parade TrueTouch(tm)
+	  Standard Product Generation5 drivers set.
+
+	  If unsure, say N.
+
 config TOUCHSCREEN_CYPRESS_CYTTSP5_I2C
 	tristate "Parade TrueTouch Gen5 I2C"
 	depends on TOUCHSCREEN_CYPRESS_CYTTSP5

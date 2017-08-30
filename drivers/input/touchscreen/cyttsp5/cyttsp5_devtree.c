@@ -30,6 +30,7 @@
 #include <linux/err.h>
 #include <linux/of_device.h>
 #include <linux/slab.h>
+#include <linux/of_gpio.h>
 
 /* cyttsp */
 #include "cyttsp5_regs.h"
@@ -546,6 +547,7 @@ static struct cyttsp5_core_platform_data *create_and_get_core_pdata(
 	u32 value;
 	int rc;
 	int i;
+	u32 flags;
 
 	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
@@ -554,8 +556,8 @@ static struct cyttsp5_core_platform_data *create_and_get_core_pdata(
 	}
 
 	/* Required fields */
-	rc = of_property_read_u32(core_node, "cy,irq_gpio", &value);
-	if (rc)
+	value = of_get_named_gpio_flags(core_node, "cy,irq_gpio", 0, &flags);
+	if (value < 0)
 		goto fail_free;
 	pdata->irq_gpio = value;
 
@@ -568,8 +570,8 @@ static struct cyttsp5_core_platform_data *create_and_get_core_pdata(
 	/* rst_gpio is optional since a platform may use
 	 * power cycling instead of using the XRES pin
 	 */
-	rc = of_property_read_u32(core_node, "cy,rst_gpio", &value);
-	if (!rc)
+	value = of_get_named_gpio_flags(core_node, "cy,rst_gpio", 0, &flags);
+	if (!(value < 0))
 		pdata->rst_gpio = value;
 
 	rc = of_property_read_u32(core_node, "cy,level_irq_udelay", &value);

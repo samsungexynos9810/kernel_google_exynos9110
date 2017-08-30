@@ -58,6 +58,7 @@ __stringify(CY_DRIVER_NAME)		    \
 
 enum cyttsp5_core_platform_flags {
 	CY_CORE_FLAG_NONE,
+	CY_CORE_FLAG_WAKE_ON_GESTURE = 0x01,
 	CY_CORE_FLAG_POWEROFF_ON_SLEEP = 0x02,
 	CY_CORE_FLAG_RESTORE_PARAMETERS = 0x04,
 };

@@ -28,6 +28,7 @@
 
 #include "cyttsp5_regs.h"
 #include <linux/cyttsp5_platform.h>
+#include <linux/regulator/consumer.h>
 
 #ifdef CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_PLATFORM_FW_UPGRADE
 /* FW for Panel ID = 0x00 */
@@ -185,47 +186,64 @@ int cyttsp5_xres(struct cyttsp5_core_platform_data *pdata,
 	return rc;
 }
 
+static struct regulator *regulator_power_on(struct device *dev, char *name)
+{
+	int rc;
+	struct regulator *vdd;
+
+	vdd = regulator_get(dev, name);
+	if (IS_ERR(vdd)) {
+		rc = PTR_ERR(vdd);
+		dev_err(dev, "Regulator %s get failed rc=%d\n", name, rc);
+		return NULL;
+	}
+	rc = regulator_enable(vdd);
+	if (rc) {
+		dev_err(dev,"Regulator %s enable failed rc=%d\n", name, rc);
+	}
+	return vdd;
+}
+
+static void regulator_power_off(struct regulator *vdd)
+{
+	if (vdd) {
+		regulator_disable(vdd);
+		regulator_put(vdd);
+	}
+}
+
 int cyttsp5_init(struct cyttsp5_core_platform_data *pdata,
 		int on, struct device *dev)
 {
 	int rst_gpio = pdata->rst_gpio;
 	int irq_gpio = pdata->irq_gpio;
 	int rc = 0;
+	static struct regulator *vdd31, *vdd18;
 
 	if (on) {
+		vdd31 = regulator_power_on(dev, "vdd_tsp_3.1");
+		vdd18 = regulator_power_on(dev, "vdd_tsp_1.8");
+		usleep_range(1000, 1000);
 		rc = gpio_request(rst_gpio, NULL);
-		if (rc < 0) {
-			gpio_free(rst_gpio);
-			rc = gpio_request(rst_gpio, NULL);
-		}
 		if (rc < 0) {
 			dev_err(dev,
 				"%s: Fail request gpio=%d\n", __func__,
 				rst_gpio);
-		} else {
-			rc = gpio_direction_output(rst_gpio, 1);
-			if (rc < 0) {
-				pr_err("%s: Fail set output gpio=%d\n",
-					__func__, rst_gpio);
-				gpio_free(rst_gpio);
-			} else {
-				rc = gpio_request(irq_gpio, NULL);
-				if (rc < 0) {
-					gpio_free(irq_gpio);
-					rc = gpio_request(irq_gpio,
-						NULL);
-				}
-				if (rc < 0) {
-					dev_err(dev,
-						"%s: Fail request gpio=%d\n",
-						__func__, irq_gpio);
-					gpio_free(rst_gpio);
-				} else {
-					gpio_direction_input(irq_gpio);
-				}
-			}
+			return rc;
+		}
+		gpio_set_value(rst_gpio, 1);
+
+		rc = gpio_request(irq_gpio, NULL);
+		if (rc < 0) {
+			dev_err(dev,
+				"%s: Fail request gpio=%d\n",
+				__func__, irq_gpio);
+			gpio_free(rst_gpio);
+			return rc;
 		}
 	} else {
+		regulator_power_off(vdd18);
+		regulator_power_off(vdd31);
 		gpio_free(rst_gpio);
 		gpio_free(irq_gpio);
 	}
@@ -234,6 +252,14 @@ int cyttsp5_init(struct cyttsp5_core_platform_data *pdata,
 		__func__, rst_gpio, irq_gpio, rc);
 	return rc;
 }
+
+void cyttsp5_shutdown(struct cyttsp5_core_platform_data *pdata)
+{
+	int rst_gpio = pdata->rst_gpio;
+
+	gpio_set_value(rst_gpio, 0);
+}
+
 
 static int cyttsp5_wakeup(struct cyttsp5_core_platform_data *pdata,
 		struct device *dev, atomic_t *ignore_irq)
