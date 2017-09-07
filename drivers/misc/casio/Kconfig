@@ -1,0 +1,22 @@
+menu "casio sw"
+
+config MULTI_SENSORS
+	tristate "Casio multi device hub driver (sensor, power, rtc, vib)"
+	depends on SPI
+	default n
+	help
+		this driver get and send some properties and command with sub-cpu
+		include sensor value, battery status, charger status, rtc,
+		enable vibration, etc...
+
+config SUBCPU_VIBRATOR
+	tristate "subcpu vibrator driver"
+    depends on MULTI_SENSORS
+	default n
+
+config SUBCPU_BATTERY
+	tristate "subcpu battery driver"
+    depends on MULTI_SENSORS
+	default n
+
+endmenu

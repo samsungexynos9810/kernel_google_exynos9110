@@ -792,6 +792,23 @@
 		};
 	};
 
+	spi@100C0000 {
+		status = "okay";
+		Msensors: MultiSensors@0 {
+			compatible = "MultiSensors,24";
+			spi-max-frequency = <20000000>;
+			reg = <0x0>;
+			nsw,sub_main_int = <&gpa0 3 0>;
+			nsw,main_sub_int = <&gpf0 1 0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&sub_main_int &main_sub_int>;
+			controller-data {
+				samsung,spi-chip-select-mode = <1>;
+				samsung,spi-feedback-delay = <0>;
+			};
+		};
+	};
+
 	gpio_keys {
 		compatible = "gpio-keys";
 		pinctrl-names = "default";
