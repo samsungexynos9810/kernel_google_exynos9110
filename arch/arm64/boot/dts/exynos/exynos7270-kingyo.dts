@@ -635,7 +635,7 @@
 		cpd_residency = <3000>;
 		sicd_residency = <3000>;
 
-		sicd_enabled = <1>;
+		sicd_enabled = <0>;
 
 		idle-ip = "136c0000.pwm",		/* idle ip index : 0 */
 			  "10550000.adc",		/* idle ip index : 1 */
