@@ -1,17 +1,21 @@
 /*
-* get proprty of fuel gauge from subCPU
+* Battery driver for SubCpu
 *
-* Author: Itsuki Yamashita
+* Author: Masanori Ishihara
 *
 */
 
+#include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/power_supply.h>
+#include <linux/err.h>
 #include <linux/platform_device.h>
-#include <linux/of.h>
+#include <linux/power_supply.h>
+#include <linux/types.h>
+#include <linux/pci.h>
+#include <linux/interrupt.h>
+#include <linux/io.h>
+#include <linux/acpi.h>
 #include "subcpu_battery.h"
-
-#define SUB_BAT_NAME		"subcpu_battery"
 
 #define FAKE_BATT_LEVEL		80
 
@@ -44,8 +48,8 @@ enum subcpu_health {
 
 struct sub_battery {
 	struct device *dev;
-	struct power_supply battery;
-	struct power_supply ac;
+	struct power_supply *battery;
+	struct power_supply *ac;
 	struct workqueue_struct *monitor_wqueue;
 	struct delayed_work monitor_work;
 
@@ -72,12 +76,8 @@ static enum power_supply_property sub_battery_props[] = {
 	POWER_SUPPLY_PROP_PRESENT,
 };
 
-static enum power_supply_property sub_power_props[] = {
+static enum power_supply_property sub_ac_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
-};
-
-static char *supply_list[] = {
-	SUB_BAT_NAME,
 };
 
 static int sub_bat_voltage(uint8_t volt_low, uint8_t volt_high)
@@ -98,7 +98,7 @@ static int sub_bat_current(uint8_t curr_low, uint8_t curr_high)
 
 static int sub_bat_temperature(uint8_t temp_low, uint8_t temp_high)
 {
-	return (int16_t)(temp_low | temp_high << 8);
+	return (int16_t)(temp_low | temp_high << 8) / 10;
 }
 
 static int sub_bat_soc(uint8_t soc)
@@ -178,12 +178,12 @@ void subcpu_battery_update_status2(uint8_t* data)
 	sb->is_ac_online = sub_is_ac_online(data[PWR_PROP_CHGSTATUS]);
 
 	if (sb->sb_status == SB_PROBED)
-		power_supply_changed(&sb->battery);
+		power_supply_changed(sb->battery);
 	else
 		sb->sb_status = SB_PROP_SET;
 }
 
-static int sub_bat_get_property(struct power_supply *psy,
+static int sub_battery_get_property(struct power_supply *psy,
 		enum power_supply_property psp,
 		union power_supply_propval *val)
 {
@@ -234,52 +234,51 @@ static int sub_ac_get_property(struct power_supply *psy,
 	return 0;
 }
 
+static const struct power_supply_desc battery_desc = {
+	.properties	= sub_battery_props,
+	.num_properties	= ARRAY_SIZE(sub_battery_props),
+	.get_property	= sub_battery_get_property,
+	.name		= "battery",
+	.type		= POWER_SUPPLY_TYPE_BATTERY,
+};
+
+static const struct power_supply_desc ac_desc = {
+	.properties	= sub_ac_props,
+	.num_properties	= ARRAY_SIZE(sub_ac_props),
+	.get_property	= sub_ac_get_property,
+	.name		= "ac",
+	.type		= POWER_SUPPLY_TYPE_MAINS,
+};
+
 static int sub_bat_probe(struct platform_device *pdev)
 {
 	struct sub_battery *sb = &g_sb;
-	int ret;
+	struct power_supply_config psy_cfg = {};
+	int ret = 0;
+
+	printk(KERN_DEBUG "%s: %s registering\n", __func__, pdev->name);
+
+	sb->sb_status = SB_REMOVED;
+
+	psy_cfg.drv_data = sb;
+
+	sb->ac = power_supply_register(&pdev->dev, &ac_desc, &psy_cfg);
+	if (IS_ERR(sb->ac)) {
+		dev_err(&pdev->dev, "failed: power supply ac register\n");
+		platform_set_drvdata(pdev, NULL);
+		ret = PTR_ERR(sb->ac);
+	}
+
+	sb->battery = power_supply_register(&pdev->dev, &battery_desc, &psy_cfg);
+	if (IS_ERR(sb->battery)) {
+		dev_err(&pdev->dev, "failed: power supply battery register\n");
+		power_supply_unregister(sb->ac);
+		platform_set_drvdata(pdev, NULL);
+		ret = PTR_ERR(sb->battery);
+	}
 
 	platform_set_drvdata(pdev, sb);
 
-	sb->battery.name			= SUB_BAT_NAME;
-	sb->battery.type			= POWER_SUPPLY_TYPE_BATTERY;
-	sb->battery.get_property	= sub_bat_get_property;
-	sb->battery.properties		= sub_battery_props;
-	sb->battery.num_properties	= ARRAY_SIZE(sub_battery_props);
-
-	if (sb->sb_status != SB_PROP_SET) {
-		sb->soc			= FAKE_BATT_LEVEL;
-		sb->temperature	= 0;
-		sb->voltage		= 0;
-		sb->current_now		= 0;
-		sb->status 		= POWER_SUPPLY_STATUS_CHARGING;
-		sb->health		= POWER_SUPPLY_HEALTH_GOOD;
-		sb->bat_present = 1;
-	}
-
-	ret = power_supply_register(&pdev->dev, &sb->battery);
-
-	if (ret) {
-		dev_err(&pdev->dev, "failed: power supply bat register\n");
-		platform_set_drvdata(pdev,NULL);
-		return ret;
-	}
-
-	sb->ac.name			= "ac";
-	sb->ac.type			= POWER_SUPPLY_TYPE_MAINS;
-	sb->ac.supplied_to	= supply_list;
-	sb->ac.num_supplicants = ARRAY_SIZE(supply_list);
-	sb->ac.properties	= sub_power_props;
-	sb->ac.get_property	= sub_ac_get_property;
-	sb->ac.num_properties	= ARRAY_SIZE(sub_power_props);
-
-	ret = power_supply_register(&pdev->dev, &sb->ac);
-
-	if (ret) {
-		dev_err(&pdev->dev, "failed: power supply ac register\n");
-		platform_set_drvdata(pdev,NULL);
-		return ret;
-	}
 	sb->sb_status = SB_PROBED;
 
 	return ret;
@@ -289,9 +288,12 @@ static int sub_bat_remove(struct platform_device *pdev)
 {
 	struct sub_battery *sb = &g_sb;
 
+	printk(KERN_DEBUG "%s: %s registering\n", __func__, pdev->name);
+
 	sb->sb_status = SB_REMOVED;
-	power_supply_unregister(&sb->battery);
-	platform_set_drvdata(pdev,NULL);
+	power_supply_unregister(sb->ac);
+	power_supply_unregister(sb->battery);
+	platform_set_drvdata(pdev, NULL);
 
 	return 0;
 }
@@ -303,16 +305,16 @@ static const struct of_device_id sub_battery_of_match[] = {
 MODULE_DEVICE_TABLE(of, sub_battery_of_match);
 
 static struct platform_driver subcpu_battery_driver = {
+	.probe = sub_bat_probe,
+	.remove = sub_bat_remove,
 	.driver = {
 		.name = "subcpu-battery",
 		.owner = THIS_MODULE,
-		.of_match_table = of_match_ptr(sub_battery_of_match),
-	},
-	.probe = sub_bat_probe,
-	.remove = sub_bat_remove
+		.of_match_table = sub_battery_of_match,
+	}
 };
 module_platform_driver(subcpu_battery_driver);
 
+MODULE_DESCRIPTION("Battery driver for SubCpu");
+MODULE_AUTHOR("Masanori Ishihara");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("subCPU fuel gauge");
-MODULE_AUTHOR("Itsuki Yamashita");

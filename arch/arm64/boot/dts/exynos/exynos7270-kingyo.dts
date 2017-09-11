@@ -883,6 +883,11 @@
 		timing,dsi-escape-clk = <16>;
 	};
 
+	battery: sub_bat {
+		compatible = "casio,sub-battery";
+		status = "okay";
+	};
+
 #if 0
 	dsim_0: dsim@14800000 {
 		lcd_info = <&rm69080>;
