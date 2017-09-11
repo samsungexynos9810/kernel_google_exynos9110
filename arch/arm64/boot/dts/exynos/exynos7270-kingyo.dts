@@ -168,9 +168,12 @@
 		status = "okay";
 	};
 
-	usb_notifier {
-		compatible = "samsung,usb-notifier";
+	usb_switch {
+		compatible = "samsung,exynos-usb-switch";
 		udc = <&udc>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sub_main_vbus_det>;
+		samsung,bsess-gpio = <&gpa1 1 0>;
 	};
 
 /*	OTS
