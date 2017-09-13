@@ -59,6 +59,7 @@
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
 #include <linux/version.h>
+#include <linux/wakelock.h>
 #include <linux/cyttsp5_core.h>
 
 #include <linux/timer.h>
@@ -153,7 +154,7 @@ enum PARADE_DEBUG_LEVEL {
 
 /*  Timeout in ms */
 #define CY_REQUEST_EXCLUSIVE_TIMEOUT		8000
-#define CY_WATCHDOG_TIMEOUT			1000
+#define CY_WATCHDOG_TIMEOUT			0
 #define CY_HID_RESET_TIMEOUT			5000
 #define CY_HID_AUTO_CALI_CPLT_TIMEOUT          2500
 /* HID_DESCRIPTOR_TIMEOUT value based on FW spec (CAL_OS) */
@@ -901,7 +902,6 @@ struct cyttsp5_core_commands {
 	struct cyttsp5_loader_platform_data
 		*(*request_loader_pdata)(struct device *dev);
 	int (*request_stop_wd)(struct device *dev);
-	int (*request_start_wd)(struct device *dev);
 	int (*request_get_hid_desc)(struct device *dev, int protect);
 	int (*request_get_mode)(struct device *dev, int protect, u8 *mode);
 	int (*request_enable_scan_type)(struct device *dev, u8 scan_type);
@@ -960,6 +960,8 @@ struct cyttsp5_core_data {
 	int irq;
 	bool irq_enabled;
 	bool irq_wake;
+	bool touch_wake;
+	struct wake_lock touch_wake_lock;
 	bool irq_disabled;
 	u8 easy_wakeup_gesture;
 #ifdef EASYWAKE_TSG6
@@ -1182,5 +1184,6 @@ void cyttsp5_unregister_module(struct cyttsp5_module *module);
 
 void *cyttsp5_get_module_data(struct device *dev,
 		struct cyttsp5_module *module);
+void cyttsp5_mt_lift_all(struct cyttsp5_mt_data *md);
 
 #endif /* _CYTTSP5_REGS_H */

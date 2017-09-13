@@ -36,7 +36,7 @@
 #define MT_PARAM_FUZZ(md, sig_ost) PARAM_FUZZ(md->pdata->frmwrk, sig_ost)
 #define MT_PARAM_FLAT(md, sig_ost) PARAM_FLAT(md->pdata->frmwrk, sig_ost)
 
-static void cyttsp5_mt_lift_all(struct cyttsp5_mt_data *md)
+void cyttsp5_mt_lift_all(struct cyttsp5_mt_data *md)
 {
 	int max = md->si->tch_abs[CY_TCH_T].max;
 
@@ -298,15 +298,30 @@ cyttsp5_get_mt_touches_pr_tch:
 	md->num_prv_rec = num_cur_tch;
 }
 
+static void report_palm(struct cyttsp5_mt_data *md, int on)
+{
+	input_report_key(md->input, KEY_SLEEP, on);
+	input_sync(md->input);
+}
+
+static struct delayed_work work_palm;
+static int palm_ignore;
+static void work_palm_ignore_off(struct work_struct *work)
+{
+	palm_ignore = 0;
+}
+
 /* read xy_data for all current touches */
 static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 {
 	struct device *dev = md->dev;
+	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 	struct cyttsp5_sysinfo *si = md->si;
 	int max_tch = si->sensing_conf_data.max_tch;
 	struct cyttsp5_touch tch;
 	u8 num_cur_tch;
 	int rc = 0;
+	static int palm_on;
 
 	cyttsp5_get_touch_hdr(md, &tch, si->xy_mode + 3);
 
@@ -324,21 +339,52 @@ static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 			num_cur_tch = 0;
 	}
 
-	if (num_cur_tch == 0 && md->num_prv_rec == 0)
+	if (num_cur_tch == 0 && md->num_prv_rec == 0 && palm_on == 0)
 		goto cyttsp5_xy_worker_exit;
 
 	/* extract xy_data for all currently reported touches */
 	parade_debug(dev, DEBUG_LEVEL_2, "%s: extract data num_cur_tch=%d\n",
 		__func__, num_cur_tch);
-	if (num_cur_tch)
-		cyttsp5_get_mt_touches(md, &tch, num_cur_tch);
-	else
-		cyttsp5_mt_lift_all(md);
+
+	if (!palm_on) {
+		if (tch.hdr[CY_TCH_LO]) {
+			if (palm_ignore == 0 && cd->irq_wake == 0) {
+				report_palm(md, 1);
+				cyttsp5_mt_lift_all(md);
+				printk(KERN_DEBUG "palm on\n");
+				palm_on = 1;
+			}
+		} else if (num_cur_tch) {
+			if (palm_ignore != 1)
+				cyttsp5_get_mt_touches(md, &tch, num_cur_tch);
+		} else {
+			cyttsp5_mt_lift_all(md);
+		}
+	} else {
+		if (tch.hdr[CY_TCH_LO] == 0 && num_cur_tch == 0) {
+			report_palm(md, 0);
+			palm_ignore = 1;
+			wake_lock_timeout(&cd->touch_wake_lock, HZ);
+			schedule_delayed_work(&work_palm, msecs_to_jiffies(600));
+			printk(KERN_DEBUG "palm off\n");
+			palm_on = 0;
+		}
+	}
 
 	rc = 0;
 
 cyttsp5_xy_worker_exit:
 	return rc;
+}
+
+void cyttsp5_mt_suspend(void)
+{
+	palm_ignore = 2;
+}
+
+void cyttsp5_mt_resume(void)
+{
+	schedule_delayed_work(&work_palm, msecs_to_jiffies(600));
 }
 
 static void cyttsp5_mt_send_dummy_event(struct cyttsp5_core_data *cd,
@@ -453,8 +499,6 @@ static int cyttsp5_mt_suspend_attention(struct device *dev)
 	md->is_suspended = true;
 	mutex_unlock(&md->mt_lock);
 
-	pm_runtime_put(dev);
-
 	return 0;
 }
 
@@ -462,8 +506,6 @@ static int cyttsp5_mt_resume_attention(struct device *dev)
 {
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 	struct cyttsp5_mt_data *md = &cd->md;
-
-	pm_runtime_get(dev);
 
 	mutex_lock(&md->mt_lock);
 	md->is_suspended = false;
@@ -477,8 +519,6 @@ static int cyttsp5_mt_open(struct input_dev *input)
 	struct device *dev = input->dev.parent;
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 	struct cyttsp5_mt_data *md = &cd->md;
-
-	pm_runtime_get_sync(dev);
 
 	mutex_lock(&md->mt_lock);
 	md->is_suspended = false;
@@ -532,7 +572,6 @@ static void cyttsp5_mt_close(struct input_dev *input)
 
 	mutex_lock(&md->mt_lock);
 	if (!md->is_suspended) {
-		pm_runtime_put(dev);
 		md->is_suspended = true;
 	}
 	mutex_unlock(&md->mt_lock);
@@ -553,6 +592,8 @@ static int cyttsp5_setup_input_device(struct device *dev)
 	__set_bit(EV_ABS, md->input->evbit);
 	__set_bit(EV_REL, md->input->evbit);
 	__set_bit(EV_KEY, md->input->evbit);
+	__set_bit(KEY_SLEEP, md->input->keybit);
+	INIT_DELAYED_WORK(&work_palm, work_palm_ignore_off);
 #ifdef INPUT_PROP_DIRECT
 	__set_bit(INPUT_PROP_DIRECT, md->input->propbit);
 #endif

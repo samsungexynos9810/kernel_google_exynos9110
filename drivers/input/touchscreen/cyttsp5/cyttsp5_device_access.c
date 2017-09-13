@@ -1628,10 +1628,12 @@ start_testing:
 	if (rc)
 		dev_err(dev, "resume_scanning failed");
 
+#if 0
 	/*start  watchdog*/
 	rc = cmd->request_start_wd(dev);
 	if (rc)
 		dev_err(dev, "start watchdog failed");
+#endif
 
 	if (self_test_id_supported)
 		goto self_test_id_failed;
@@ -3641,8 +3643,6 @@ static ssize_t cyttsp5_run_and_get_selftest_result(struct device *dev,
 
 	mutex_lock(&dad->sysfs_lock);
 
-	pm_runtime_get_sync(dev);
-
 	rc = cmd->request_exclusive(dev, CY_REQUEST_EXCLUSIVE_TIMEOUT);
 	if (rc < 0) {
 		dev_err(dev, "%s: Error on request exclusive r=%d\n",
@@ -3704,7 +3704,6 @@ release_exclusive:
 	cmd->release_exclusive(dev);
 
 put_pm_runtime:
-	pm_runtime_put(dev);
 
 	if (status == STATUS_FAIL)
 		length = 0;
@@ -3777,8 +3776,6 @@ static ssize_t panel_scan_debugfs_read(struct file *filp, char __user *buf,
 
 	mutex_lock(&dad->sysfs_lock);
 
-	pm_runtime_get_sync(dev);
-
 	rc = cmd->request_exclusive(dev, CY_REQUEST_EXCLUSIVE_TIMEOUT);
 	if (rc < 0) {
 		dev_err(dev, "%s: Error on request exclusive r=%d\n",
@@ -3841,7 +3838,6 @@ release_exclusive:
 	cmd->release_exclusive(dev);
 
 put_pm_runtime:
-	pm_runtime_put(dev);
 
 	if (status == STATUS_FAIL)
 		length = 0;
@@ -3923,8 +3919,6 @@ static ssize_t get_idac_debugfs_read(struct file *filp, char __user *buf,
 
 	mutex_lock(&dad->sysfs_lock);
 
-	pm_runtime_get_sync(dev);
-
 	rc = cmd->request_exclusive(dev, CY_REQUEST_EXCLUSIVE_TIMEOUT);
 	if (rc < 0) {
 		dev_err(dev, "%s: Error on request exclusive r=%d\n",
@@ -3965,7 +3959,6 @@ release_exclusive:
 	cmd->release_exclusive(dev);
 
 put_pm_runtime:
-	pm_runtime_put(dev);
 
 	if (status == STATUS_FAIL)
 		length = 0;
@@ -4033,8 +4026,6 @@ static ssize_t calibrate_debugfs_read(struct file *filp, char __user *buf,
 
 	mutex_lock(&dad->sysfs_lock);
 
-	pm_runtime_get_sync(dev);
-
 	rc = cmd->request_exclusive(dev, CY_REQUEST_EXCLUSIVE_TIMEOUT);
 	if (rc < 0) {
 		dev_err(dev, "%s: Error on request exclusive r=%d\n",
@@ -4083,7 +4074,6 @@ release_exclusive:
 	cmd->release_exclusive(dev);
 
 put_pm_runtime:
-	pm_runtime_put(dev);
 
 	if (status == STATUS_FAIL)
 		length = 0;
@@ -4152,8 +4142,6 @@ static ssize_t baseline_debugfs_read(struct file *filp, char __user *buf,
 
 	mutex_lock(&dad->sysfs_lock);
 
-	pm_runtime_get_sync(dev);
-
 	rc = cmd->request_exclusive(dev, CY_REQUEST_EXCLUSIVE_TIMEOUT);
 	if (rc < 0) {
 		dev_err(dev, "%s: Error on request exclusive r=%d\n",
@@ -4187,7 +4175,6 @@ release_exclusive:
 	cmd->release_exclusive(dev);
 
 put_pm_runtime:
-	pm_runtime_put(dev);
 
 	if (status == STATUS_FAIL)
 		length = 0;
@@ -4786,10 +4773,8 @@ int cyttsp5_device_access_user_command(const char *core_name, u16 read_len,
 		return -ENODEV;
 	}
 
-	pm_runtime_get_sync(cd->dev);
 	rc = cmd->nonhid_cmd->user_cmd(cd->dev, 1, read_len, read_buf,
 			write_len, write_buf, actual_read_len);
-	pm_runtime_put(cd->dev);
 
 	return rc;
 }
