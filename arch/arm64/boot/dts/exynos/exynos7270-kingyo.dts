@@ -22,7 +22,7 @@
 	};
 
 	chosen {
-		bootargs ="console=ttySAC2,115200 clk_ignore_unused androidboot.hardware=nerka androidboot.selinux=permissive firmware_class.path=/vendor/firmware ess_setup=0x46000000";
+		bootargs ="console=ttySAC2,115200 clk_ignore_unused androidboot.hardware=nerka androidboot.selinux=permissive androidboot.serialno=012345789abcdef firmware_class.path=/vendor/firmware ess_setup=0x46000000";
 		linux,initrd-start = <0x42000000>;
 		linux,initrd-end = <0x420FFFFF>;
 	};
@@ -350,20 +350,20 @@
 					regulator-boot-on;
 					regulator-ramp-delay = <12000>;
 				};
-
+				/* Audio 1.8V */
 				ldo11_reg: LDO11 {
-					regulator-name = "vdd_ldo11";
+					regulator-name = "vdd_aud_1.8";
 					regulator-min-microvolt = <1800000>;
-					regulator-max-microvolt = <2850000>;
+					regulator-max-microvolt = <1800000>;
 				//	regulator-always-on;
 				//	regulator-boot-on;
 					regulator-ramp-delay = <12000>;
 				};
-
+				/* Audio 3.1V */
 				ldo12_reg: LDO12 {
-					regulator-name = "vdd_ldo12";
-					regulator-min-microvolt = <1800000>;
-					regulator-max-microvolt = <3375000>;
+					regulator-name = "vdd_aud_3.1";
+					regulator-min-microvolt = <3100000>;
+					regulator-max-microvolt = <3100000>;
 				//	regulator-always-on;
 				//	regulator-boot-on;
 					regulator-ramp-delay = <12000>;
@@ -407,7 +407,7 @@
 
 				/* LCD */
 				ldo17_reg: LDO17 {
-					regulator-name = "vdd_ldo17";
+					regulator-name = "vdd_lcd_1.8";
 					regulator-min-microvolt = <1500000>;
 					regulator-max-microvolt = <2000000>;
 					regulator-always-on;
@@ -418,7 +418,7 @@
 
 				/* OTS */
 				ldo18_reg: LDO18 {
-					regulator-name = "vdd_ldo18";
+					regulator-name = "vdd_ots_3.1";
 					regulator-min-microvolt = <3100000>;
 					regulator-max-microvolt = <3100000>;
 					regulator-ramp-delay = <12000>;
