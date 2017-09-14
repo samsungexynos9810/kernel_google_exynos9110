@@ -17,6 +17,8 @@
 #define EXYNOS_DEVFREQ_MODULE_NAME	"exynos-devfreq"
 #define VOLT_STEP			25000
 
+struct clk;
+
 enum exynos_devfreq_type {
 	DEVFREQ_MIF = 0,
 	DEVFREQ_INT,
