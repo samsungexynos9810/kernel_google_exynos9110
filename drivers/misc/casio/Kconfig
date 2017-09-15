@@ -19,4 +19,9 @@ config SUBCPU_BATTERY
     depends on MULTI_SENSORS
 	default n
 
+config KINGYO_BLUETOOTH
+	bool "Kingyo board bluetooth"
+	default n
+	help
+	  Kingyo board bluetooth.
 endmenu

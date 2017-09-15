@@ -148,6 +148,7 @@ static void print_uart_mode(struct uart_port *port,
 		printk(KERN_ERR " - Use Autoflow control\n");
 
 	printk(KERN_ERR " - Baudrate : %u\n", baud);
+
 }
 
 static ssize_t
@@ -1110,6 +1111,14 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	if (ourport->dbg_mode & UART_DBG_MODE)
 		print_uart_mode(port, termios, baud);
 
+#ifdef CONFIG_KINGYO_BLUETOOTH
+	/*
+	 * Work around. Some delay is required for USI1 (but don't know why)
+	 */
+	if (port->line == PORTLINE_BT)
+		mdelay(10);
+#endif
+
 	/*
 	 * Update the per-port timeout.
 	 */
@@ -1192,9 +1201,18 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
 	return 0;
 }
 
+#ifdef CONFIG_KINGYO_BLUETOOTH
+extern void bt_lpm_exit_lpm_locked(struct uart_port *uport);
+#endif
+
 static void s3c24xx_serial_wake_peer(struct uart_port *port)
 {
 	struct s3c2410_uartcfg *cfg = s3c24xx_port_to_cfg(port);
+
+#ifdef CONFIG_KINGYO_BLUETOOTH
+	if(port->line == PORTLINE_BT)
+		bt_lpm_exit_lpm_locked(port);
+#endif
 
 	if (cfg->wake_peer[port->line])
 		cfg->wake_peer[port->line](port);
@@ -1244,6 +1262,16 @@ static void s3c24xx_serial_put_poll_char(struct uart_port *port,
 			 unsigned char c);
 #endif
 
+#if defined(CONFIG_KINGYO_BLUETOOTH)
+void s3c24xx_serial_throttle(struct uart_port *port)
+{
+}
+
+void s3c24xx_serial_unthrottle(struct uart_port *port)
+{
+}
+#endif
+
 static struct uart_ops s3c24xx_serial_ops = {
 	.pm		= s3c24xx_serial_pm,
 	.tx_empty	= s3c24xx_serial_tx_empty,
@@ -1262,6 +1290,10 @@ static struct uart_ops s3c24xx_serial_ops = {
 	.config_port	= s3c24xx_serial_config_port,
 	.verify_port	= s3c24xx_serial_verify_port,
 	.wake_peer	= s3c24xx_serial_wake_peer,
+#if defined(CONFIG_KINGYO_BLUETOOTH)
+	.throttle       = s3c24xx_serial_throttle,
+	.unthrottle     = s3c24xx_serial_unthrottle,
+#endif
 #if defined(CONFIG_SERIAL_SAMSUNG_CONSOLE) && defined(CONFIG_CONSOLE_POLL)
 	.poll_get_char = s3c24xx_serial_get_poll_char,
 	.poll_put_char = s3c24xx_serial_put_poll_char,
@@ -1437,12 +1469,17 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		s3c24xx_serial_ops.startup = s3c64xx_serial_startup;
 
 	port->uartclk = 1;
-
+#ifdef CONFIG_KINGYO_BLUETOOTH
+	if(port->line == PORTLINE_BT) {
+		dbg("set port%d->flags |= UPF_HARD_FLOW\n", port->line);
+		port->flags |= UPF_HARD_FLOW;
+	}
+#else
 	if (cfg->uart_flags & UPF_CONS_FLOW) {
 		dbg("s3c24xx_serial_init_port: enabling flow control\n");
 		port->flags |= UPF_CONS_FLOW;
 	}
-
+#endif
 	/* sort our the physical and virtual addresses for each UART */
 
 	res = platform_get_resource(platdev, IORESOURCE_MEM, 0);
