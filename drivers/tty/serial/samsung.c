@@ -63,6 +63,10 @@
 #include <linux/pm_qos.h>
 #endif
 
+static int dbg_level = 0;
+module_param(dbg_level, int, 0644);
+MODULE_PARM_DESC(dbg_level, "set debug level");
+
 #if	defined(CONFIG_SERIAL_SAMSUNG_DEBUG) &&	\
 	defined(CONFIG_DEBUG_LL) &&		\
 	!defined(MODULE)
@@ -83,7 +87,8 @@ static void dbg(const char *fmt, ...)
 }
 
 #else
-#define dbg(fmt, ...) do { if (0) no_printk(fmt, ##__VA_ARGS__); } while (0)
+//#define dbg(fmt, ...) do { if (0) no_printk(fmt, ##__VA_ARGS__); } while (0)
+#define dbg(fmt, ...) do { if (dbg_level) printk(KERN_INFO fmt, ##__VA_ARGS__); } while (0)
 #endif
 
 /* UART name and device definitions */
