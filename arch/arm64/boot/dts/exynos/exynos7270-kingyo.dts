@@ -901,6 +901,11 @@
 		status = "okay";
 	};
 
+	vibrator: sub_vib {
+		compatible = "casio,sub-vibrator";
+		status = "okay";
+	};
+
 #if 0
 	dsim_0: dsim@14800000 {
 		lcd_info = <&rm69080>;
