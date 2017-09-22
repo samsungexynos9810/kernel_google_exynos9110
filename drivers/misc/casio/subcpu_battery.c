@@ -98,7 +98,7 @@ static int sub_bat_current(uint8_t curr_low, uint8_t curr_high)
 
 static int sub_bat_temperature(uint8_t temp_low, uint8_t temp_high)
 {
-	return (int16_t)(temp_low | temp_high << 8) / 10;
+	return (int16_t)(temp_low | temp_high << 8);
 }
 
 static int sub_bat_soc(uint8_t soc)
