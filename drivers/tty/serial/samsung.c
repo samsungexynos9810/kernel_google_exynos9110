@@ -1120,7 +1120,7 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	/*
 	 * Work around. Some delay is required for USI1 (but don't know why)
 	 */
-	if (port->line == PORTLINE_BT)
+	if (port->line == PORTLINE_BT || port->line == PORTLINE_SUBCPU)
 		mdelay(10);
 #endif
 
@@ -1475,7 +1475,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 
 	port->uartclk = 1;
 #ifdef CONFIG_KINGYO_BLUETOOTH
-	if(port->line == PORTLINE_BT) {
+	if(port->line == PORTLINE_BT || port->line == PORTLINE_SUBCPU) {
 		dbg("set port%d->flags |= UPF_HARD_FLOW\n", port->line);
 		port->flags |= UPF_HARD_FLOW;
 	}

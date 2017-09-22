@@ -119,4 +119,5 @@ struct s3c24xx_uart_port {
 #endif
 #ifdef CONFIG_KINGYO_BLUETOOTH
 #define PORTLINE_BT 4
+#define PORTLINE_SUBCPU 3
 #endif

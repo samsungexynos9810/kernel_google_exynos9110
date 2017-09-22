@@ -24,4 +24,10 @@ config KINGYO_BLUETOOTH
 	default n
 	help
 	  Kingyo board bluetooth.
+
+config KINGYO_GPS
+	bool "Kingyo board gps"
+	default n
+	help
+	  Kingyo board gps.
 endmenu

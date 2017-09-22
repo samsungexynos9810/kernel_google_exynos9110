@@ -39,15 +39,15 @@
 		status = "okay";
 	};
 
-	/* UART (SUB) */
-/*	usi_0: usi@101D2000 {
+	/* UART (SUBCPU) */
+	usi_0: usi@101D2000 {
 		status = "okay";
 	};
 
 	serial_3: uart@13910000 {
 		status = "okay";
 	};
-*/
+
 	/* UART (BT) */
 	usi_1: usi@101D3000 {
 		status = "okay";
@@ -182,6 +182,15 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&dual_main_wkup>;
+	};
+
+	kingyo_gps {
+		compatible = "kingyo-gps";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sub_main_int2>;
+		sub-main-int2 = <&gpa1 3 0>;
 	};
 
 /*	OTS
