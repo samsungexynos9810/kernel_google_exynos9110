@@ -672,16 +672,19 @@ static unsigned int s3c24xx_serial_tx_empty(struct uart_port *port)
 /* no modem control lines */
 static unsigned int s3c24xx_serial_get_mctrl(struct uart_port *port)
 {
+#ifndef CONFIG_KINGYO_BLUETOOTH
 	unsigned int umstat = rd_regb(port, S3C2410_UMSTAT);
 
 	if (umstat & S3C2410_UMSTAT_CTS)
 		return TIOCM_CAR | TIOCM_DSR | TIOCM_CTS;
 	else
-		return TIOCM_CAR | TIOCM_DSR;
+#endif
+		return TIOCM_CAR | TIOCM_DSR | TIOCM_CTS;
 }
 
 static void s3c24xx_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 {
+#ifndef CONFIG_KINGYO_BLUETOOTH
 	unsigned int umcon = rd_regl(port, S3C2410_UMCON);
 
 	if (mctrl & TIOCM_RTS)
@@ -690,6 +693,7 @@ static void s3c24xx_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 		umcon &= ~S3C2410_UMCOM_RTS_LOW;
 
 	wr_regl(port, S3C2410_UMCON, umcon);
+#endif
 }
 
 static void s3c24xx_serial_break_ctl(struct uart_port *port, int break_state)
@@ -1100,8 +1104,10 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 		umcon |= S3C2410_UMCOM_AFC;
 		/* Disable RTS when RX FIFO contains 63 bytes */
 		umcon &= ~S3C2412_UMCON_AFC_8;
+		port->status |= (UPSTAT_AUTORTS | UPSTAT_AUTOCTS);
 	} else {
 		umcon &= ~S3C2410_UMCOM_AFC;
+		port->status &= ~(UPSTAT_AUTORTS | UPSTAT_AUTOCTS);
 	}
 	wr_regl(port, S3C2410_UMCON, umcon);
 
