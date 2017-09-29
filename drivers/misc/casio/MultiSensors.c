@@ -222,7 +222,7 @@ static void sub_HeaderInfoProc(void)
 }
 
 
-#define STSOBJ_NUM 4
+#define STSOBJ_NUM 5
 
 static uint32_t cnt_num[STSOBJ_NUM];	// number of samples
 static uint32_t cnt_idx[STSOBJ_NUM];
@@ -355,7 +355,7 @@ static int SensorReadThread(void *p)
 				(type == SUB_COM_TYPE_SENSOR_GETDATA)) {	/* Get Data and Sensor Data */
 				event_time = soc_time - elapsed_time * 1000000LL;
 				/* Sensor Data Proc */
-				if (recv_buf[recv_index] == 0x00)
+				if (recv_buf[recv_index] == MSENSORS_TYPE_TIMESTAMP)
 					wake_lock_timeout(&wlock, HZ/5);
 #ifdef CFG_SUBCPU_LOG
 			  if (recv_buf[recv_index] == MSENSORS_TYPE_SUBCPU_LOG) {	// subcpu log
@@ -375,7 +375,7 @@ static int SensorReadThread(void *p)
 				for (cnt= 0; cnt < PacketDataNum; cnt++) {
 					sensor_type = recv_buf[recv_index++];
 
-					if (sensor_type == 0) {
+					if (sensor_type == MSENSORS_TYPE_TIMESTAMP) {
 						elapsed_time = recv_buf[recv_index+3]<<24 | recv_buf[recv_index+2]<<16 |
 										recv_buf[recv_index+1]<<8 | recv_buf[recv_index];
 						event_time = soc_time - elapsed_time * 1000000LL;

@@ -85,26 +85,19 @@
 #define SUB_COM_GETID_POWER_WARN		(0x07)
 #define SUB_COM_GETID_NUM	(0x08)	/* Number of GETIDs */
 
-#define SUB_COM_SENSID_ACCELE			(0x01)		/* Acceleration Data */
-#define SUB_COM_SENSID_MAG			(0x02)		/* Magnetic Data */
-#define SUB_COM_SENSID_GYRO			(0x03)		/* Gyroscope Data */
-#define SUB_COM_SENSID_PRESS			(0x04)		/* Pressure Data */
-#define SUB_COM_SENSID_WAKEMOTION		(0x05)		/* WakeMotion Data */
-#define SUB_COM_SENSID_STPCOUNTER		(0x06)		/* Step Counter Data */
-#define SUB_COM_SENSID_STPDETECTOR		(0x07)		/* Step Detector Data */
-#define SUB_COM_SENSID_NUM			(0x08)		/* Number of SENSIDs */
-
-#define MSENSORS_TYPE_ACCELERATION		(0x01)		/* Sensor Type Acceleration */
+#define MSENSORS_TYPE_META			(0x00)		/* Sensor Type Meta */
+#define MSENSORS_TYPE_ACCELEROMETER		(0x01)		/* Sensor Type Accelerometer */
 #define MSENSORS_TYPE_MAGNETIC_FIELD		(0x02)		/* Sensor Type Magnetic */
 #define MSENSORS_TYPE_GYRO			(0x03)		/* Sensor Type Gyroscope */
 #define MSENSORS_TYPE_PRESSURE			(0x04)		/* Sensor Type Pressure */
-#define MSENSORS_TYPE_BHA		(0x05)		/* Sensor Type WakeMotion */
-#define MSENSORS_TYPE_STEP_COUNTER		(0x06)		/* Sensor Type Step Counter */
-#define MSENSORS_TYPE_STEP_DETECTOR		(0x07)		/* Sensor Type Step Detector */
-#define MSENSORS_TYPE_WRIST_TILT	(0x08)	/* Sensor Type Wrist Tilt  */
-#define MSENSORS_TYPE_SIGNIFICANT_MOTION	(0x09)	/* Sensor Type SignificantMotion */
+#define MSENSORS_TYPE_LIGHT		(0x05)		/* Sensor Type Light */
+#define MSENSORS_TYPE_BHA		(0x06)		/* Sensor Type Bha */
+#define MSENSORS_TYPE_STEP_COUNTER		(0x07)		/* Sensor Type Step Counter */
+#define MSENSORS_TYPE_STEP_DETECTOR		(0x08)		/* Sensor Type Step Detector */
+#define MSENSORS_TYPE_WRIST_TILT	(0x09)	/* Sensor Type Wrist Tilt  */
+#define MSENSORS_TYPE_SIGNIFICANT_MOTION	(0x0a)	/* Sensor Type SignificantMotion */
 #define MSENSORS_TYPE_SUBCPU_LOG			(0x0e)		/* subcpu log */
-#define MSENSORS_TYPE_META			(0x0f)		/* Sensor Type Meta */
+#define MSENSORS_TYPE_TIMESTAMP			(0x0f)		/* timestamp */
 
 #define SUB_COM_HEAD_INDEX_TYPE			(0x00)		/* HEADER Information Index Type */
 #define SUB_COM_HEAD_INDEX_PACKET		(0x01)		/* HEADER Information Index Packet */
