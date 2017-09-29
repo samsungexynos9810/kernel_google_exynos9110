@@ -1562,6 +1562,17 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		return ret;
 	}
 
+#ifdef CONFIG_KINGYO_BLUETOOTH
+	if(ourport->port.line == PORTLINE_BT) {
+		dbg("set gateuart%d clock rate to 100MHz\n", ourport->port.line);
+		ret = clk_set_rate(ourport->clk, 100000000);
+		if (ret) {
+			pr_err("uart: clock failed to set rate 100MHz: %d\n", ret);
+			return ret;
+		}
+	}
+#endif
+
 	/* Keep all interrupts masked and cleared */
 	if (s3c24xx_serial_has_interrupt_mask(port)) {
 		wr_regl(port, S3C64XX_UINTM, 0xf);
