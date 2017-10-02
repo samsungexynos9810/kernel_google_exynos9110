@@ -88,7 +88,7 @@
 		uart3_bus_single: uart3-bus-single {
 			samsung,pins = "gpa2-0", "gpa1-7", "gpa2-1", "gpa2-2";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <3>;
 		};
 
 		/* UART_USI_1 (Single mode) BT */
