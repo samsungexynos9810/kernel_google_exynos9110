@@ -604,6 +604,11 @@ config SND_SOC_SN95031
 config SND_SOC_SPDIF
 	tristate "S/PDIF CODEC"
 
+config SND_SOC_EXYNOS_AUDMIXER
+	tristate
+	select REGMAP_MMIO
+	select REGMAP_I2C
+
 config SND_SOC_SSM2518
 	tristate
 
@@ -890,6 +895,10 @@ config SND_SOC_WM9712
 	tristate
 
 config SND_SOC_WM9713
+	tristate
+
+# Dummy  TODO: remove keisak 
+config SND_SOC_DUMMY_CODEC
 	tristate
 
 # Amp

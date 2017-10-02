@@ -925,48 +925,45 @@
 		status = "okay";
 	};
 
-	/* sound */
-	gaudio_codec: ics43432 {
-		compatible = "invensense,ics43432";
+/*
+ * we should decide whether the audio mixer should be removed
+ */ 
+ 
+ 	s1403x: s1403x@14880000 {
+		pinctrl-names = "default", "idle";
+		pinctrl-0 = <&i2s_pmic_bus
+				&i2s_amp_bus
+				&i2s_codec_clk>;
+		pinctrl-1 = <&i2s_pmic_bus_idle
+				&i2s_amp_bus_idle> ;
 		status = "okay";
 	};
 
 	i2s0: i2s@148A0000 {
-		compatible = "samsung,exynos7-i2s1";
-		reg = <0x0 0x148A0000 0x100>;
-		dmas = <&pdma0 29
-			&pdma0 30>;
-		dma-names = "tx", "rx";
-		interrupts = <0 69 0>;
-		clocks = <&clock 711>,	/* dispaud_mi2s_aud */
-			<&clock 741>,	/* d1_i2s */
-			<&clock 741>;	/* d1_i2s */
-		clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
-		samsung,amixer = <4>;
-		samsung,supports-rstclr;
-		samsung,supports-secdai;
-		samsung,supports-esa-dma;
-		samsung,i2s-str;
-		samsung,lpass-subip;
+		pinctrl-names = "default", "idle";
+		pinctrl-0 = <&i2s_pmic_bus
+				&i2s_amp_bus
+				&i2s_codec_clk>;
+		pinctrl-1 = <&i2s_pmic_bus_idle
+				&i2s_amp_bus_idle> ;
 		status = "okay";
-		i2s-sec {
-			dmas = <&pdma0 28>;
-			dma-names = "tx-sec";
-			clocks = <&clock 711>,	/* dispaud_mi2s_aud */
-				<&clock 741>,	/* d1_i2s */
-				<&clock 741>;	/* d1_i2s */
-			clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
-		};
+	};
+
+	/* sound */
+
+	audio_codec: ics43432 {
+		compatible = "invensense,ics43432";
+		status = "okay";
 	};
 
 	sound {
 		compatible = "samsung,kingyo-4343X";
-		samsung,audio-cpu = <&i2s0>;
-		samsung,audio-codec = <&gaudio_codec>;
 		vdd_18-supply = <&ldo11_reg>;
+		clocks = <&clock 740>, <&clock 741>;
+		clock-names = "fout_aud_pll", "div_audmixer";
 		status = "okay";
 	};
-	
+
 #if 0
 	dsim_0: dsim@14800000 {
 		lcd_info = <&rm69080>;

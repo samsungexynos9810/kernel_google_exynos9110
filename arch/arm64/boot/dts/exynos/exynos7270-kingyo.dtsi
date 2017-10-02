@@ -704,7 +704,7 @@
 		samsung,lpass-subip;
 		status = "okay";
 	};
-#if 0
+
 	i2s0: i2s@148A0000 {
 		compatible = "samsung,i2s-v5";
 		reg = <0x0 0x148A0000 0x100>;
@@ -748,7 +748,7 @@
 		samsung,lpass-subip;
 		status = "disabled";
 	};
-#endif
+
 #if 0
 	/* USI_0_CH0_HSI2C (unused) */
 	hsi2c_5: hsi2c@13910000 {
