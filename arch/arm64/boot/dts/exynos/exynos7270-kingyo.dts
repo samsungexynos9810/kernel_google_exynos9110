@@ -110,17 +110,21 @@
 	};
 
 	dwmmc2@13560000 {
-		status = "disabled";
+		status = "okay";
 		num-slots = <1>;
+		supports-4bit;
+		supports-cmd23;
+		supports-erase;
 		clock-gate;
-//		fixed_volt;
+		fixed_volt;
 		supports-highspeed;
-		only_once_tune;
+//		only_once_tune;
 		enable-cclk-on-suspend;
 		keep-power-in-suspend;
 //		enable-sdio-wakeup;
-                non-removable;
-                broken-card-detect;
+		skip-init-mmc-scan;
+		non-removable;
+		broken-card-detect;
 		supports-poweroff-notification;
 		card-detect-ext;
 //		cd-gpio = <&gpc0 1 0xf>;
@@ -130,9 +134,11 @@
 		samsung,dw-mshc-ciu-div = <3>;
 		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
 		samsung,dw-mshc-ddr-timing = <3 0 3 2>;
+		num-ref-clks = <3>;
+		ciu_clkin = <25 50 50>;
 
-		num-ref-clks = <11>;
-		ciu_clkin = <25 50 50 50 50 100 200 100 100 200 400>;
+//		num-ref-clks = <11>;
+//		ciu_clkin = <25 50 50 50 50 100 200 100 100 200 400>;
 //		clk-drive-number = <4>;
 		pinctrl-names = "default";
 //			"fast-slew-rate-1x",
@@ -445,8 +451,6 @@
 					regulator-name = "vdd_ldo19";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-always-on;
-					regulator-boot-on;
 					regulator-ramp-delay = <12000>;
 				};
 

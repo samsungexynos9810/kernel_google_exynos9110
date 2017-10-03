@@ -18,6 +18,29 @@
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 *
 */
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/gpio.h>
+#include <linux/hrtimer.h>
+#include <linux/irq.h>
+#include <linux/rfkill.h>
+#include <linux/platform_device.h>
+#include <linux/wakelock.h>
+#include <linux/regmap.h>
+#include <linux/delay.h>
+#include <linux/of_platform.h>
+#include <linux/of_gpio.h>
+#include <linux/of_irq.h>
+#include <linux/spinlock.h>
+#include <linux/serial_core.h>
+#include <linux/regulator/driver.h>
+#include <linux/regulator/consumer.h>
+#include <linux/regulator/machine.h>
+#include <linux/err.h>
+
+#define DBG_INFO    1
+#define DBG_TRACE   2
+#define DBG_VERBOSE 4
 
 #define POWER_ON    1
 #define POWER_OFF   0

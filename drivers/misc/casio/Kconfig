@@ -30,4 +30,10 @@ config KINGYO_GPS
 	default n
 	help
 	  Kingyo board gps.
+	  
+config KINGYO_WIFI
+	bool "Kingyo board wifi"
+	default n
+	help
+	  Kingyo board wifi.
 endmenu

@@ -374,6 +374,18 @@ struct dw_mci_board {
 
 	/* Number of descriptors */
 	unsigned int desc_sz;
+
+    /* ext_cd_cleanup: Cleanup external card detect subsystem.
+     * ext_cd_init: Initialize external card detect subsystem.
+     *       notify_func argument is a callback to the dwmci driver
+     *       that triggers the card detection event. Callback arguments:
+     *       dev is pointer to platform device of the host controller,
+     *       state is new state of the card (0 - removed, 1 - inserted).
+     */
+    int (*ext_cd_init)(void (*notify_func)
+                    (struct platform_device *, int state));
+    int (*ext_cd_cleanup)(void (*notify_func)
+                    (struct platform_device *, int state));
 };
 
 #ifdef CONFIG_MMC_DW_IDMAC

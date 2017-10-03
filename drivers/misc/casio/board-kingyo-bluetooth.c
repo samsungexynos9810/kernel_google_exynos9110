@@ -20,26 +20,7 @@
 */
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-#include <linux/module.h>
-#include <linux/init.h>
-#include <linux/gpio.h>
-#include <linux/hrtimer.h>
-#include <linux/irq.h>
-#include <linux/rfkill.h>
-#include <linux/platform_device.h>
-#include <linux/wakelock.h>
-#include <linux/regmap.h>
-#include <linux/delay.h>
-#include <linux/of_platform.h>
-#include <linux/of_gpio.h>
-#include <linux/of_irq.h>
-#include <linux/spinlock.h>
-#include <linux/serial_core.h>
 #include "board-kingyo-rf.h"
-
-#define DBG_INFO    1
-#define DBG_TRACE   2
-#define DBG_VERBOSE 4
 
 static int dbg_level = DBG_INFO;
 module_param(dbg_level, int, 0644);
@@ -66,7 +47,6 @@ struct bcm_bt_lpm {
 	char wake_lock_name[100];
 } bt_lpm;
 
-
 static int bluetooth_set_power(void *data, bool blocked)
 {
 	int val_power = 0;
@@ -82,13 +62,13 @@ static int bluetooth_set_power(void *data, bool blocked)
 
 	// rfkill_ops callback. Turn transmitter on when blocked is false
 	if (!blocked) {
-		gpio_set_value(BT_RESET_GPIO, 1);
+		gpio_set_value(BT_RESET_GPIO, POWER_ON);
 		msleep(30);
 		dbg_info("%s(): Power ON\n", __func__);
 	}
 	else {
 		gpio_set_value(BT_WAKE_GPIO, 0);
-		gpio_set_value(BT_RESET_GPIO, 0);
+		gpio_set_value(BT_RESET_GPIO, POWER_OFF);
 		dbg_info("%s(): Power OFF\n", __func__);
 	}
 	return 0;
