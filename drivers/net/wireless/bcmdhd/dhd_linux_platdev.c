@@ -499,6 +499,19 @@ static int wifi_plat_dev_drv_resume(struct platform_device *pdev)
 	return 0;
 }
 
+static void wifi_plat_dev_dev_shutdown(struct platform_device *pdev){
+	wifi_adapter_info_t *adapter;
+
+	ASSERT(dhd_wifi_platdata != NULL);
+	ASSERT(dhd_wifi_platdata->num_adapters == 1);
+	adapter = &dhd_wifi_platdata->adapters[0];
+	if (is_power_on) {
+		wifi_platform_set_power(adapter, FALSE, WIFI_TURNOFF_DELAY);
+		wifi_platform_bus_enumerate(adapter, FALSE);
+	}
+	return;
+}
+
 #ifdef CONFIG_DTS
 static const struct of_device_id wifi_device_dt_match[] = {
 	{ .compatible = "android,bcmdhd_wlan", },
@@ -510,6 +523,7 @@ static struct platform_driver wifi_platform_dev_driver = {
 	.remove         = wifi_plat_dev_drv_remove,
 	.suspend        = wifi_plat_dev_drv_suspend,
 	.resume         = wifi_plat_dev_drv_resume,
+	.shutdown		= wifi_plat_dev_dev_shutdown,
 	.driver         = {
 	.name   = WIFI_PLAT_NAME,
 #ifdef CONFIG_DTS
@@ -523,6 +537,7 @@ static struct platform_driver wifi_platform_dev_driver_legacy = {
 	.remove         = wifi_plat_dev_drv_remove,
 	.suspend        = wifi_plat_dev_drv_suspend,
 	.resume         = wifi_plat_dev_drv_resume,
+	.shutdown		= wifi_plat_dev_dev_shutdown,
 	.driver         = {
 	.name	= WIFI_PLAT_NAME2,
 	}
