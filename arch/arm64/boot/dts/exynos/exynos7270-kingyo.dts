@@ -187,7 +187,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&dual_main_wkup>;
+		pinctrl-0 = <&dual_main_wkup &main_dual_rst>;
 	};
 
 	kingyo_gps {
