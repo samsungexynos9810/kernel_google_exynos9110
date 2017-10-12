@@ -190,6 +190,12 @@
 		pinctrl-0 = <&dual_main_wkup &main_dual_rst>;
 	};
 
+	wlan {
+		compatible = "kingyo-wifi";
+		pinctrl-names = "default";
+		pinctrl-0 = <&wlan_main_wkup &wlan_reset>;
+	};
+
 	kingyo_gps {
 		compatible = "kingyo-gps";
 		#address-cells = <1>;

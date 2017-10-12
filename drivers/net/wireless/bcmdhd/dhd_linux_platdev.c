@@ -517,7 +517,12 @@ static const struct of_device_id wifi_device_dt_match[] = {
 	{ .compatible = "android,bcmdhd_wlan", },
 	{},
 };
-#endif /* CONFIG_DTS */
+#elif CONFIG_KINGYO_WIFI
+static const struct of_device_id wifi_device_dt_match[] = {
+	{ .compatible = "kingyo-wifi", },
+	{},
+};
+#endif /* CONFIG_DTS | CONFIG_KINGYO_WIFI */
 static struct platform_driver wifi_platform_dev_driver = {
 	.probe          = wifi_plat_dev_drv_probe,
 	.remove         = wifi_plat_dev_drv_remove,
@@ -526,9 +531,9 @@ static struct platform_driver wifi_platform_dev_driver = {
 	.shutdown		= wifi_plat_dev_dev_shutdown,
 	.driver         = {
 	.name   = WIFI_PLAT_NAME,
-#ifdef CONFIG_DTS
+#if defined(CONFIG_DTS) || defined(CONFIG_KINGYO_WIFI)
 	.of_match_table = wifi_device_dt_match,
-#endif /* CONFIG_DTS */
+#endif /* CONFIG_DTS | CONFIG_KINGYO_WIFI */
 	}
 };
 
