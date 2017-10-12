@@ -95,7 +95,7 @@
 		uart4_bus_single: uart4-bus-single {
 			samsung,pins = "gpa2-5", "gpa2-4", "gpa2-6", "gpa2-7";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <3>;
 		};
 #if 0
 		/* USI_0_CH0_HSI2C (unused) */
