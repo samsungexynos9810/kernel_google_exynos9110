@@ -9,6 +9,7 @@
 #include "u_f.h"
 #include "u_os_desc.h"
 #include <linux/soc/samsung/exynos-soc.h>
+#include <linux/delay.h>
 
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
 #include <linux/platform_device.h>
@@ -315,6 +316,7 @@ static ssize_t gadget_dev_desc_UDC_store(struct config_item *item,
 	char *name;
 	int ret;
 
+	msleep(1000);
 	name = kstrdup(page, GFP_KERNEL);
 	if (!name)
 		return -ENOMEM;
