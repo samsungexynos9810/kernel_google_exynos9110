@@ -655,6 +655,9 @@ static int lpass_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "syscon regmap lookup failed.\n");
 		return PTR_ERR(lpass.pmureg);
 	}
+	// keisak
+	lpass_enable(&lpass.pdev->dev);
+
 	dev_dbg(dev, "%s Completed\n", __func__);
 	return 0;
 }
