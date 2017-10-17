@@ -70,6 +70,7 @@ int soc_has_mongoose(void)
 #define EXYNOS_PMU_SWRESET				(0x0400)
 #define EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION	(0x0500)
 #define EXYNOS_PMU_PS_HOLD_CONTROL			(0x330C)
+#define EXYNOS_PMU_INFORM4		(0x0840)
 
 #define DFD_EDPCSR_DUMP_EN			(1 << 0)
 #define DFD_L2RSTDISABLE_MNGS_EN		(1 << 11)
@@ -164,8 +165,10 @@ void mngs_reset_control(int en)
 }
 
 #define INFORM_NONE		0x0
-#define INFORM_RAMDUMP		0xd
+#define INFORM_BOOTLOADER	0xd
 #define INFORM_RECOVERY		0xf
+#define INFORM_NEED_UPDATE	0x6
+#define INFORM_PANIC 0xa
 
 #if !defined(CONFIG_SEC_REBOOT)
 #ifdef CONFIG_OF
@@ -190,13 +193,17 @@ static void exynos_reboot(enum reboot_mode mode, const char *cmd)
 	if (!exynos_pmu_base)
 		return;
 
-	restart_inform = INFORM_NONE;
+	restart_inform = readl(exynos_pmu_base + EXYNOS_PMU_INFORM4);
 
-	if (cmd) {
-		if (!strcmp((char *)cmd, "recovery"))
-			restart_inform = INFORM_RECOVERY;
-		else if(!strcmp((char *)cmd, "ramdump"))
-			restart_inform = INFORM_RAMDUMP;
+	if (cmd == NULL) {
+		__raw_writel(INFORM_PANIC, exynos_pmu_base + EXYNOS_PMU_INFORM4);
+	} else if (!strncmp(cmd, "bootloader", 10)) {
+		__raw_writel(INFORM_BOOTLOADER, exynos_pmu_base + EXYNOS_PMU_INFORM4);
+	} else if (!strncmp(cmd, "recovery", 8)) {
+		__raw_writel(INFORM_RECOVERY, exynos_pmu_base + EXYNOS_PMU_INFORM4);
+	} else {
+		if (restart_inform != INFORM_NEED_UPDATE)
+			__raw_writel(INFORM_NONE, exynos_pmu_base + EXYNOS_PMU_INFORM4);
 	}
 
 	/* Check by each SoC */
