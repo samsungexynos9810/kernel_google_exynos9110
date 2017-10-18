@@ -23,52 +23,63 @@
 #include "i2s.h"
 #include "i2s-regs.h"
 
-#if 0
+#if 1
 	#define gprintk(fmt, x... ) printk( "%s: " fmt, __FUNCTION__ , ## x)
 #else
 	#define gprintk(x...) do { } while (0)
 #endif
 
-#define AUDMIXER
-#define IOREGMAP
+/*
+ * TODO: Do we need register Audio component to control it.
+ * If we do not use its function, we should remove this.
+ */
+#define MIXER_COMPONENT
+/*
+ * We must set divider of mixer clock
+ */
+#define MIXER_SET_CLKDIV
+/*
+ * We should use clock api rather than this iomapping method,
+ * so we must change it if they would support the clock
+ */
+#define MIXER_CLK_IOREGMAP
+/*
+ * We must configire mixer register here until audio mixer driver
+ * will be supported.
+ */
+#define MIXER_CONTORL_IOREG
 
 /*
  * The following paramters are set in bootloader. These paramters are no longer
  * used here, they are accessed by audio_fw.c in platform HAL layser throgh
  * this machine driver layer.
  */
-
 int MicGain = 1;
 int IDVol = 16;
 module_param(MicGain, int, S_IRUGO|S_IWUSR);
 module_param(IDVol, int, S_IRUGO|S_IWUSR);
 
-/*
- * We should use clock api instead if they would be supported
- */
-#ifdef IOREGMAP
+
+#ifdef MIXER_CLK_IOREGMAP
 static void __iomem *dispaud_vclk;
-
 // #define CMU_DISPAUD_REG(x)     (disaud_vclk + (x))
-
 #define PA_CMU_DISPAUD				0x148D0000
 #define CLK_CON_DIV_CLK_DISPAUD_MIXER 0x410
-
+#endif
+#ifdef MIXER_CONTORL_IOREG
+#include "../codecs/exynos-audmixer-regs.h"
+static void __iomem *audmixer_reg;
+#define MIXER_AUD					0x14880000
 #endif
 
-#ifdef AUDMIXER
-struct kingyo_priv {
-	struct snd_soc_codec *codec;
-	int aifrate;
-};
 
+#ifdef MIXER_COMPONENT
 static const struct snd_soc_component_driver smdk7270_cmpnt = {
 	.name = "smdk7270-audio",
 };
 
 static struct snd_soc_dai_driver smdk7270_ext_dai[] = {
 };
-
 #endif
 
 static struct regulator_bulk_data core_supplies[] = {
@@ -109,15 +120,18 @@ static void kingyo_aif_shutdown(struct snd_pcm_substream *substream)
 
 }
 
+#ifdef MIXER_SET_CLKDIV
 static int set_mixer_div(void)
 {
-#ifdef IOREGMAP
-	dispaud_vclk = ioremap(PA_CMU_DISPAUD, SZ_4K);
+#ifdef MIXER_CLK_IOREGMAP
 	if (dispaud_vclk == NULL) {
-		gprintk("CMU_DISPAUD ioremap failed\n");
-		return -ENOMEM;
+		dispaud_vclk = ioremap(PA_CMU_DISPAUD, SZ_4K);
+		if (dispaud_vclk == NULL) {
+			gprintk("CMU_DISPAUD ioremap failed\n");
+			return -ENOMEM;
+		}
 	}
-	writel(0x1, dispaud_vclk + CLK_CON_DIV_CLK_DISPAUD_MIXER);
+	writel(0x3, dispaud_vclk + CLK_CON_DIV_CLK_DISPAUD_MIXER);
 #else
 	div_mixer = devm_clk_get(dev, "div_audmixer");
 	if (IS_ERR(div_mixer)) {
@@ -131,7 +145,34 @@ static int set_mixer_div(void)
 #endif
 	return 0;
 }
+#endif
 
+#ifdef MIXER_CONTORL_IOREG
+static unsigned int mixer_config_regs[] = {
+	AUDMIXER_REG_10_DMIX1, 0x00,
+	AUDMIXER_REG_11_DMIX2, 0x80,
+	AUDMIXER_REG_0F_DIG_EN, 0x08,
+	AUDMIXER_REG_0D_RMIX_CTL, 0x80,
+};
+static int map_audiomixer(void)
+{
+	audmixer_reg = ioremap(MIXER_AUD, SZ_1K);
+	if (audmixer_reg == NULL) {
+		gprintk("MIXER_AUD ioremap failed\n");
+		return -ENOMEM;
+	}
+	return 0;
+}
+static int config_audmixer(void)
+{
+	int i;
+	for (i=0; i<sizeof(ARRAY_SIZE(mixer_config_regs)); i+=2) {
+		writel(mixer_config_regs[i+1],
+				audmixer_reg + mixer_config_regs[i]);
+	}
+	return 0;
+}
+#endif
 /*
  * kingyo hw params. (AP I2S Master with mic)
  */
@@ -141,36 +182,12 @@ static int kingyo_hw_params(struct snd_pcm_substream *substream,
 
 	gprintk("\n");
 
-	#if 0
-	{
-		struct snd_soc_pcm_runtime *rtd = substream->private_data;
-		struct struct platform_device *card = rtd->card->dev;
-		unsigned int fs, aud_pll_rate;
-		int ret;
-		clk *aud_pll, * div_mixer;
-
-		fs = params_rate(params);
-		/* rate = 64(rfs) * 48K/44.1(fs) * N is about equal to  98.304MHz */
-		if ( fs % 8000 == 0 ) {
-			aud_pll_rate = 98304019; /* N = 32 */
-		} else {
-			aud_pll_rate = 90316800; /* N = 32 */
-		}
-		gprintk("fs: %u, pll: %u\n", fs, aud_pll_rate);
-		aud_pll = devm_clk_get(dev, "fout_aud_pll");
-		if (IS_ERR(aud_pll)) {
-			gprintk("clk_get aud_pll return error\n");
-		} else {
-			clk_set_rate(aud_pll, aud_pll_rate);
-			devm_clk_put(dev,aud_pll);
-		}
-	}
+	/* Do we need call here again as another module overwrite this register */
+	#ifdef MIXER_SET_CLKDIV
+	set_mixer_div();
 	#endif
 
-	/* Do we need call here again as another module overwrite this register */
-	set_mixer_div();
-
-	/* Do we need to call sysclock here */
+	/* Do we need to call sysclock for i2s here */
 	{
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
@@ -181,6 +198,13 @@ static int kingyo_hw_params(struct snd_pcm_substream *substream,
 	snd_soc_dai_set_clkdiv(cpu_dai, SAMSUNG_I2S_DIV_BCLK, bfs);
 	snd_soc_dai_set_clkdiv(cpu_dai, SAMSUNG_I2S_DIV_RCLK, rfs);
 	}
+
+	/* The following setting mixer register might be removed after
+	 * mixer driver funcions would be supported */
+	#ifdef MIXER_CONTORL_IOREG
+	config_audmixer();
+	#endif
+
 	gprintk("exit\n");
 	return 0;
 }
@@ -230,8 +254,15 @@ static int kingyo_probe(struct snd_soc_card *card) {
 		return -ENOMEM;
 	}
 
+	#ifdef MIXER_SET_CLKDIV
 	/* set CLK_DISPAUD_MIXER DIV_RATIO */
 	set_mixer_div();
+	#endif
+
+	#ifdef MIXER_CONTORL_IOREG
+	/* iomapping audio mixer */
+	map_audiomixer();
+	#endif
 
 	return 0;
 }
@@ -259,12 +290,8 @@ static int kingyo_ics4343X_probe(struct platform_device *pdev)
 	/* register card */
 	card->dev = &pdev->dev;
 
-	#ifdef AUDMIXER
+	#ifdef MIXER_COMPONENT
 	{
-		struct kingyo_priv *priv;
-		priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-		if (!priv)
-			return -ENOMEM;
 		gprintk("register_component\n");
 		ret = snd_soc_register_component(&pdev->dev, &smdk7270_cmpnt,
 				smdk7270_ext_dai,	0);
@@ -272,7 +299,6 @@ static int kingyo_ics4343X_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "Failed to register component: %d\n", ret);
 			return ret;
 		}
-		snd_soc_card_set_drvdata(card, priv);
 	}
 	#endif
 
