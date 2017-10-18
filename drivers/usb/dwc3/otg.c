@@ -265,6 +265,7 @@ static int dwc3_otg_start_gadget(struct otg_fsm *fsm, int on)
 			on ? "on" : "off", otg->gadget->name);
 
 	if (on) {
+		dwc->is_on = on;
 		wake_lock(&dotg->wakelock);
 		pm_runtime_get_sync(dev);
 		ret = dwc3_phy_setup(dwc);
@@ -302,6 +303,7 @@ err2:
 err1:
 		pm_runtime_put_sync(dev);
 		wake_unlock(&dotg->wakelock);
+		dwc->is_on = on;
 	}
 
 	return ret;

@@ -916,7 +916,7 @@ struct dwc3 {
 
 	bool			vbus_session;
 	bool			softconnect;
-
+	int			is_on;
 	struct completion	disconnect;
 
 	/**

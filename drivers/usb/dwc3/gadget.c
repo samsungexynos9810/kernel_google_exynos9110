@@ -1792,6 +1792,9 @@ static int dwc3_gadget_start(struct usb_gadget *g,
 	int			ret = 0;
 	int			irq;
 
+	if (!dwc->is_on)
+		return 0;
+
 	irq = platform_get_irq(to_platform_device(dwc->dev), 0);
 #if IS_ENABLED(DWC3_GADGET_IRQ_ORG)
 	ret = request_threaded_irq(irq, dwc3_interrupt, dwc3_thread_interrupt,
@@ -1836,6 +1839,9 @@ static int dwc3_gadget_stop(struct usb_gadget *g)
 	struct dwc3		*dwc = gadget_to_dwc(g);
 	unsigned long		flags;
 	int			irq;
+
+	if (!dwc->is_on)
+		return 0;
 
 	spin_lock_irqsave(&dwc->lock, flags);
 
