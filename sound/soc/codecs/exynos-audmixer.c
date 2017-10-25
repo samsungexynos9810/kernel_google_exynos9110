@@ -451,7 +451,7 @@ static const struct regmap_config audmixer_regmap_i2c = {
 	.cache_type = REGCACHE_RBTREE,
 };
 
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 static int audmixer_reset_sys_data(void)
 {
 	regmap_write(g_audmixer->regmap, AUDMIXER_REG_00_SOFT_RSTB, 0x0);
@@ -617,7 +617,7 @@ static void audmixer_cfg_gpio(struct device *dev, const char *name)
 			dev_err(dev, "Unable to configure pinctrl %s\n", name);
 	}
 }
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 
 /*
  * audmixer_save_regs: Prepare the registers before suspend
@@ -1997,7 +1997,7 @@ static void audmixer_update_soc_reg(struct audmixer_soc_reg_info *socreg,
 		writel(val, socreg->reg);
 	}
 }
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 /**
  * audmixer_power_on: SoC specific powering on configurations
  *
@@ -2404,7 +2404,7 @@ static int audmixer_probe(struct snd_soc_codec *codec)
 		return ret;
 	}
 
-#ifndef CONFIG_PM_RUNTIME
+#ifndef CONFIG_EXYNOS_PD
 	audmixer_clk_enable(codec->dev);
 #endif
 
@@ -2615,7 +2615,7 @@ static int audmixer_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 /*
  * audmixer_runtime_resume: Runtime resume handler for Audio Mixer
  *
@@ -2712,7 +2712,7 @@ static const struct dev_pm_ops audmixer_pm = {
 			NULL,
 			NULL
 	)
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	SET_RUNTIME_PM_OPS(
 			audmixer_runtime_suspend,
 			audmixer_runtime_resume,

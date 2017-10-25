@@ -555,7 +555,7 @@ static int lpass_suspend(struct device *dev)
 		return 0;
 	}
 
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	if (atomic_read(&lpass.use_cnt) > 0)
 		lpass_disable(dev);
 #else
@@ -575,7 +575,7 @@ static int lpass_resume(struct device *dev)
 		return 0;
 
 	exynos_update_ip_idle_status(lpass.idle_ip_index, 0);
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	if (atomic_read(&lpass.use_cnt) > 0)
 		lpass_enable(dev);
 #else
@@ -636,7 +636,7 @@ static int lpass_probe(struct platform_device *pdev)
 	lpass.idle_ip_index = exynos_get_idle_ip_index(dev_name(&pdev->dev));
 	if (lpass.idle_ip_index < 0)
 		dev_err(dev, "Idle ip index is not provided for Audio.\n");
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	pm_runtime_enable(&lpass.pdev->dev);
 
 	pm_runtime_get_sync(&lpass.pdev->dev);
@@ -661,7 +661,7 @@ static int lpass_probe(struct platform_device *pdev)
 
 static int lpass_remove(struct platform_device *pdev)
 {
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	pm_runtime_disable(&pdev->dev);
 #else
 	lpass_disable(&pdev->dev);
@@ -671,7 +671,7 @@ static int lpass_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 static int lpass_runtime_suspend(struct device *dev)
 {
 	lpass_disable(dev);
@@ -715,7 +715,7 @@ static const struct dev_pm_ops lpass_pmops = {
 		lpass_suspend,
 		lpass_resume
 	)
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	SET_RUNTIME_PM_OPS(
 		lpass_runtime_suspend,
 		lpass_runtime_resume,
@@ -742,7 +742,7 @@ static int __init lpass_driver_init(void)
 }
 subsys_initcall(lpass_driver_init);
 
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 static int lpass_driver_rpm_begin(void)
 {
 	pr_debug("%s entered\n", __func__);

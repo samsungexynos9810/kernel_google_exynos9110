@@ -105,7 +105,7 @@ struct i2s_dai {
 #ifdef CONFIG_SND_SAMSUNG_IDMA
 	struct s3c_dma_params idma_playback;
 #endif
-#ifndef CONFIG_PM_RUNTIME
+#ifndef CONFIG_EXYNOS_PD
 	int enable_cnt;
 #endif
 	int	stream_cnt;
@@ -138,7 +138,7 @@ struct i2s_dai {
 /* Lock for cross i/f checks */
 static DEFINE_SPINLOCK(lock);
 
-#ifndef CONFIG_PM_RUNTIME
+#ifndef CONFIG_EXYNOS_PD
 static int i2s_disable(struct device *dev);
 static int i2s_enable(struct device *dev);
 #endif
@@ -895,7 +895,7 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 	lpass_add_stream();
 
 	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	pm_runtime_get_sync(&pdev->dev);
 #else
 	i2s_enable(&pdev->dev);
@@ -981,7 +981,7 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 	spin_unlock_irqrestore(&lock, flags);
 
 	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	pm_runtime_put_sync(&pdev->dev);
 #else
 	i2s_disable(&pdev->dev);
@@ -1633,7 +1633,7 @@ static inline int samsung_i2s_get_driver_data(struct platform_device *pdev)
 		return platform_get_device_id(pdev)->driver_data;
 }
 
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 static int i2s_runtime_suspend(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
@@ -1709,7 +1709,7 @@ static int i2s_enable(struct device *dev)
 
 	return 0;
 }
-#endif /* CONFIG_PM_RUNTIME */
+#endif /* CONFIG_EXYNOS_PD */
 
 static int samsung_i2s_probe(struct platform_device *pdev)
 {
@@ -2077,7 +2077,7 @@ MODULE_DEVICE_TABLE(of, exynos_i2s_match);
 #endif
 
 static const struct dev_pm_ops samsung_i2s_pm = {
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_EXYNOS_PD
 	SET_RUNTIME_PM_OPS(i2s_runtime_suspend,
 				i2s_runtime_resume, NULL)
 #endif
