@@ -1534,7 +1534,7 @@ int _cyttsp5_request_hid_output_set_param(struct device *dev,
 	return cyttsp5_hid_output_set_param_(cd, param_id, value, size);
 }
 
-#ifndef DONT_SLEEP
+//#ifndef DONT_SLEEP
 static int cyttsp5_hid_output_enter_easywake_state_(
 		struct cyttsp5_core_data *cd, u8 data, u8 *return_data)
 {
@@ -1554,7 +1554,7 @@ static int cyttsp5_hid_output_enter_easywake_state_(
 	*return_data = cd->response_buf[5];
 	return rc;
 }
-#endif
+//#endif
 
 static int cyttsp5_hid_output_verify_config_block_crc_(
 		struct cyttsp5_core_data *cd, u8 ebid, u8 *status,
@@ -3599,7 +3599,7 @@ static void cyttsp5_watchdog_timer(unsigned long handle)
 	if (!work_pending(&cd->watchdog_work))
 		schedule_work(&cd->watchdog_work);
 }
-#ifndef DONT_SLEEP
+//#ifndef DONT_SLEEP
 static int cyttsp5_put_device_into_easy_wakeup_(struct cyttsp5_core_data *cd)
 {
 	int rc;
@@ -3685,7 +3685,7 @@ static int cyttsp5_core_sleep_(struct cyttsp5_core_data *cd)
 	return rc;
 }
 
-static int cyttsp5_core_sleep(struct cyttsp5_core_data *cd)
+int cyttsp5_core_sleep(struct cyttsp5_core_data *cd)
 {
 	int rc;
 
@@ -3706,7 +3706,7 @@ static int cyttsp5_core_sleep(struct cyttsp5_core_data *cd)
 
 	return rc;
 }
-
+#if 0
 static int cyttsp5_wakeup_host(struct cyttsp5_core_data *cd)
 {
 #ifndef EASYWAKE_TSG6
@@ -3771,6 +3771,7 @@ exit:
 #endif
 }
 #endif
+//#endif
 static void cyttsp5_get_touch_axis(struct cyttsp5_core_data *cd,
 	int *axis, int size, int max, u8 *data, int bofs)
 {
@@ -4053,6 +4054,8 @@ static irqreturn_t cyttsp5_irq(int irq, void *handle)
 	struct cyttsp5_core_data *cd = handle;
 	int rc;
 
+	//printk(KERN_INFO "***** cyttsp5_irq\n");
+
 	if (!cyttsp5_check_irq_asserted(cd))
 		return IRQ_HANDLED;
 
@@ -4257,7 +4260,7 @@ static int _cyttsp5_request_stop_wd(struct device *dev)
 	return 0;
 }
 
-#ifndef DONT_SLEEP
+//#ifndef DONT_SLEEP
 static int cyttsp5_core_wake_device_from_deep_sleep_(
 		struct cyttsp5_core_data *cd)
 {
@@ -4290,7 +4293,7 @@ static int cyttsp5_core_wake_device_(struct cyttsp5_core_data *cd)
 
 	return cyttsp5_core_wake_device_from_deep_sleep_(cd);
 }
-#endif
+//#endif
 
 static int cyttsp5_restore_parameters_(struct cyttsp5_core_data *cd)
 {
@@ -4316,7 +4319,7 @@ exit:
 	return rc;
 }
 
-#ifndef DONT_SLEEP
+//#ifndef DONT_SLEEP
 static int _fast_startup(struct cyttsp5_core_data *cd)
 {
 	int retry = CY_CORE_STARTUP_RETRY_COUNT;
@@ -4420,7 +4423,7 @@ static int cyttsp5_core_wake_(struct cyttsp5_core_data *cd)
 	return rc;
 }
 
-static int cyttsp5_core_wake(struct cyttsp5_core_data *cd)
+int cyttsp5_core_wake(struct cyttsp5_core_data *cd)
 {
 	int rc;
 
@@ -4441,7 +4444,7 @@ static int cyttsp5_core_wake(struct cyttsp5_core_data *cd)
 
 	return rc;
 }
-#endif
+//#endif
 
 static int cyttsp5_get_ic_crc_(struct cyttsp5_core_data *cd, u8 ebid)
 {

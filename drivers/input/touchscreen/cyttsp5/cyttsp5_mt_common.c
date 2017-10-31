@@ -524,6 +524,10 @@ static int cyttsp5_mt_open(struct input_dev *input)
 	md->is_suspended = false;
 	mutex_unlock(&md->mt_lock);
 
+	/* For Touch Lock function */
+	cyttsp5_core_wake(cd);
+	printk(KERN_INFO "cyttsp5_mt_open->cyttsp5_core_wake\n");
+
 	parade_debug(dev, DEBUG_LEVEL_2, "%s: setup subscriptions\n", __func__);
 
 	/* set up touch call back */
@@ -569,6 +573,10 @@ static void cyttsp5_mt_close(struct input_dev *input)
 
 	_cyttsp5_unsubscribe_attention(dev, CY_ATTEN_RESUME, CYTTSP5_MT_NAME,
 		cyttsp5_mt_resume_attention, 0);
+
+	/* For Touch Lock function */
+	cyttsp5_core_sleep(cd);
+	printk(KERN_INFO "cyttsp5_mt_close->cyttsp5_core_sleep\n");
 
 	mutex_lock(&md->mt_lock);
 	if (!md->is_suspended) {

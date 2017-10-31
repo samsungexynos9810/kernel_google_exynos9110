@@ -1186,4 +1186,7 @@ void *cyttsp5_get_module_data(struct device *dev,
 		struct cyttsp5_module *module);
 void cyttsp5_mt_lift_all(struct cyttsp5_mt_data *md);
 
+int cyttsp5_core_sleep(struct cyttsp5_core_data *cd);
+int cyttsp5_core_wake(struct cyttsp5_core_data *cd);
+
 #endif /* _CYTTSP5_REGS_H */
