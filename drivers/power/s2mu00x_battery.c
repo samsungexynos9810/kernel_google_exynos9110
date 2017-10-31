@@ -193,7 +193,7 @@ static int set_charge(
 {
 	union power_supply_propval val;
 
-	pr_info("%s: battery status[%d]\n", __func__, battery->status);
+	pr_debug("%s: battery status[%d]\n", __func__, battery->status);
 	if (battery->cable_type == POWER_SUPPLY_TYPE_OTG)
 		return 0;
 
@@ -434,7 +434,7 @@ static int s2mu00x_bat_cable_check(struct s2mu00x_battery_info *battery,
 		current_cable_type = POWER_SUPPLY_TYPE_HV_UNKNOWN;
 		break;
 	default:
-		pr_err("%s: invalid type for charger:%d\n",
+		pr_debug("%s: invalid type for charger:%d\n",
 				__func__, attached_dev);
 	}
 
@@ -471,14 +471,14 @@ static int s2mu00x_battery_handle_notification(struct notifier_block *nb,
 		break;
 	}
 
-	pr_info("%s: current_cable(%d) former cable_type(%d) battery_valid(%d)\n",
+	pr_debug("%s: current_cable(%d) former cable_type(%d) battery_valid(%d)\n",
 			__func__, cable_type, battery->cable_type,
 			battery->battery_valid);
 	if (battery->battery_valid == false)
-		pr_info("%s: Battery is disconnected\n", __func__);
+		pr_debug("%s: Battery is disconnected\n", __func__);
 
 	battery->cable_type = cable_type;
-	pr_info("%s: CMD=%s, attached_dev=%d battery_cable=%d\n",
+	pr_debug("%s: CMD=%s, attached_dev=%d battery_cable=%d\n",
 			__func__, cmd, attached_dev, battery->cable_type);
 
 
@@ -488,13 +488,13 @@ static int s2mu00x_battery_handle_notification(struct notifier_block *nb,
 			psy_do_property(battery->pdata->charger_name, set,
 					POWER_SUPPLY_PROP_CHARGE_OTG_CONTROL,
 					value);
-			pr_info("%s: OTG cable attached\n", __func__);
+			pr_debug("%s: OTG cable attached\n", __func__);
 		} else {
 			value.intval = false;
 			psy_do_property(battery->pdata->charger_name, set,
 					POWER_SUPPLY_PROP_CHARGE_OTG_CONTROL,
 					value);
-			pr_info("%s: OTG cable detached\n", __func__);
+			pr_debug("%s: OTG cable detached\n", __func__);
 		}
 	}
 
@@ -512,7 +512,7 @@ static int s2mu00x_battery_handle_notification(struct notifier_block *nb,
 		}
 	}
 
-	pr_info(
+	pr_debug(
 			"%s: Status(%s), charging(%s), Health(%s), Cable(%d), Recharging(%d))\n",
 			__func__,
 			bat_status_str[battery->status],
@@ -561,10 +561,10 @@ static void get_battery_info(struct s2mu00x_battery_info *battery)
 	psy_do_property(battery->pdata->charger_name, get,
 			POWER_SUPPLY_PROP_STATUS, value);
 	if (battery->status != value.intval)
-		pr_err("%s: battery status = %d, charger status = %d\n",
+		pr_debug("%s: battery status = %d, charger status = %d\n",
 				__func__, battery->status, value.intval);
 
-	pr_info(
+	pr_debug(
 			"%s:Vnow(%dmV),Inow(%dmA),SOC(%d%%),Tbat(%d),Vavg(%dmV)\n",
 			__func__,
 			battery->voltage_now, battery->current_now,
@@ -753,7 +753,7 @@ static bool bat_temperature_check(
 static void check_charging_full(
 		struct s2mu00x_battery_info *battery)
 {
-	pr_info("%s Start\n", __func__);
+	pr_debug("%s Start\n", __func__);
 
 	if ((battery->status == POWER_SUPPLY_STATUS_DISCHARGING) ||
 			(battery->status == POWER_SUPPLY_STATUS_NOT_CHARGING)) {
@@ -766,7 +766,7 @@ static void check_charging_full(
 	if (battery->status == POWER_SUPPLY_STATUS_FULL &&
 			battery->voltage_now < battery->pdata->chg_recharge_vcell &&
 			!battery->is_recharging) {
-		pr_info("%s: Recharging start\n", __func__);
+		pr_debug("%s: Recharging start\n", __func__);
 		set_battery_status(battery, POWER_SUPPLY_STATUS_CHARGING);
 		battery->is_recharging = true;
 	}
@@ -777,7 +777,7 @@ static void check_charging_full(
 				battery->cable_type].full_check_current) &&
 			(battery->voltage_avg > battery->pdata->chg_full_vcell)) {
 		battery->full_check_cnt++;
-		pr_info("%s: Full Check Cnt (%d)\n", __func__, battery->full_check_cnt);
+		pr_debug("%s: Full Check Cnt (%d)\n", __func__, battery->full_check_cnt);
 	}
 
 	/* 3. If full charged, turn off charging. */
@@ -785,7 +785,7 @@ static void check_charging_full(
 		battery->full_check_cnt = 0;
 		battery->is_recharging = false;
 		set_battery_status(battery, POWER_SUPPLY_STATUS_FULL);
-		pr_info("%s: Full charged, charger off\n", __func__);
+		pr_debug("%s: Full charged, charger off\n", __func__);
 	}
 }
 
@@ -812,7 +812,7 @@ static void bat_monitor_work(struct work_struct *work)
 		container_of(work, struct s2mu00x_battery_info, monitor_work.work);
 	union power_supply_propval value;
 
-	pr_info("%s: start monitoring\n", __func__);
+	pr_debug("%s: start monitoring\n", __func__);
 
 	/* Let charger know booting period to control additional charging */
 	if (batt_booting_chk == 0) {
@@ -826,7 +826,7 @@ static void bat_monitor_work(struct work_struct *work)
 			POWER_SUPPLY_PROP_PRESENT, value);
 	if (!value.intval) {
 		battery->battery_valid = false;
-		pr_info("%s: There is no battery, skip monitoring.\n", __func__);
+		pr_debug("%s: There is no battery, skip monitoring.\n", __func__);
 		goto continue_monitor;
 	} else
 		battery->battery_valid = true;
@@ -849,7 +849,7 @@ static void bat_monitor_work(struct work_struct *work)
 	power_supply_changed(battery->psy_battery);
 
 continue_monitor:
-	pr_err(
+	pr_debug(
 		 "%s: Status(%s), charging(%s), Health(%s), Cable(%d), Recharging(%d))"
 		 "\n", __func__,
 		 bat_status_str[battery->status],
@@ -875,28 +875,28 @@ static int s2mu00x_battery_parse_dt(struct device *dev,
 	u32 temp;
 
 	if (!np) {
-		pr_err("%s np NULL(battery)\n", __func__);
+		pr_debug("%s np NULL(battery)\n", __func__);
 		return -1;
 	}
 	ret = of_property_read_string(np,
 			"battery,vendor", (char const **)&pdata->vendor);
 	if (ret)
-		pr_info("%s: Vendor is empty\n", __func__);
+		pr_debug("%s: Vendor is empty\n", __func__);
 
 	ret = of_property_read_string(np,
 			"battery,charger_name", (char const **)&pdata->charger_name);
 	if (ret)
-		pr_info("%s: Charger name is empty\n", __func__);
+		pr_debug("%s: Charger name is empty\n", __func__);
 
 	ret = of_property_read_string(np,
 			"battery,fuelgauge_name", (char const **)&pdata->fuelgauge_name);
 	if (ret)
-		pr_info("%s: Fuelgauge name is empty\n", __func__);
+		pr_debug("%s: Fuelgauge name is empty\n", __func__);
 
 	ret = of_property_read_u32(np, "battery,technology",
 			&pdata->technology);
 	if (ret)
-		pr_info("%s : technology is empty\n", __func__);
+		pr_debug("%s : technology is empty\n", __func__);
 
 
 	p = of_get_property(np, "battery,input_current_limit", &len);
@@ -913,67 +913,67 @@ static int s2mu00x_battery_parse_dt(struct device *dev,
 				"battery,input_current_limit", i,
 				&pdata->charging_current[i].input_current_limit);
 		if (ret)
-			pr_info("%s : Input_current_limit is empty\n",
+			pr_debug("%s : Input_current_limit is empty\n",
 					__func__);
 
 		ret = of_property_read_u32_index(np,
 				"battery,fast_charging_current", i,
 				&pdata->charging_current[i].fast_charging_current);
 		if (ret)
-			pr_info("%s : Fast charging current is empty\n",
+			pr_debug("%s : Fast charging current is empty\n",
 					__func__);
 
 		ret = of_property_read_u32_index(np,
 				"battery,full_check_current", i,
 				&pdata->charging_current[i].full_check_current);
 		if (ret)
-			pr_info("%s : Full check current is empty\n",
+			pr_debug("%s : Full check current is empty\n",
 					__func__);
 
 	}
 	ret = of_property_read_u32(np, "battery,temp_check_count",
 			&pdata->temp_check_count);
 	if (ret)
-		pr_info("%s : Temp check count is Empty\n", __func__);
+		pr_debug("%s : Temp check count is Empty\n", __func__);
 
 
 	ret = of_property_read_u32(np, "battery,temp_highlimit_threshold_normal",
 			&temp);
 	pdata->temp_highlimit_threshold_normal =  (int)temp;
 	if (ret)
-		pr_info("%s : Temp highlimit threshold normal is empty\n", __func__);
+		pr_debug("%s : Temp highlimit threshold normal is empty\n", __func__);
 
 	ret = of_property_read_u32(np, "battery,temp_highlimit_recovery_normal",
 			&temp);
 	pdata->temp_highlimit_recovery_normal =  (int)temp;
 	if (ret)
-		pr_info("%s : Temp highlimit recovery normal is empty\n", __func__);
+		pr_debug("%s : Temp highlimit recovery normal is empty\n", __func__);
 
 	ret = of_property_read_u32(np, "battery,temp_high_threshold_normal",
 			&temp);
 	pdata->temp_high_threshold_normal =  (int)temp;
 	if (ret)
-		pr_info("%s : Temp high threshold normal is empty\n", __func__);
+		pr_debug("%s : Temp high threshold normal is empty\n", __func__);
 
 	ret = of_property_read_u32(np, "battery,temp_high_recovery_normal",
 			&temp);
 	pdata->temp_high_recovery_normal =  (int)temp;
 	if (ret)
-		pr_info("%s : Temp high recovery normal is empty\n", __func__);
+		pr_debug("%s : Temp high recovery normal is empty\n", __func__);
 
 	ret = of_property_read_u32(np, "battery,temp_low_threshold_normal",
 			&temp);
 	pdata->temp_low_threshold_normal =  (int)temp;
 	if (ret)
-		pr_info("%s : Temp low threshold normal is empty\n", __func__);
+		pr_debug("%s : Temp low threshold normal is empty\n", __func__);
 
 	ret = of_property_read_u32(np, "battery,temp_low_recovery_normal",
 			&temp);
 	pdata->temp_low_recovery_normal =  (int)temp;
 	if (ret)
-		pr_info("%s : Temp low recovery normal is empty\n", __func__);
+		pr_debug("%s : Temp low recovery normal is empty\n", __func__);
 
-	pr_info("%s : HIGHLIMIT_THRESHOLD_NOLMAL(%d), HIGHLIMIT_RECOVERY_NORMAL(%d)\n"
+	pr_debug("%s : HIGHLIMIT_THRESHOLD_NOLMAL(%d), HIGHLIMIT_RECOVERY_NORMAL(%d)\n"
 			"HIGH_THRESHOLD_NORMAL(%d), HIGH_RECOVERY_NORMAL(%d)"
 			"LOW_THRESHOLD_NORMAL(%d), LOW_RECOVERY_NORMAL(%d)\n",
 			__func__,
@@ -984,19 +984,19 @@ static int s2mu00x_battery_parse_dt(struct device *dev,
 	ret = of_property_read_u32(np, "battery,full_check_count",
 			&pdata->full_check_count);
 	if (ret)
-		pr_info("%s : full_check_count is empty\n", __func__);
+		pr_debug("%s : full_check_count is empty\n", __func__);
 
 	ret = of_property_read_u32(np, "battery,chg_full_vcell",
 			&pdata->chg_full_vcell);
 	if (ret)
-		pr_info("%s : chg_full_vcell is empty\n", __func__);
+		pr_debug("%s : chg_full_vcell is empty\n", __func__);
 
 	ret = of_property_read_u32(np, "battery,chg_recharge_vcell",
 			&pdata->chg_recharge_vcell);
 	if (ret)
-		pr_info("%s : chg_recharge_vcell is empty\n", __func__);
+		pr_debug("%s : chg_recharge_vcell is empty\n", __func__);
 
-	pr_info("%s:DT parsing is done, vendor : %s, technology : %d\n",
+	pr_debug("%s:DT parsing is done, vendor : %s, technology : %d\n",
 			__func__, pdata->vendor, pdata->technology);
 	return ret;
 }
@@ -1023,7 +1023,7 @@ static int s2mu00x_battery_probe(struct platform_device *pdev)
 	int i;
 #endif
 
-	pr_info("%s: S2MU00x battery driver loading\n", __func__);
+	pr_debug("%s: S2MU00x battery driver loading\n", __func__);
 
 	/* Allocate necessary device data structures */
 	battery = kzalloc(sizeof(*battery), GFP_KERNEL);
@@ -1125,27 +1125,27 @@ static int s2mu00x_battery_probe(struct platform_device *pdev)
 
 	battery->psy_battery = power_supply_register(&pdev->dev, &battery->psy_battery_desc, &psy_cfg);
 	if (IS_ERR(battery->psy_battery)) {
-		pr_err("%s: Failed to Register psy_battery\n", __func__);
+		pr_debug("%s: Failed to Register psy_battery\n", __func__);
 		ret = PTR_ERR(battery->psy_battery);
 		goto err_workqueue;
 	}
-	pr_info("%s: Registered battery as power supply\n", __func__);
+	pr_debug("%s: Registered battery as power supply\n", __func__);
 
 	battery->psy_usb = power_supply_register(&pdev->dev, &battery->psy_usb_desc, &psy_cfg);
 	if (IS_ERR(battery->psy_usb)) {
-		pr_err("%s: Failed to Register psy_usb\n", __func__);
+		pr_debug("%s: Failed to Register psy_usb\n", __func__);
 		ret = PTR_ERR(battery->psy_usb);
 		goto err_unreg_battery;
 	}
-	pr_info("%s: Registered USB as power supply\n", __func__);
+	pr_debug("%s: Registered USB as power supply\n", __func__);
 
 	battery->psy_ac = power_supply_register(&pdev->dev, &battery->psy_ac_desc, &psy_cfg);
 	if (IS_ERR(battery->psy_ac)) {
-		pr_err("%s: Failed to Register psy_ac\n", __func__);
+		pr_debug("%s: Failed to Register psy_ac\n", __func__);
 		ret = PTR_ERR(battery->psy_ac);
 		goto err_unreg_usb;
 	}
-	pr_info("%s: Registered AC as power supply\n", __func__);
+	pr_debug("%s: Registered AC as power supply\n", __func__);
 
 	/* To get SOC value (NOT raw SOC), need to reset value */
 	value.intval = 0;
@@ -1154,13 +1154,13 @@ static int s2mu00x_battery_probe(struct platform_device *pdev)
 	battery->capacity = value.intval;
 
 #if defined(CONFIG_MUIC_NOTIFIER)
-	pr_info("%s: Register MUIC notifier\n", __func__);
+	pr_debug("%s: Register MUIC notifier\n", __func__);
 	muic_notifier_register(&battery->batt_nb, s2mu00x_battery_handle_notification,
 			MUIC_NOTIFY_DEV_CHARGER);
 #endif
 
 	/* Kick off monitoring thread */
-	pr_info("%s: start battery monitoring work\n", __func__);
+	pr_debug("%s: start battery monitoring work\n", __func__);
 	battery->loop_cnt = 0;
 	queue_delayed_work(battery->monitor_wqueue, &battery->monitor_work, 5*HZ);
 
