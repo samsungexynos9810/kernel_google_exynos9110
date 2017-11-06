@@ -35,11 +35,12 @@ extern struct ion_device *ion_exynos;
 extern struct decon_device *decon_int_drvdata;
 extern int decon_log_level;
 
-//#define BRINGUP_DEBUG
+#define BRINGUP_DEBUG
 
 #if defined(CONFIG_ARM_EXYNOS7570_BUS_DEVFREQ)
 #define CONFIG_DECON_DEVFREQ
 #endif
+#define CONFIG_LCD_DOZE_MODE
 /*
  * Lets Keep it same as 7420. This is the count for
  * maximum number of layers supported by this driver.
@@ -689,6 +690,11 @@ struct decon_device {
 	struct pinctrl_state 		*decon_te_on;
 	struct pinctrl_state		*decon_te_off;
 	struct decon_phys_old_info	old_info;
+	unsigned int			force_fullupdate;
+#ifdef CONFIG_LCD_DOZE_MODE
+	unsigned int			doze_state;
+	unsigned int			pwr_mode;
+#endif
 };
 
 static inline struct decon_device *get_decon_drvdata(u32 id)
@@ -850,5 +856,25 @@ static inline bool is_any_pending_frames(struct decon_device *decon)
 
 #define DECON_IOC_LPD_EXIT_LOCK		_IOW('L', 0, u32)
 #define DECON_IOC_LPD_UNLOCK		_IOW('L', 1, u32)
+
+#ifdef CONFIG_LCD_DOZE_MODE
+#define S3CFB_POWER_MODE		_IOW('F', 223, __u32)
+
+enum decon_pwr_mode {
+	DECON_POWER_MODE_OFF,
+	DECON_POWER_MODE_DOZE,
+	DECON_POWER_MODE_NORMAL,
+	DECON_POWER_MODE_DOZE_SUSPEND
+};
+
+enum doze_state {
+	DOZE_STATE_NORMAL,
+	DOZE_STATE_DOZE,
+	DOZE_STATE_SUSPEND,
+	DOZE_STATE_DOZE_SUSPEND
+};
+
+#define IS_DOZE(doze_state)		(doze_state == DOZE_STATE_DOZE || doze_state == DOZE_STATE_DOZE_SUSPEND)
+#endif
 
 #endif /* ___SAMSUNG_DECON_H__ */

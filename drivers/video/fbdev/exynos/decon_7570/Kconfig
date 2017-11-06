@@ -88,6 +88,11 @@ config DECON_BLOCKING_MODE
         depends on EXYNOS_DECON_7570
         default n
 
+config CONFIG_LCD_DOZE_MODE
+	bool "DECON doze mode"
+        depends on EXYNOS_DECON_7570
+        default y
+
 config DECON_USE_BOOTLOADER_FB
 	bool "DECON Bootloader Framebuffer support"
         depends on EXYNOS7570_DISPLAY_VIDEO_MODE
