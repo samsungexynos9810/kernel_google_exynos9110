@@ -718,18 +718,17 @@ static void decon_enable_blocking_mode(struct decon_device *decon,
 #ifdef CONFIG_FB_WINDOW_UPDATE
 static void decon_wait_for_framedone(struct decon_device *decon)
 {
-	int ret;
 	s64 time_ms = ktime_to_ms(ktime_get()) - ktime_to_ms(decon->trig_mask_timestamp);
 
 	if (time_ms < MAX_FRM_DONE_WAIT) {
 		DISP_SS_EVENT_LOG(DISP_EVT_DECON_FRAMEDONE_WAIT, &decon->sd, ktime_set(0, 0));
-		ret = wait_event_interruptible_timeout(decon->wait_frmdone,
+		wait_event_interruptible_timeout(decon->wait_frmdone,
 			(decon->frame_done_cnt_target <= decon->frame_done_cnt_cur),
 		msecs_to_jiffies(MAX_FRM_DONE_WAIT - time_ms));
 	}
 }
 
-inline static void decon_win_update_rect_reset(struct decon_device *decon)
+static inline void decon_win_update_rect_reset(struct decon_device *decon)
 {
 	decon->update_win.x = 0;
 	decon->update_win.y = 0;
@@ -1147,6 +1146,7 @@ static int decon_blank(int blank_mode, struct fb_info *info)
 	struct decon_device *decon = win->decon;
 	int ret = 0;
 
+	decon_info("%s ++ blank_mode : %d\n", __func__, blank_mode);
 	decon_info("decon-%s %s mode: %dtype (0: DSI)\n", "int",
 			blank_mode == FB_BLANK_UNBLANK ? "UNBLANK" : "POWERDOWN",
 			decon->out_type);
@@ -1183,7 +1183,7 @@ static int decon_blank(int blank_mode, struct fb_info *info)
 
 blank_exit:
 	decon_lpd_unblock(decon);
-	decon_info("%s -\n", __func__);
+	decon_info("%s -- blank_mode : %d, %d\n", __func__, blank_mode, ret);
 	return ret;
 }
 
@@ -1785,8 +1785,6 @@ static void decon_calibrate_win_update_size(struct decon_device *decon,
 		update_config->dst.w = decon->lcd_info->xres;
 		update_config->dst.x = 0;
 	}
-
-	return;
 }
 
 static void decon_set_win_update_config(struct decon_device *decon,
@@ -1900,8 +1898,6 @@ static void decon_set_win_update_config(struct decon_device *decon,
 				temp_config.src.x, temp_config.src.y, temp_config.src.w, temp_config.src.h,
 				config->src.x, config->src.y, config->src.w, config->src.h);
 	}
-
-	return;
 }
 #endif
 
