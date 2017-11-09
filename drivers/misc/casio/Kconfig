@@ -3,6 +3,7 @@ menu "casio sw"
 config MULTI_SENSORS
 	tristate "Casio multi device hub driver (sensor, power, rtc, vib)"
 	depends on SPI
+	select FW_LOADER_USER_HELPER
 	default n
 	help
 		this driver get and send some properties and command with sub-cpu

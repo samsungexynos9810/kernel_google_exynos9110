@@ -32,94 +32,36 @@ static void show_fw_status(struct Msensors_state *st)
 	}
 }
 
-/* get the number of rows of the data */
-static int get_total_line(uint8_t *data, size_t size)
-{
-	int i, count=0;
-
-	for (i=0; i<size; i++)
-		if (data[i] == '\n')
-			count++;
-
-	return count;
-}
-
-/* get one line from *data
- * return a size of the line
- * set the index to the next line
- */
-static int get_one_line(uint8_t *buf, uint8_t *data, size_t size, int *ind)
-{
-	int i = 0;
-
-	while(!(data[*ind] == '\r' || data[*ind] == '\n')) {
-		buf[i] = data[*ind];
-		*ind = *ind+1;
-		i++;
-		if (*ind >= size)
-			return -1;
-	}
-
-	while(data[*ind] == '\r' || data[*ind] == '\n') {
-		*ind = *ind+1;
-		if (*ind >= size)
-			break;
-	}
-
-	return i;
-}
-
 static int msensor_do_update(struct Msensors_state *st, uint8_t *data, size_t size)
 {
-	int line_len, line_now, line_total;
-	uint8_t buf[256];
-	int ind = 0;
+	uint16_t pktnum;
 
-	line_total = get_total_line(data, size);
-	line_now = 1;
-	line_len = get_one_line(buf, data, size, &ind);
+	/* send packet num */
+	pktnum = (size + 511) / 512;
+	memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
+	st->spi.send_buf[0] = SUB_COM_TYPE_SET_FW_SIZE;	/* 0xAF */
+	st->spi.send_buf[1] = (uint8_t)(pktnum & 0xff);
+	st->spi.send_buf[2] = (uint8_t)(pktnum >> 8);
+	spi_send_wrapper_for_fwup(st->spi.send_buf, st->spi.recv_buf, WRITE_DATA_SIZE);
+	if (st->spi.recv_buf[0] != SUB_COM_TYPE_FW_RECV_SIZE)
+		return 1;
 
+	st->spi.send_buf[0] = SUB_COM_TYPE_SET_FW_DATA;
 	while (!kthread_should_stop()) {
-		switch (st->spi.recv_buf[SUB_COM_HEAD_INDEX_TYPE]) {
-		case SUB_COM_TYPE_FWUP_READY:
-		case SUB_COM_TYPE_FW_REQ_HEAD:
-			if (line_len < 0) {
-			dev_err(&st->sdev->dev,
-					"FWUp Failed incorrect file format (%04d/%04d)line \n",
-					line_now, line_total);
-			goto update_finish;
-			}
-			memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-			st->spi.send_buf[0] = SUB_COM_TYPE_SET_FW_SIZE;
-			st->spi.send_buf[1] = (uint8_t)(line_len & 0x00FF);
-			st->spi.send_buf[2] = (uint8_t)((line_len & 0xFF00) >> 8);
-			st->spi.send_buf[3] = (uint8_t)(line_now & 0x00FF);
-			st->spi.send_buf[4] = (uint8_t)((line_now & 0xFF00) >> 8);
-			st->spi.send_buf[5] = (uint8_t)(line_total & 0x00FF);
-			st->spi.send_buf[6] = (uint8_t)((line_total & 0xFF00) >> 8);
-			st->spi.pre_send_type =  st->spi.send_buf[0];
-			Msensors_Spi_Send(st, st->spi.send_buf, st->spi.recv_buf, WRITE_DATA_SIZE);
-			break;
-		case SUB_COM_TYPE_FW_REQ_DATA:
-			memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, 1 + line_len);
-			st->spi.send_buf[0] = SUB_COM_TYPE_SET_FW_DATA;
-			memcpy(&st->spi.send_buf[1], buf, line_len);
-			st->spi.pre_send_type = st->spi.send_buf[0];
-			Msensors_Spi_Send(st, st->spi.send_buf, st->spi.recv_buf, 1 + line_len);
-			if (line_now == line_total) {
-				dev_info(&st->sdev->dev, "subcpu FW update Complete!\n");
-				goto update_finish;
-			}
-			line_now++;
-			line_len = get_one_line(buf, data, size, &ind);
-			break;
-		default:
-			dev_err(&st->sdev->dev,
-					"FWUp RecvDeta Error (%04d/%04d)line \n", line_now, line_total);
-			goto update_finish;
+		if (size < 512) {
+			memcpy(&st->spi.send_buf[4], data, size);
+			size = 0;
+		} else {
+			memcpy(&st->spi.send_buf[4], data, 512);
+			size -= 512;
+			data += 512;
 		}
+		spi_send_wrapper_for_fwup(st->spi.send_buf, st->spi.recv_buf, 516);
+		if (st->spi.recv_buf[0] != SUB_COM_TYPE_FW_RECV_PKT)
+			return 2;
+		if (size == 0)
+			break;
 	}
-update_finish:
 	return 0;
 }
 
@@ -145,35 +87,19 @@ static void get_msensors_version(void)
 	Msensors_PushData(&write_buff[0]);
 }
 
-static uint8_t atoi(uint8_t num)
-{
-	uint8_t ret = 0;
-
-	if (num >= '0' && num <= '9')
-		ret = num - '0';
-	else if (num >= 'a' && num <= 'f')
-		ret = num - 'a' + 10;
-	else if (num >= 'A' && num <= 'F')
-		ret = num - 'A' + 10;
-	else
-		printk("[msensors_fw_up,atoi] unexpected value\n");
-
-	return ret;
-}
-
 static int need_update(struct Msensors_state *st, uint8_t *data, size_t size)
 {
-	uint8_t buf[256], ver[6];
-	int ind = 0;
 	uint8_t maj, min, rev;
 
-	/* version info is embedded in 26th of the 2nd line */
-	get_one_line(buf, data, size, &ind);
-	get_one_line(buf, data, size, &ind);
-	memcpy(ver, &buf[26], 6);
-	maj = atoi(ver[0]) << 4 | atoi(ver[1]);
-	min = atoi(ver[2]) << 4 | atoi(ver[3]);
-	rev = atoi(ver[4]) << 4 | atoi(ver[5]);
+#if 0	// no compress
+	maj = data[36];
+	min = data[37];
+	rev = data[38];
+#else
+	maj = data[4];
+	min = data[5];
+	rev = data[6];
+#endif
 
 	if (st->fw.maj_ver == maj && st->fw.min_ver == min
 			&& st->fw.revision == rev) {
@@ -190,7 +116,7 @@ static void start_msensors_update(void)
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
 	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_SETID_SUB_FIRM_UPDATE;
+	write_buff[1] = SUB_COM_SETID_SUB_FIRM_UPDATE;	/* 0x99 */
 	write_buff[2] = 0xff;
 	Msensors_PushData(&write_buff[0]);
 }

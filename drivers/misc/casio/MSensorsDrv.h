@@ -27,8 +27,8 @@
 #define SUB_COM_TYPE_BIT_HEAD			(0x80)		/* HEADER Information */
 #define SUB_COM_TYPE_FWUP_READY			(0x81)		/* SubCPU is ready for FWUpdate */
 #define SUB_COM_TYPE_SUBCPU_LOG			(0x83)		/* SubCPU log info */
-#define SUB_COM_TYPE_FW_REQ_DATA		(0x40)		/* SubCPU Request FW Data */
-#define SUB_COM_TYPE_FW_REQ_HEAD		(0x8F)		/* SubCPU Request FW Header */
+#define SUB_COM_TYPE_FW_RECV_SIZE		(0x40)		/* SubCPU Receive FW size */
+#define SUB_COM_TYPE_FW_RECV_PKT		(0x8F)		/* SubCPU Receive FW pkt */
 #define SUB_COM_TYPE_GETDATA			(0xF1)		/* GetData */
 #define SUB_COM_TYPE_SENSOR			(0xF2)		/* Sensor Data(Get Data Non) */
 #define SUB_COM_TYPE_SENSOR_GETDATA		(0xF3)		/* Sensor Data(Get Data True) */
@@ -226,6 +226,7 @@ void Msensors_set_backlight_zero_flag(int flg);
 void Msensors_SetTimestamp(void);
 void msensors_fw_up_init(struct Msensors_state *st);
 void Msensors_set_fw_version(struct Msensors_state *st, uint8_t *data);
+void spi_send_wrapper_for_fwup(uint8_t *sendbuf, uint8_t *recvbuf, size_t count);
 
 #endif	/* __MULTISENSORS_H */
 /* PET nishino ADD End */

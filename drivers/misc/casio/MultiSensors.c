@@ -324,11 +324,13 @@ static int SensorReadThread(void *p)
 			} else if(PacketDataNum) {
 				send_type = SUB_COM_TYPE_SENSOR;
 			}
-		} else if (type == SUB_COM_TYPE_FWUP_READY) {
+		} else if (type == SUB_COM_TYPE_FWUP_READY) {	/* 0x81 */
+			pr_info("msensors fw update\n");
 			st->fw.status = MSENSORS_FW_UP_READY;
 			wake_up(&st->fw.wait);
 			wait_event(st->fw.wait,
 					st->fw.status == MSENSORS_FW_UP_WAIT_RESET);
+			st->spi.pre_send_type = SUB_COM_TYPE_RES_NOMAL;
 		} else {
 		/* Data */
 			recv_index = SUB_COM_DATA_INDEX_ID;
@@ -429,6 +431,7 @@ retry_check_wq:
 		}
 		sub_main_int_occur = 0;
 		data_pushed = 0;
+		gpio_set_value(g_st->main_sub_int, 0);
 		if (Flg_driver_shutdown)
 			break;
 
@@ -440,7 +443,7 @@ retry_check_wq:
 			st->spi.send_buf[2] == 0x2)	/* shutdown */
 			Flg_driver_shutdown = 1;
 		Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], next_recv_size);
-		gpio_set_value(g_st->main_sub_int, 0);
+
 		if (wb) {
 			spin_lock_irqsave(&slock, flags);
 			list_del(&wb->bqueue);
@@ -449,6 +452,16 @@ retry_check_wq:
 		}
 	}
 	return 0;
+}
+
+void spi_send_wrapper_for_fwup(uint8_t *sendbuf, uint8_t *recvbuf, size_t count)
+{
+	if (sub_main_int_occur == 0)
+		gpio_set_value(g_st->main_sub_int, 1);
+	wait_event(wait_subint, sub_main_int_occur);
+	sub_main_int_occur = 0;
+	gpio_set_value(g_st->main_sub_int, 0);
+	Msensors_Spi_Send(g_st, sendbuf, recvbuf, count);
 }
 
 static ssize_t Msensors_Read( struct file* file, char* buf, size_t count, loff_t* offset )
@@ -637,8 +650,8 @@ static void Msensors_init(struct Msensors_state *st)
 	gpio_set_value(g_st->main_sub_int, 1);
 	wait_event(wait_subint, sub_main_int_occur);
 	sub_main_int_occur = 0;
-	Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], WRITE_DATA_SIZE);
 	gpio_set_value(g_st->main_sub_int, 0);
+	Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], WRITE_DATA_SIZE);
 }
 
 static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)
