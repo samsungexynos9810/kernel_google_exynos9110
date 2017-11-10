@@ -35,7 +35,7 @@ extern struct ion_device *ion_exynos;
 extern struct decon_device *decon_int_drvdata;
 extern int decon_log_level;
 
-#define BRINGUP_DEBUG
+//#define BRINGUP_DEBUG
 
 #if defined(CONFIG_ARM_EXYNOS7570_BUS_DEVFREQ)
 #define CONFIG_DECON_DEVFREQ
