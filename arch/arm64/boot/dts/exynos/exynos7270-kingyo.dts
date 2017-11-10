@@ -930,22 +930,13 @@
  */ 
  
  	s1403x: s1403x@14880000 {
-		pinctrl-names = "default", "idle";
-		pinctrl-0 = <&i2s_pmic_bus
-				&i2s_amp_bus
-				&i2s_codec_clk>;
-		pinctrl-1 = <&i2s_pmic_bus_idle
-				&i2s_amp_bus_idle> ;
 		status = "okay";
 	};
 
 	i2s0: i2s@148A0000 {
 		pinctrl-names = "default", "idle";
-		pinctrl-0 = <&i2s_pmic_bus
-				&i2s_amp_bus
-				&i2s_codec_clk>;
-		pinctrl-1 = <&i2s_pmic_bus_idle
-				&i2s_amp_bus_idle> ;
+		pinctrl-0 = <&i2s_pmic_bus>;
+		pinctrl-1 = <&i2s_pmic_bus_idle>;
 		status = "okay";
 	};
 
@@ -959,8 +950,11 @@
 	sound {
 		compatible = "samsung,kingyo-4343X";
 		vdd_18-supply = <&ldo11_reg>;
-		clocks = <&clock 740>, <&clock 741>;
-		clock-names = "fout_aud_pll", "div_audmixer";
+		clocks = <&clock 740>, <&clock 742>;
+		clock-names = "fout_aud_pll", "audmixer_dout";
+		samsung,audio-cpu = <&i2s0>;
+		samsung,audio-codec = <&audio_codec>;
+		samsung,auxdev = <&s1403x>;
 		status = "okay";
 	};
 
