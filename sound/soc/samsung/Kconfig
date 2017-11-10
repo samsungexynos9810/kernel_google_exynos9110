@@ -260,6 +260,15 @@ config SND_SOC_SAMSUNG_KINGYO
 	help
 	  Say Y if you want to add support for SoC audio on the Kingyo board.
 
+config SND_SOC_SAMSUNG_VERBOSE_DEBUG
+	tristate "Audio debug message for Samsung"
+	depends on SND_SOC_SAMSUNG
+
+config SND_SAMSUNG_MIXER_COMPONENT
+	tristate "Audio supports audio mixer componet for Samsung"
+	depends on SND_SOC_SAMSUNG
+	select SND_SOC_EXYNOS_AUDMIXER
+
 config SND_SOC_I2S_TXSLOT_NUMBER
 	int "Number of tx slots including audio sample"
 	depends on SND_SAMSUNG_I2S && SND_SAMSUNG_AUDSS
