@@ -14,38 +14,32 @@
 #include <linux/fb.h>
 #include <linux/kthread.h>
 #include <linux/pm_qos.h>
-#include <linux/suspend.h>
 
 static int cpu_hotplug_in(const struct cpumask *mask)
 {
-	int cpu, ret = 0;
+	int cpu, error = 0;
 
 	for_each_cpu(cpu, mask) {
-		ret = cpu_up(cpu);
-		if (ret) {
+		error = cpu_up(cpu);
+		if (error) {
 			/*
-			 * -EIO means core fail to come online by itself
-			 * it is critical error
-			 */
-			if (ret == -EIO)
-				panic("I/O error(-EIO) occurs while CPU%d comes online\n", cpu);
-
-			/*
-			 * If it fails to enable cpu,
+			 * If someone is requesting cpu hotplug(-EBUSY),
 			 * it cancels cpu hotplug request and retries later.
 			 */
-			pr_err("%s: Failed to hotplug in CPU%d with error %d\n",
-								__func__, cpu, ret);
+			if (error == -EBUSY)
+				return error;
+
+			panic("Error %d taking CPU%d up\n", error, cpu);
 			break;
 		}
 	}
 
-	return ret;
+	return error;
 }
 
 static int cpu_hotplug_out(const struct cpumask *mask)
 {
-	int cpu, ret = 0;
+	int cpu, error = 0;
 
 	/*
 	 * Reverse order of cpu,
@@ -55,23 +49,26 @@ static int cpu_hotplug_out(const struct cpumask *mask)
 		if (!cpumask_test_cpu(cpu, mask))
 			continue;
 
-		ret = cpu_down(cpu);
-		if (ret) {
-			pr_err("%s: Failed to hotplug out CPU%d with error %d\n",
-								__func__, cpu, ret);
+		error = cpu_down(cpu);
+		if (error) {
+			/*
+			 * If someone is requesting cpu hotplug(-EBUSY),
+			 * it cancels cpu hotplug request and retries later.
+			 */
+			if (error == -EBUSY)
+				return error;
+
+			panic("Error %d taking CPU%d down\n", error, cpu);
 			break;
 		}
 	}
 
-	return ret;
+	return error;
 }
 
 static struct {
-	/* Control cpu hotplug operation */
-	bool			enabled;
-
-	/* flag for suspend */
-	bool			suspended;
+	/* Disable cpu hotplug operation */
+	bool			disabled;
 
 	/* Synchronizes accesses to refcount and cpumask */
 	struct mutex		lock;
@@ -79,9 +76,8 @@ static struct {
 	/* all CPUs running time during booting */
 	int			boot_lock_time;
 
-	/* user input minimum and maximum online cpu */
-	int			user_min;
-	int			user_max;
+	/* The number of online cpu while display off */
+	unsigned int		display_off_online_cpu;
 
 	/*
 	 * In blocking notifier call chain, it is not supposed to call
@@ -102,29 +98,9 @@ static struct {
 	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
 };
 
-static inline void cpu_hotplug_suspend(bool enable)
-{
-	/* This lock guarantees completion of do_cpu_hotplug() */
-	mutex_lock(&cpu_hotplug.lock);
-	cpu_hotplug.suspended = enable;
-	mutex_unlock(&cpu_hotplug.lock);
-}
-
-static inline void update_enable_flag(bool enable)
-{
-	mutex_lock(&cpu_hotplug.lock);
-	cpu_hotplug.enabled = enable;
-	mutex_unlock(&cpu_hotplug.lock);
-}
-
 struct kobject *exynos_cpu_hotplug_kobj(void)
 {
 	return cpu_hotplug.kobj;
-}
-
-bool exynos_cpu_hotplug_enabled(void)
-{
-	return cpu_hotplug.enabled;
 }
 
 /*
@@ -140,8 +116,14 @@ static struct cpumask create_cpumask(void)
 	int cpu;
 	struct cpumask mask;
 
-	online_cpu_min = min(pm_qos_request(PM_QOS_CPU_ONLINE_MIN), nr_cpu_ids);
-	online_cpu_max = min(pm_qos_request(PM_QOS_CPU_ONLINE_MAX), nr_cpu_ids);
+	/* If cpu hotplug is disabled, all cpus stay in online state */
+	if (cpu_hotplug.disabled) {
+		cpumask_setall(&mask);
+		return mask;
+	}
+
+	online_cpu_min = pm_qos_request(PM_QOS_CPU_ONLINE_MIN),
+	online_cpu_max = pm_qos_request(PM_QOS_CPU_ONLINE_MAX);
 
 	cpumask_clear(&mask);
 
@@ -159,22 +141,12 @@ static struct cpumask create_cpumask(void)
  * enables or disables cpus, so all APIs in this driver call do_cpu_hotplug()
  * eventually.
  */
-static int do_cpu_hotplug(void *param)
+static int do_cpu_hotplug(void)
 {
 	int ret = 0;
 	struct cpumask disable_cpus, enable_cpus;
-	char cpus_buf[10];
 
 	mutex_lock(&cpu_hotplug.lock);
-
-	/*
-	 * If cpu hotplug is disabled or suspended,
-	 * do_cpu_hotplug() do nothing.
-	 */
-	if (!cpu_hotplug.enabled || cpu_hotplug.suspended) {
-		mutex_unlock(&cpu_hotplug.lock);
-		return 0;
-	}
 
 	/* Create online cpumask */
 	enable_cpus = create_cpumask();
@@ -193,28 +165,19 @@ static int do_cpu_hotplug(void *param)
 	cpumask_andnot(&enable_cpus, &enable_cpus, cpu_online_mask);
 	cpumask_and(&disable_cpus, &disable_cpus, cpu_online_mask);
 
-	cpulist_scnprintf(cpus_buf, sizeof(cpus_buf), &enable_cpus);
-	pr_debug("%s: enable_cpus=%s\n", __func__, cpus_buf);
-	cpulist_scnprintf(cpus_buf, sizeof(cpus_buf), &disable_cpus);
-	pr_debug("%s: disable_cpus=%s\n", __func__, cpus_buf);
+	pr_debug("%s: enable_cpus=%#lx\n", __func__, *cpumask_bits(&enable_cpus));
+	pr_debug("%s: disable_cpus=%#lx\n", __func__, *cpumask_bits(&disable_cpus));
 
 	/* If request has the callback, call cpus_up() and cpus_down() */
 	if (!cpumask_empty(&enable_cpus)) {
-		if (param)
-			ret = cpus_up(&enable_cpus);
-		else
-			ret = cpu_hotplug_in(&enable_cpus);
-
+		ret = cpu_hotplug_in(&enable_cpus);
 		if (ret)
 			goto out;
 	}
 
-	if (!cpumask_empty(&disable_cpus)) {
-		if (param)
-			ret = cpus_down(&disable_cpus);
-		else
-			ret = cpu_hotplug_out(&disable_cpus);
-	}
+	if (!cpumask_empty(&disable_cpus))
+		ret = cpu_hotplug_out(&disable_cpus);
+
 out:
 	/* If it fails to complete cpu hotplug request, retries after 100ms */
 	if (ret)
@@ -228,42 +191,7 @@ out:
 
 static void cpu_hotplug_work(struct work_struct *work)
 {
-	do_cpu_hotplug(NULL);
-}
-
-static int control_cpu_hotplug(bool enable)
-{
-	struct cpumask mask;
-	int ret = 0;
-
-	if (enable) {
-		update_enable_flag(true);
-		do_cpu_hotplug(NULL);
-	} else {
-		mutex_lock(&cpu_hotplug.lock);
-
-		cpumask_setall(&mask);
-		cpumask_andnot(&mask, &mask, cpu_online_mask);
-
-		/*
-		 * If it success to enable all CPUs, clear cpu_hotplug.enabled flag.
-		 * Since then all hotplug requests are ignored.
-		 */
-		ret = cpu_hotplug_in(&mask);
-		if (!ret) {
-			/*
-			 * In this position, can't use update_enable_flag()
-			 * because already taken cpu_hotplug.lock
-			 */
-			cpu_hotplug.enabled = false;
-		} else {
-			pr_err("Fail to disable cpu hotplug, please try again\n");
-		}
-
-		mutex_unlock(&cpu_hotplug.lock);
-	}
-
-	return ret;
+	do_cpu_hotplug();
 }
 
 /*
@@ -273,11 +201,53 @@ static int control_cpu_hotplug(bool enable)
 static int cpu_hotplug_qos_handler(struct notifier_block *b,
 					 unsigned long val, void *v)
 {
-	return do_cpu_hotplug(v);
+	return do_cpu_hotplug();
 }
 
 static struct notifier_block cpu_hotplug_qos_notifier = {
 	.notifier_call = cpu_hotplug_qos_handler,
+};
+
+static struct pm_qos_request display_cpu_hotplug_request;
+static int cpu_hotplug_fb_notifier(struct notifier_block *nb,
+					unsigned long val, void *data)
+{
+	struct fb_event *evdata = data;
+	struct fb_info *info = evdata->info;
+	unsigned int blank;
+	int ret = NOTIFY_OK;
+
+	if (val != FB_EVENT_BLANK && val != FB_R_EARLY_EVENT_BLANK)
+		return 0;
+
+	/*
+	 * If FBNODE is not zero, it is not primary display(LCD)
+	 * and don't need to process these scheduling.
+	 */
+	if (info->node)
+		return ret;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_POWERDOWN:
+		pr_info("%s: LCD is off\n", __func__);
+		pm_qos_update_request(&display_cpu_hotplug_request,
+					cpu_hotplug.display_off_online_cpu);
+		break;
+	case FB_BLANK_UNBLANK:
+		pr_info("%s: LCD is on\n", __func__);
+		pm_qos_update_request(&display_cpu_hotplug_request, NR_CPUS);
+		break;
+	default:
+		break;
+	}
+
+	return ret;
+}
+
+static struct notifier_block cpu_hotplug_fb_notifier_block = {
+        .notifier_call = cpu_hotplug_fb_notifier,
 };
 
 /*
@@ -295,7 +265,7 @@ static ssize_t show_control_online_cpus(struct kobject *kobj,
 {
 	ssize_t count = 0;
 
-	count += snprintf(&buf[count], 40, "cpu online count(min/max) : %u/%u\n",
+	count += snprintf(&buf[count], 40, "cpu online count(mix/max) : %u/%u\n",
 					pm_qos_request(PM_QOS_CPU_ONLINE_MIN),
 					pm_qos_request(PM_QOS_CPU_ONLINE_MAX));
 
@@ -328,63 +298,20 @@ static struct kobj_attribute control_online_cpus =
 __ATTR(control_online_cpus, 0644, show_control_online_cpus, store_control_online_cpus);
 
 /*
- * User can change the number of online cpu by using min_online_cpu and
- * max_online_cpu sysfs node. User input minimum and maxinum online cpu
- * to this node as below:
+ * User can disable the cpu hotplug operation as below:
  *
- * #echo min > /sys/power/cpuhotplug/min_online_cpu
- * #echo max > /sys/power/cpuhotplug/max_online_cpus
- */
-#define attr_online_cpu(type)						\
-static ssize_t show_##type##_online_cpu(struct kobject *kobj,		\
-	struct kobj_attribute *attr, char *buf)				\
-{									\
-	return snprintf(buf, 30, #type " online cpu : %d\n",		\
-			cpu_hotplug.user_##type);			\
-}									\
-									\
-static ssize_t store_##type##_online_cpu(struct kobject *kobj,		\
-	struct kobj_attribute *attr, const char *buf,			\
-	size_t count)							\
-{									\
-	int input;							\
-									\
-	if (!sscanf(buf, "%d", &input))					\
-		return -EINVAL;						\
-									\
-	if (input <= 0 || input > NR_CPUS)							\
-		return -EINVAL;						\
-									\
-	pm_qos_update_request(&user_##type##_cpu_hotplug_request,	\
-				input);					\
-	cpu_hotplug.user_##type = input;				\
-									\
-	return count;							\
-}									\
-									\
-static struct kobj_attribute type##_online_cpu =			\
-__ATTR(type##_online_cpu, 0644,					\
-	show_##type##_online_cpu, store_##type##_online_cpu)
-
-attr_online_cpu(min);
-attr_online_cpu(max);
-
-/*
- * User can control the cpu hotplug operation as below:
+ * #echo 1 > /sys/power/cpuhotplug/disable
  *
- * #echo 1 > /sys/power/cpuhotplug/enabled => enable
- * #echo 0 > /sys/power/cpuhotplug/enabled => disable
- *
- * If enabled become 0, hotplug driver enable the all cpus and no hotplug
+ * If disable become 1, hotplug driver enable the all cpus and no hotplug
  * operation happen from hotplug driver.
  */
-static ssize_t show_cpu_hotplug_enable(struct kobject *kobj,
+static ssize_t show_cpu_hotplug_disable(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
-	return snprintf(buf, 10, "%d\n", cpu_hotplug.enabled);
+	return snprintf(buf, 10, "%d\n", cpu_hotplug.disabled);
 }
 
-static ssize_t store_cpu_hotplug_enable(struct kobject *kobj,
+static ssize_t store_cpu_hotplug_disable(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf,
 		size_t count)
 {
@@ -393,19 +320,20 @@ static ssize_t store_cpu_hotplug_enable(struct kobject *kobj,
 	if (!sscanf(buf, "%d", &input))
 		return -EINVAL;
 
-	control_cpu_hotplug(!!input);
+	cpu_hotplug.disabled = !!input;
+
+	/* To enable all cpus, call do_cpu_hotplug() */
+	do_cpu_hotplug();
 
 	return count;
 }
 
-static struct kobj_attribute cpu_hotplug_enabled =
-__ATTR(enabled, 0644, show_cpu_hotplug_enable, store_cpu_hotplug_enable);
+static struct kobj_attribute cpu_hotplug_disabled =
+__ATTR(disable, 0644, show_cpu_hotplug_disable, store_cpu_hotplug_disable);
 
 static struct attribute *cpu_hotplug_attrs[] = {
 	&control_online_cpus.attr,
-	&min_online_cpu.attr,
-	&max_online_cpu.attr,
-	&cpu_hotplug_enabled.attr,
+	&cpu_hotplug_disabled.attr,
 	NULL,
 };
 
@@ -416,34 +344,20 @@ static const struct attribute_group cpu_hotplug_group = {
 static void __init cpu_hotplug_dt_init(void)
 {
 	struct device_node *np = of_find_node_by_name(NULL, "cpu_hotplug");
+	int count;
+
+	if (of_property_read_u32(np, "display_off_online_cpu", &count)) {
+		pr_warn("display_off_online_cpu property is omitted!\n");
+		return;
+	}
+
+	cpu_hotplug.display_off_online_cpu = count;
 
 	if (of_property_read_u32(np, "boot_lock_time", &cpu_hotplug.boot_lock_time)) {
 		pr_warn("boot_lock_time property is omitted!\n");
 		return;
 	}
 }
-
-static int exynos_cpu_hotplug_pm_notifier(struct notifier_block *notifier,
-				       unsigned long pm_event, void *v)
-{
-	switch (pm_event) {
-	case PM_SUSPEND_PREPARE:
-		cpu_hotplug_suspend(true);
-		break;
-
-	case PM_POST_SUSPEND:
-		cpu_hotplug_suspend(false);
-		do_cpu_hotplug(NULL);
-		break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block exynos_cpu_hotplug_nb = {
-	.notifier_call = exynos_cpu_hotplug_pm_notifier,
-};
-
 
 static struct pm_qos_request boot_min_cpu_hotplug_request;
 static void __init cpu_hotplug_pm_qos_init(void)
@@ -463,6 +377,10 @@ static void __init cpu_hotplug_pm_qos_init(void)
 		PM_QOS_CPU_ONLINE_MIN, PM_QOS_CPU_ONLINE_MIN_DEFAULT_VALUE);
 	pm_qos_add_request(&user_max_cpu_hotplug_request,
 		PM_QOS_CPU_ONLINE_MAX, PM_QOS_CPU_ONLINE_MAX_DEFAULT_VALUE);
+
+	/* Add PM QoS for display */
+	pm_qos_add_request(&display_cpu_hotplug_request,
+		PM_QOS_CPU_ONLINE_MIN, PM_QOS_CPU_ONLINE_MIN_DEFAULT_VALUE);
 }
 
 static void __init cpu_hotplug_sysfs_init(void)
@@ -502,14 +420,11 @@ static int __init cpu_hotplug_init(void)
 	/* Initialize pm_qos request and handler */
 	cpu_hotplug_pm_qos_init();
 
+	/* Register FB notifier */
+	fb_register_client(&cpu_hotplug_fb_notifier_block);
+
 	/* Create sysfs */
 	cpu_hotplug_sysfs_init();
-
-	/* register pm notifier */
-	register_pm_notifier(&exynos_cpu_hotplug_nb);
-
-	/* Enable cpu_hotplug */
-	update_enable_flag(true);
 
 	return 0;
 }

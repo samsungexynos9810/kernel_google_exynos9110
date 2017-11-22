@@ -27,10 +27,6 @@
 #include <linux/netdevice.h>
 #include <linux/sysfs.h>
 
-#ifdef CONFIG_ARCH_EXYNOS
-#include <soc/samsung/exynos-cpu_hotplug.h>
-#endif
-
 #include "base.h"
 #include "power/power.h"
 
@@ -430,11 +426,10 @@ static DEVICE_ATTR_RW(uevent);
 static ssize_t online_show(struct device *dev, struct device_attribute *attr,
 			   char *buf)
 {
-	struct cpu *cpu = container_of(dev, struct cpu, dev);
 	bool val;
 
 	device_lock(dev);
-	val = !!cpu_online(cpu->dev.id);
+	val = !dev->offline;
 	device_unlock(dev);
 	return sprintf(buf, "%u\n", val);
 }
@@ -444,11 +439,6 @@ static ssize_t online_store(struct device *dev, struct device_attribute *attr,
 {
 	bool val;
 	int ret;
-
-#if defined(CONFIG_ARCH_EXYNOS) && defined(CONFIG_HOTPLUG_CPU)
-	if (exynos_cpu_hotplug_enabled())
-		return count;
-#endif
 
 	ret = strtobool(buf, &val);
 	if (ret < 0)
@@ -1404,14 +1394,13 @@ int __init devices_init(void)
 
 static int device_check_offline(struct device *dev, void *not_used)
 {
-	struct cpu *cpu = container_of(dev, struct cpu, dev);
 	int ret;
 
 	ret = device_for_each_child(dev, NULL, device_check_offline);
 	if (ret)
 		return ret;
 
-	return device_supports_offline(dev) && cpu_online(cpu->dev.id) ? -EBUSY : 0;
+	return device_supports_offline(dev) && !dev->offline ? -EBUSY : 0;
 }
 
 /**
@@ -1427,7 +1416,6 @@ static int device_check_offline(struct device *dev, void *not_used)
  */
 int device_offline(struct device *dev)
 {
-	struct cpu *cpu = container_of(dev, struct cpu, dev);
 	int ret;
 
 	if (dev->offline_disabled)
@@ -1439,12 +1427,14 @@ int device_offline(struct device *dev)
 
 	device_lock(dev);
 	if (device_supports_offline(dev)) {
-		if (!cpu_online(cpu->dev.id)) {
+		if (dev->offline) {
 			ret = 1;
 		} else {
 			ret = dev->bus->offline(dev);
-			if (!ret)
+			if (!ret) {
 				kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
+				dev->offline = true;
+			}
 		}
 	}
 	device_unlock(dev);
@@ -1464,15 +1454,16 @@ int device_offline(struct device *dev)
  */
 int device_online(struct device *dev)
 {
-	struct cpu *cpu = container_of(dev, struct cpu, dev);
 	int ret = 0;
 
 	device_lock(dev);
 	if (device_supports_offline(dev)) {
-		if (!cpu_online(cpu->dev.id)) {
+		if (dev->offline) {
 			ret = dev->bus->online(dev);
-			if (!ret)
+			if (!ret) {
 				kobject_uevent(&dev->kobj, KOBJ_ONLINE);
+				dev->offline = false;
+			}
 		} else {
 			ret = 1;
 		}
