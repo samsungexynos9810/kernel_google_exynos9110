@@ -118,6 +118,10 @@ static int bd82103_update_status(struct backlight_device *bd)
 	    bd->props.power == FB_BLANK_POWERDOWN)
 		intensity = 0;
 #endif
+	if (intensity == 0) {
+		if (!(bd->props.state & BL_CORE_FBBLANK))
+			intensity = 1;
+	}
 
 	ctrl_brightness(pchip, intensity);
 
@@ -156,6 +160,7 @@ static int bd82103_probe(struct platform_device *pdev)
 	props.max_brightness = BRIGHTNESS_MAX;
 	props.power = FB_BLANK_UNBLANK;
 	props.type = BACKLIGHT_RAW;
+	props.state = BL_CORE_FBBLANK;
 
 	pchip->bd = backlight_device_register(DRIVER_NAME, pchip->dev, pchip, &bd82103_bd_ops, &props);
 	if (IS_ERR(pchip->bd))
