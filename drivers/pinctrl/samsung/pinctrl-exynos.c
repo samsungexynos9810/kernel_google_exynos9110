@@ -1610,12 +1610,12 @@ const struct samsung_pin_ctrl exynos7_pin_ctrl[] __initconst = {
 
 /* pin banks of exynos7570 pin-controller 0 (ALIVE) */
 static const struct samsung_pin_bank_data exynos7570_pin_banks0[] = {
-	EXYNOS_PIN_BANK_EINTW(7, 0x000, "etc0", 0x00),
-	EXYNOS_PIN_BANK_EINTW(3, 0x020, "etc1", 0x00),
-	EXYNOS_PIN_BANK_EINTW(8, 0x040, "gpa0", 0x00),
-	EXYNOS_PIN_BANK_EINTW(8, 0x060, "gpa1", 0x04),
-	EXYNOS_PIN_BANK_EINTW(8, 0x080, "gpa2", 0x08),
-	EXYNOS_PIN_BANK_EINTW(1, 0x0a0, "gpq0", 0x00),
+	EXYNOS8_PIN_BANK_EINTW(bank_type_5, 7, 0x000, "etc0", 0x00),
+	EXYNOS8_PIN_BANK_EINTW(bank_type_5, 3, 0x020, "etc1", 0x00),
+	EXYNOS8_PIN_BANK_EINTW(bank_type_5, 8, 0x040, "gpa0", 0x00),
+	EXYNOS8_PIN_BANK_EINTW(bank_type_5, 8, 0x060, "gpa1", 0x04),
+	EXYNOS8_PIN_BANK_EINTW(bank_type_5, 8, 0x080, "gpa2", 0x08),
+	EXYNOS8_PIN_BANK_EINTW(bank_type_5, 1, 0x0a0, "gpq0", 0x00),
 };
 
 /* pin banks of exynos7570 pin-controller 1 (DISPAUD) */
