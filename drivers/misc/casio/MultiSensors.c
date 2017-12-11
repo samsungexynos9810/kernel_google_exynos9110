@@ -558,6 +558,22 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = sub_read_command(SUB_COM_GETID_POWER_WARN);
 		if (ret >= 0)
 			ret = copy_to_user((void __user *)arg, SubReadData, 2);
+	} else if (cmd == IOC_HEIGHT_CORR) {
+		ret = sub_read_command(SUB_COM_GETID_HEIGHT_CORR);
+		if (ret >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, 4);
+	} else if (cmd == IOC_PRESSURE_CORR) {
+		ret = sub_read_command(SUB_COM_GETID_PRESSURE_CORR);
+		if (ret >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, 4);
+	} else if (cmd == IOC_STEP_TODAY) {
+		ret = sub_read_command(SUB_COM_GETID_STEP_TODAY);
+		if (ret >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, 4);
+	} else if (cmd == IOC_STEP_YESTERDAY) {
+		ret = sub_read_command(SUB_COM_GETID_STEP_YESTERDAY);
+		if (ret >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, 4);
 	} else {
 		ret = -1;
 		pr_info("%s: unknown command %x\n", __func__, cmd);

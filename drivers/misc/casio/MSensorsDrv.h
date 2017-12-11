@@ -83,7 +83,11 @@
 #define SUB_COM_GETID_ACC_READ_OFFSET	(0x05)
 #define SUB_COM_GETID_ACC_READ_GAIN		(0x06)
 #define SUB_COM_GETID_POWER_WARN		(0x07)
-#define SUB_COM_GETID_NUM	(0x08)	/* Number of GETIDs */
+#define SUB_COM_GETID_HEIGHT_CORR		(0x08)
+#define SUB_COM_GETID_PRESSURE_CORR		(0x09)
+#define SUB_COM_GETID_STEP_TODAY		(0x0a)
+#define SUB_COM_GETID_STEP_YESTERDAY	(0x0b)
+#define SUB_COM_GETID_NUM	(0x0c)	/* Number of GETIDs */
 
 #define MSENSORS_TYPE_META			(0x00)		/* Sensor Type Meta */
 #define MSENSORS_TYPE_ACCELEROMETER		(0x01)		/* Sensor Type Accelerometer */
@@ -149,6 +153,11 @@
 #define IOC_GET_VERSION	_IOR('K', 0, unsigned char *)
 #define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)
 #define IOC_POWER_WARN	_IOR('K', 3, unsigned short *)
+#define IOC_HEIGHT_CORR		_IOR('K', 5, float *)
+#define IOC_PRESSURE_CORR	_IOR('K', 6, float *)
+#define IOC_STEP_TODAY		_IOR('K', 7, int *)
+#define IOC_STEP_YESTERDAY	_IOR('K', 8, int *)
+
 
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
 #define HEADER_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE +SUB_COM_HEAD_SIZE_SETDATA )
