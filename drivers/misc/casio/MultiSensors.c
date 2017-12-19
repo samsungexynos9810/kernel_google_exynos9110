@@ -652,6 +652,7 @@ static struct file_operations Msensors_fops = {
 		.read = Msensors_Read,
 		.write = Msensors_Write,
 		.unlocked_ioctl = Msensors_Ioctl,
+		.compat_ioctl = Msensors_Ioctl,
 };
 
 static void Msensors_init(struct Msensors_state *st)

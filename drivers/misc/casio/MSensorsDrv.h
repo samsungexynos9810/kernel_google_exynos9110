@@ -150,13 +150,13 @@
 #define PARAM_INDEX_PRESS                   	(  0U)
 
 
-#define IOC_GET_VERSION	_IOR('K', 0, unsigned char *)
-#define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)
-#define IOC_POWER_WARN	_IOR('K', 3, unsigned short *)
-#define IOC_HEIGHT_CORR		_IOR('K', 5, float *)
-#define IOC_PRESSURE_CORR	_IOR('K', 6, float *)
-#define IOC_STEP_TODAY		_IOR('K', 7, int *)
-#define IOC_STEP_YESTERDAY	_IOR('K', 8, int *)
+#define IOC_GET_VERSION	_IOR('K', 0, __u32)
+#define IOC_ACCEL_ADJ	_IOR('K', 2, __u32)
+#define IOC_POWER_WARN	_IOR('K', 3, __u32)
+#define IOC_HEIGHT_CORR		_IOR('K', 5, __u32)
+#define IOC_PRESSURE_CORR	_IOR('K', 6, __u32)
+#define IOC_STEP_TODAY		_IOR('K', 7, __u32)
+#define IOC_STEP_YESTERDAY	_IOR('K', 8, __u32)
 
 
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
