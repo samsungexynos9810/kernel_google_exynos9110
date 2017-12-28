@@ -11,6 +11,7 @@
 #include "lcd_ctrl.h"
 #include "decon_lcd.h"
 #include "auo_h120bln017_param.h"
+#include "../../../../../misc/casio/MSensorsDrv.h"
 
 //#define GAMMA_PARAM_SIZE 26
 #define MAX_BRIGHTNESS 255
@@ -41,6 +42,13 @@ static int auo_h120bln017_set_brightness(struct backlight_device *bd)
 		printk(KERN_ALERT "Brightness should be in the range of 0 ~ 255\n");
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_BACKLIGHT_SUBCPU
+	if (brightness > 0)
+		SUB_LCDBrightnessSet((brightness >> 4) + 1);
+	else
+		SUB_LCDBrightnessSet(0);
+#endif
 
 	update_brightness(brightness);
 

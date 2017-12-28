@@ -25,3 +25,7 @@ config EXYNOS_DECON_LCD_RM69080
 config EXYNOS_DECON_LCD_AUO_H120BLN017
 	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
 	tristate "AUO_H120BLN017 AMOLED LCD driver(390 x 390)"
+
+config BACKLIGHT_SUBCPU
+	depends on EXYNOS_DECON_LCD_AUO_H120BLN017
+	tristate "Notify backlight brightness to SubCpu"
