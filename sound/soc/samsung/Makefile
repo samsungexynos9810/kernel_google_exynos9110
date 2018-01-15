@@ -1,5 +1,4 @@
 # S3c24XX Platform Support
-snd-soc-s3c24xx-objs := dma.o
 snd-soc-s3c-dma-objs := dmaengine.o
 snd-soc-idma-objs := idma.o
 snd-soc-s3c24xx-i2s-objs := s3c24xx-i2s.o
@@ -9,11 +8,8 @@ snd-soc-s3c-i2s-v2-objs := s3c-i2s-v2.o
 snd-soc-samsung-spdif-objs := spdif.o
 snd-soc-pcm-objs := pcm.o
 snd-soc-i2s-objs := i2s.o
-snd-soc-lpass-objs := lpass.o
-snd-soc-eax-dai-objs := eax-dai.o
-snd-soc-eax-dma-objs := eax-dma.o
 
-obj-$(CONFIG_SND_SOC_SAMSUNG) += snd-soc-s3c24xx.o
+obj-$(CONFIG_SND_SOC_SAMSUNG) += snd-soc-s3c-dma.o
 obj-$(CONFIG_SND_S3C24XX_I2S) += snd-soc-s3c24xx-i2s.o
 obj-$(CONFIG_SND_SAMSUNG_AC97) += snd-soc-ac97.o
 obj-$(CONFIG_SND_S3C2412_SOC_I2S) += snd-soc-s3c2412-i2s.o
@@ -22,18 +18,6 @@ obj-$(CONFIG_SND_SAMSUNG_SPDIF) += snd-soc-samsung-spdif.o
 obj-$(CONFIG_SND_SAMSUNG_PCM) += snd-soc-pcm.o
 obj-$(CONFIG_SND_SAMSUNG_I2S) += snd-soc-i2s.o
 obj-$(CONFIG_SND_SAMSUNG_I2S) += snd-soc-idma.o
-ifeq ($(CONFIG_SND_SAMSUNG_AUDSS),y)
-obj-$(CONFIG_SOC_EXYNOS5422) += lpass.o lpass-exynos5422.o
-obj-$(CONFIG_SOC_EXYNOS5430) += lpass.o lpass-exynos5430.o
-obj-$(CONFIG_SOC_EXYNOS5433) += lpass.o lpass-exynos5433.o
-obj-$(CONFIG_SOC_EXYNOS7420) += lpass.o lpass-exynos7420.o
-obj-$(CONFIG_SOC_EXYNOS7580) += lpass.o lpass-exynos7580.o
-obj-$(CONFIG_SOC_EXYNOS7890) += lpass.o lpass-exynos7890.o
-obj-$(CONFIG_SOC_EXYNOS8890) += lpass.o lpass-exynos8890.o
-obj-$(CONFIG_SOC_EXYNOS7870) += lpass-exynos7870.o
-obj-$(CONFIG_SND_SOC_SAMSUNG) += lpass-exynos7570.o
-endif
-obj-$(CONFIG_SND_SOC_SAMSUNG) += snd-soc-eax-dai.o snd-soc-eax-dma.o
 
 # S3C24XX Machine Support
 snd-soc-jive-wm8750-objs := jive_wm8750.o
@@ -47,8 +31,7 @@ snd-soc-s3c24xx-simtec-tlv320aic23-objs := s3c24xx_simtec_tlv320aic23.o
 snd-soc-h1940-uda1380-objs := h1940_uda1380.o
 snd-soc-rx1950-uda1380-objs := rx1950_uda1380.o
 snd-soc-smdk-wm8580-objs := smdk_wm8580.o
-#snd-soc-smdk-wm8994-objs := smdk_wm8994.o
-snd-soc-smdk-wm8994-objs := smdk7270_wm8994.o
+snd-soc-smdk-wm8994-objs := smdk_wm8994.o
 snd-soc-snow-objs := snow.o
 snd-soc-smdk-wm9713-objs := smdk_wm9713.o
 snd-soc-s3c64xx-smartq-wm8987-objs := smartq_wm8987.o
@@ -88,4 +71,3 @@ obj-$(CONFIG_SND_SOC_LITTLEMILL) += snd-soc-littlemill.o
 obj-$(CONFIG_SND_SOC_BELLS) += snd-soc-bells.o
 obj-$(CONFIG_SND_SOC_ODROIDX2) += snd-soc-odroidx2-max98090.o
 obj-$(CONFIG_SND_SOC_ARNDALE_RT5631_ALC5631) += snd-soc-arndale-rt5631.o
-

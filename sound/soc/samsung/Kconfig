@@ -1,6 +1,8 @@
 config SND_SOC_SAMSUNG
 	tristate "ASoC support for Samsung"
-	depends on SOC_SAMSUNG
+	depends on (PLAT_SAMSUNG || ARCH_EXYNOS)
+	depends on S3C64XX_PL080 || !ARCH_S3C64XX
+	depends on S3C24XX_DMAC || !ARCH_S3C24XX
 	select SND_SOC_GENERIC_DMAENGINE_PCM
 	help
 	  Say Y or M if you want to add support for codecs attached to
@@ -30,16 +32,6 @@ config SND_SAMSUNG_SPDIF
 
 config SND_SAMSUNG_I2S
 	tristate
-
-config SND_SAMSUNG_AUDSS
-	tristate
-
-config SND_SAMSUNG_IOMMU
-	tristate "IOMMU support for Samsung Audio sub system"
-	depends on SND_SOC_SAMSUNG && SND_SAMSUNG_AUDSS
-	help
-		Say Y if you want to add support for iommu.
-
 
 config SND_SOC_SAMSUNG_NEO1973_WM8753
 	tristate "Audio support for Openmoko Neo1973 Smartphones (GTA02)"
@@ -72,12 +64,9 @@ config SND_SOC_SAMSUNG_SMDK_WM8994
 	tristate "SoC I2S Audio support for WM8994 on SMDK"
 	depends on SND_SOC_SAMSUNG
 	depends on I2C=y
-	select SND_SAMSUNG_I2S
-	select SND_SAMSUNG_AUDSS
 	select MFD_WM8994
 	select SND_SOC_WM8994
-	select SND_SOC_DUMMY_CODEC
-	select SND_SOC_EXYNOS_AUDMIXER
+	select SND_SAMSUNG_I2S
 	help
 		Say Y if you want to add support for SoC audio on the SMDKs.
 
@@ -250,21 +239,3 @@ config SND_SOC_ARNDALE_RT5631_ALC5631
         depends on SND_SOC_SAMSUNG && I2C
         select SND_SAMSUNG_I2S
         select SND_SOC_RT5631
-
-config SND_SOC_I2S_TXSLOT_NUMBER
-	int "Number of tx slots including audio sample"
-	depends on SND_SAMSUNG_I2S && SND_SAMSUNG_AUDSS
-	default 2
-	help
-	  An audio sample is included in a slot in the I2S. Thus, slot number will be 2
-	  in the stereo audio transmission, so it's default number. In the TDM mode,
-	  you have to change number of slot for transmitting more slots.
-
-config SND_SOC_I2S_RXSLOT_NUMBER
-	int "Number of rx slots including audio sample"
-	depends on SND_SAMSUNG_I2S && SND_SAMSUNG_AUDSS
-	default 2
-	help
-	  An audio sample is included in a slot in the I2S. Thus, slot number will be 2
-	  in the stereo audio transmission, so it's default number. In the TDM mode,
-	  you have to change number of slot for receiving more slots.
