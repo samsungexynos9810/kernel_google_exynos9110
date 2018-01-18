@@ -17,6 +17,8 @@
 
 #define ID		0
 
+static int sunlightmode = 0;
+
 void lcd_init(struct decon_lcd * lcd)
 {
 	/* cmd_set_1 */
@@ -50,10 +52,8 @@ void lcd_init(struct decon_lcd * lcd)
 		dsim_err("********** failed to send cmd_set_5.\n");
 
 	/* cmd_set_6 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned long) cmd_set_6,
-		ARRAY_SIZE(cmd_set_6)) == -1)
-		dsim_err("********** failed to send cmd_set_6.\n");
+	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
+		0x12, 0);
 
 	/* cmd_set_7 */
 	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
@@ -109,4 +109,102 @@ void lcd_brightness_set(int brightness)
 		(unsigned long) reg_brightness_set,
 		ARRAY_SIZE(reg_brightness_set)) == -1)
 		dsim_err("failed to brightness_set.\n");
+
+	if (brightness == 255) {
+		lcd_highbrightness_mode(1);
+		sunlightmode = 1;
+	} else {
+		if (sunlightmode == 1) {
+			lcd_highbrightness_mode(0);
+			sunlightmode = 0;
+		}
+	}
+}
+
+void lcd_idle_mode(int on)
+{
+	if (on) {
+		dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
+			0x39, 0x00);
+	} else {
+		dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
+			0x38, 0x00);
+	}
+}
+
+void lcd_highbrightness_mode(int on)
+{
+	unsigned char reg_hbm_set[2] = "";
+
+	if (on) {
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x00;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_on_1.\n");
+
+		reg_hbm_set[0] = 0xB0;
+		reg_hbm_set[1] = 0x06;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_on_2.\n");
+
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x01;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_on_3.\n");
+
+		reg_hbm_set[0] = 0x25;
+		reg_hbm_set[1] = 0x83;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_on_4.\n");
+
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x00;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_on_5.\n");
+	} else {
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x00;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_1.\n");
+
+		reg_hbm_set[0] = 0xB0;
+		reg_hbm_set[1] = 0x04;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_2.\n");
+
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x01;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_3.\n");
+
+		reg_hbm_set[0] = 0x25;
+		reg_hbm_set[1] = 0x03;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_4.\n");
+
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x00;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_5.\n");
+	}
 }

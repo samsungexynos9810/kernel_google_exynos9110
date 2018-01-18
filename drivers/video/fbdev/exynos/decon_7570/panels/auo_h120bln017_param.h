@@ -51,7 +51,7 @@ static const unsigned char cmd_set_7[2] = {
 	/* command */
 	0x35,
 	/* parameter */
-	0x00
+	0x02
 };
 
 static const unsigned char cmd_set_8[2] = {

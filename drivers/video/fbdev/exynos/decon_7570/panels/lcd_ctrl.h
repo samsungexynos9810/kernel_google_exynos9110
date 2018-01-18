@@ -21,5 +21,7 @@ void lcd_lane_ctl(unsigned int lane_num);
 int lcd_gamma_ctrl(unsigned int backlightlevel);
 int lcd_gamma_update(void);
 void lcd_brightness_set(int brightness);
+void lcd_idle_mode(int on);
+void lcd_highbrightness_mode(int on);
 
 #endif /* __LCD_CTRL_H__ */
