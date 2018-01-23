@@ -326,9 +326,6 @@
 					regulator-name = "vdd_ldo5";
 					regulator-min-microvolt = <800000>;
 					regulator-max-microvolt = <1200000>;
-					regulator-always-on;
-					regulator-boot-on;
-					regulator-initial-mode = <1>;
 					regulator-ramp-delay = <12000>;
 				};
 
@@ -440,9 +437,6 @@
 					regulator-name = "vdd_lcd_1.8";
 					regulator-min-microvolt = <1500000>;
 					regulator-max-microvolt = <2000000>;
-					regulator-always-on;
-					regulator-boot-on;
-					regulator-initial-mode = <1>;
 					regulator-ramp-delay = <12000>;
 				};
 
@@ -465,9 +459,6 @@
 					regulator-name = "vdd_ldo20";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-				//	regulator-always-on;
-				//	regulator-boot-on;
-					regulator-initial-mode = <1>;
 					regulator-ramp-delay = <12000>;
 				};
 
@@ -495,9 +486,6 @@
 					regulator-name = "vdd_ldo23";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-always-on;
-					regulator-boot-on;
-					regulator-initial-mode = <1>;
 					regulator-ramp-delay = <12000>;
 				};
 			};
