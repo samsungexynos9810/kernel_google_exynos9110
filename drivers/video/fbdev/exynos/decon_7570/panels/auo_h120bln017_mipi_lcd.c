@@ -8,7 +8,7 @@
 #include <linux/platform_device.h>
 
 #include "../dsim.h"
-#include "lcd_ctrl.h"
+#include "auo_h120bln017_lcd_ctrl.h"
 #include "decon_lcd.h"
 #include "auo_h120bln017_param.h"
 #include "../../../../../misc/casio/MSensorsDrv.h"
@@ -30,7 +30,7 @@ static int auo_h120bln017_get_brightness(struct backlight_device *bd)
 
 static int update_brightness(int brightness)
 {
-	lcd_brightness_set(brightness);
+	auo_h120bln017_lcd_brightness_set(brightness);
 	return 0;
 }
 
@@ -62,7 +62,7 @@ static const struct backlight_ops auo_h120bln017_backlight_ops = {
 
 static int auo_h120bln017_probe(struct dsim_device *dsim)
 {
-	printk(KERN_ERR "***** auo_h120bln017_probe \n");
+	printk(KERN_INFO "***** auo_h120bln017_probe \n");
 	bd = backlight_device_register("pwm-backlight.0", NULL,
 		NULL, &auo_h120bln017_backlight_ops, NULL);
 	if (IS_ERR(bd))
@@ -76,21 +76,21 @@ static int auo_h120bln017_probe(struct dsim_device *dsim)
 
 static int auo_h120bln017_displayon(struct dsim_device *dsim)
 {
-	printk(KERN_ERR "***** auo_h120bln017_displayon \n");
-	lcd_init(&dsim->lcd_info);
+	printk(KERN_INFO "***** auo_h120bln017_displayon \n");
+	auo_h120bln017_lcd_init(&dsim->lcd_info);
 	return 0;
 }
 
 static int auo_h120bln017_suspend(struct dsim_device *dsim)
 {
-	printk(KERN_ERR "***** auo_h120bln017_suspend \n");
-	lcd_disable();
+	printk(KERN_INFO "***** auo_h120bln017_suspend \n");
+	auo_h120bln017_lcd_disable();
 	return 0;
 }
 
 static int auo_h120bln017_resume(struct dsim_device *dsim)
 {
-	printk(KERN_ERR "***** auo_h120bln017_resume\n");
+	printk(KERN_INFO "***** auo_h120bln017_resume\n");
 	//lcd_init(&dsim->lcd_info);
 	return 0;
 }

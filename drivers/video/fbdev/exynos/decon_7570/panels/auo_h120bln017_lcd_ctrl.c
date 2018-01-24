@@ -3,7 +3,7 @@
 */
 
 #include "auo_h120bln017_param.h"
-#include "lcd_ctrl.h"
+#include "auo_h120bln017_lcd_ctrl.h"
 
 /* use FW_TEST definition when you test CAL on firmware */
 /* #define FW_TEST */
@@ -19,7 +19,7 @@
 
 static int sunlightmode = 0;
 
-void lcd_init(struct decon_lcd * lcd)
+void auo_h120bln017_lcd_init(struct decon_lcd * lcd)
 {
 	/* cmd_set_1 */
 	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
@@ -79,11 +79,11 @@ void lcd_init(struct decon_lcd * lcd)
 		0x29, 0);
 }
 
-void lcd_enable(void)
+void auo_h120bln017_lcd_enable(void)
 {
 }
 
-void lcd_disable(void)
+void auo_h120bln017_lcd_disable(void)
 {
 	/* display off */
 	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
@@ -97,7 +97,7 @@ void lcd_disable(void)
 	usleep_range(120000, 130000);
 }
 
-void lcd_brightness_set(int brightness)
+void auo_h120bln017_lcd_brightness_set(int brightness)
 {
 	unsigned char reg_brightness_set[2] = "";
 
@@ -111,17 +111,17 @@ void lcd_brightness_set(int brightness)
 		dsim_err("failed to brightness_set.\n");
 
 	if (brightness == 255) {
-		lcd_highbrightness_mode(1);
+		auo_h120bln017_lcd_highbrightness_mode(1);
 		sunlightmode = 1;
 	} else {
 		if (sunlightmode == 1) {
-			lcd_highbrightness_mode(0);
+			auo_h120bln017_lcd_highbrightness_mode(0);
 			sunlightmode = 0;
 		}
 	}
 }
 
-void lcd_idle_mode(int on)
+void auo_h120bln017_lcd_idle_mode(int on)
 {
 	if (on) {
 		dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
@@ -132,7 +132,7 @@ void lcd_idle_mode(int on)
 	}
 }
 
-void lcd_highbrightness_mode(int on)
+void auo_h120bln017_lcd_highbrightness_mode(int on)
 {
 	unsigned char reg_hbm_set[2] = "";
 
