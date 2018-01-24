@@ -43,6 +43,7 @@ enum usb_notifier_gadget_cmd {
 extern int dwc3_exynos_id_event(struct device *dev, int state);
 extern int dwc3_exynos_vbus_event(struct device *dev, int state);
 extern int exynos_otg_vbus_event(struct platform_device *pdev, int state);
+extern int dwc3_exynos_ison_disable(struct device *dev, bool vbus_active);
 
 #ifdef CONFIG_OF
 static void of_get_usb_redriver_dt(struct device_node *np,
@@ -203,6 +204,37 @@ static void check_usb_id_state(int state)
 }
 #endif
 
+static void usb_ison_disable(void)
+{
+	struct usb_notifier_platform_data *pdata = of_get_usb_notifier_pdata();
+	struct device_node *np = NULL;
+	struct platform_device *pdev = NULL;
+	int ret = 0;
+
+	np = exynos_udc_parse_dt();
+	if (!np) {
+		pr_err("%s: failed to get usb gadget device node\n", __func__);
+		return;
+	}
+
+	pdev = of_find_device_by_node(np);
+	if (!pdev) {
+		pr_err("%s: failed to get the %s platform_device\n",
+			__func__, np->name);
+		return;
+	}
+
+	of_node_put(np);
+
+	pr_info("usb: %s is_ready:%d ,vbus state:%d\n",
+				__func__, pdata->g_ndev.is_ready,
+					(int)pdata->g_ndev.gadget_state);
+
+	ret = dwc3_exynos_ison_disable(&pdev->dev, pdata->g_ndev.gadget_state);
+	if (ret)
+		pr_err("%s: failed to set is_on\n", __func__);
+}
+
 static void usbgadget_ready(struct work_struct *work)
 {
 	struct usb_notifier_platform_data *pdata = of_get_usb_notifier_pdata();
@@ -210,6 +242,10 @@ static void usbgadget_ready(struct work_struct *work)
 	pr_info("usb: %s,gadget_state:%d\n", __func__,
 				pdata->g_ndev.gadget_state);
 	pdata->g_ndev.is_ready = true;
+
+	if(pdata->g_ndev.gadget_state != GADGET_NOTIFIER_ATTACH)
+		usb_ison_disable();
+
 	if (pdata->g_ndev.gadget_state != GADGET_NOTIFIER_DEFAULT)
 		check_usb_vbus_state(pdata->g_ndev.gadget_state);
 }

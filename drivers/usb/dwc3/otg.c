@@ -317,6 +317,16 @@ static struct otg_fsm_ops dwc3_otg_fsm_ops = {
 
 /* -------------------------------------------------------------------------- */
 
+void dwc3_otg_ison_disable(struct otg_fsm *fsm)
+{
+	struct dwc3_otg	*dotg = container_of(fsm, struct dwc3_otg, fsm);
+	struct dwc3	*dwc = dotg->dwc;
+
+	pr_info("%s, %d\n", __func__, dwc->is_on);
+
+	dwc->is_on = 0;
+}
+
 void dwc3_otg_run_sm(struct otg_fsm *fsm)
 {
 	struct dwc3_otg	*dotg = container_of(fsm, struct dwc3_otg, fsm);

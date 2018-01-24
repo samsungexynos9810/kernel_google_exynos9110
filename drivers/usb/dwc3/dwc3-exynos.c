@@ -65,6 +65,8 @@ struct dwc3_exynos {
 };
 
 void dwc3_otg_run_sm(struct otg_fsm *fsm);
+void dwc3_otg_ison_disable(struct otg_fsm *fsm);
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -412,6 +414,32 @@ int dwc3_exynos_vbus_event(struct device *dev, bool vbus_active)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(dwc3_exynos_vbus_event);
+
+/**
+ * dwc3_exynos_ison_disable - set dwc->is_on.
+ * vbus_active : New VBus state, true if active, false otherwise.
+ */
+int dwc3_exynos_ison_disable(struct device *dev, bool vbus_active)
+{
+	struct dwc3_exynos	*exynos;
+	struct dwc3_exynos_rsw	*rsw;
+	struct otg_fsm		*fsm;
+
+	exynos = dev_get_drvdata(dev);
+	if (!exynos)
+		return -ENOENT;
+
+	rsw = &exynos->rsw;
+
+	fsm = rsw->fsm;
+	if (!fsm)
+		return -ENOENT;
+
+	dwc3_otg_ison_disable(fsm);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(dwc3_exynos_ison_disable);
 
 static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
 {
