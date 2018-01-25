@@ -255,6 +255,17 @@ static int exynos_usbswitch_parse_dt(struct exynos_usb_switch *usb_switch,
 	return 0;
 }
 
+int dwc3_exynos_ison_disable(struct device *dev, bool vbus_active);
+
+static void usbgadget_ready(struct work_struct *work)
+{
+	struct exynos_usb_switch *usb_switch =
+		container_of(work, struct exynos_usb_switch, notify_work.work);
+
+	if (!is_device_detect(usb_switch))
+		dwc3_exynos_ison_disable(usb_switch->dwc3_udc_dev, 0);
+}
+
 static int exynos_usbswitch_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -308,8 +319,12 @@ static int exynos_usbswitch_probe(struct platform_device *pdev)
 		dev_info(dev, "Disable device detect IRQ\n");
 	}
 
+
 	if (usb_switch->drvdata->use_change_mode)
 		exynos_usb_status_init(usb_switch);
+
+	INIT_DELAYED_WORK(&usb_switch->notify_work, usbgadget_ready);
+	schedule_delayed_work(&usb_switch->notify_work, msecs_to_jiffies(10000));
 
 	ret = sysfs_create_group(&dev->kobj, &exynos_usbswitch_attr_group);
 	if (ret)
