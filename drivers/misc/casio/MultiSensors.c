@@ -383,7 +383,7 @@ static int SensorReadThread(void *p)
 										recv_buf[recv_index+1]<<8 | recv_buf[recv_index];
 						event_time = soc_time - elapsed_time * 1000000LL;
 					} else {
-						if ((sensor_type & 0xf) >= MSENSORS_TYPE_BHA) {
+						if ((sensor_type & 0xf) >= MSENSORS_TYPE_LIGHT) {
 							Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
 						} else {
 							Msensors_data_buff[dataBuffWriteIndex].timestamp =
@@ -443,6 +443,7 @@ retry_check_wq:
 			st->spi.send_buf[1] == SUB_COM_SETID_MAIN_STATUS &&
 			st->spi.send_buf[2] == 0x2)	/* shutdown */
 			Flg_driver_shutdown = 1;
+		Msensors_SetTimestamp();
 		Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], next_recv_size);
 
 		if (wb) {
