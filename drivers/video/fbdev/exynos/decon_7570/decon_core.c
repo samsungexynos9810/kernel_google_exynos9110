@@ -1239,7 +1239,7 @@ static void decon_deactivate_vsync(struct decon_device *decon)
 	mutex_unlock(&decon->vsync_info.irq_lock);
 }
 
-static int decon_wait_for_vsync(struct decon_device *decon, u32 timeout)
+int decon_wait_for_vsync(struct decon_device *decon, u32 timeout)
 {
 	ktime_t timestamp;
 	int ret;

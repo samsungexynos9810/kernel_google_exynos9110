@@ -331,19 +331,15 @@ int decon_set_par(struct fb_info *info)
 	struct fb_var_screeninfo *var = &info->var;
 	struct decon_win *win = info->par;
 	struct decon_device *decon = win->decon;
-	struct decon_regs_data win_regs;
 	int win_no = win->index;
+	struct decon_regs_data *win_regs;
 
-	memset(&win_regs, 0, sizeof(struct decon_regs_data));
-	dev_info(decon->dev, "setting framebuffer parameters\n");
+	win_regs = &decon->win_regs;
+	memset(win_regs, 0, sizeof(struct decon_regs_data));
+	decon_warn("setting framebuffer parameters\n");
 
 	if (decon->state == DECON_STATE_OFF)
 		return 0;
-
-	decon_lpd_block_exit(decon);
-
-	decon_reg_shadow_protect_win(DECON_INT, win->index, 1);
-
 	info->fix.visual = fb_visual(var->bits_per_pixel, 0);
 
 	info->fix.line_length = fb_linelength(var->xres_virtual,
@@ -351,34 +347,24 @@ int decon_set_par(struct fb_info *info)
 	info->fix.xpanstep = fb_panstep(var->xres, var->xres_virtual);
 	info->fix.ypanstep = fb_panstep(var->yres, var->yres_virtual);
 
-	if (decon_reg_is_win_enabled(DECON_INT, win_no))
-		win_regs.wincon = WINCON_ENWIN;
-	else
-		win_regs.wincon = 0;
-
-	win_regs.wincon |= wincon(var->bits_per_pixel, var->transp.length);
-	win_regs.winmap = 0x0;
-	win_regs.vidosd_a = vidosd_a(0, 0);
-	win_regs.vidosd_b = vidosd_b(0, 0, var->xres, var->yres);
-	win_regs.vidosd_c = vidosd_c(0x0, 0x0, 0x0);
-	win_regs.vidosd_d = vidosd_d(0xff, 0xff, 0xff);
-	win_regs.vidw_buf_start = info->fix.smem_start;
-	win_regs.vidw_whole_w = var->xoffset + var->xres;
-	win_regs.vidw_whole_h = var->yoffset + var->yres;
-	win_regs.vidw_offset_x = var->xoffset;
-	win_regs.vidw_offset_y = var->yoffset;
+	win_regs->wincon = WINCON_ENWIN;
+	win_regs->wincon |= wincon(var->bits_per_pixel, var->transp.length);
+	win_regs->winmap = 0x0;
+	win_regs->vidosd_a = vidosd_a(0, 0);
+	win_regs->vidosd_b = vidosd_b(0, 0, var->xres, var->yres);
+	win_regs->vidosd_c = vidosd_c(0x0, 0x0, 0x0);
+	win_regs->vidosd_d = vidosd_d(0xff, 0xff, 0xff);
+	win_regs->vidw_buf_start = info->fix.smem_start;
+	win_regs->vidw_whole_w = var->xres;
+	win_regs->vidw_whole_h = var->yres;
+	win_regs->vidw_offset_x = 0;
+	win_regs->vidw_offset_y = 0;
 	if (win_no)
-		win_regs.blendeq = BLENDE_A_FUNC(BLENDE_COEF_ONE) |
+		win_regs->blendeq = BLENDE_A_FUNC(BLENDE_COEF_ONE) |
 			BLENDE_B_FUNC(BLENDE_COEF_ZERO) |
 			BLENDE_P_FUNC(BLENDE_COEF_ZERO) |
 			BLENDE_Q_FUNC(BLENDE_COEF_ZERO);
-	win_regs.type = IDMA_G0;
-	decon_reg_set_regs_data(DECON_INT, win_no, &win_regs);
-
-	decon_reg_shadow_protect_win(DECON_INT, win->index, 0);
-
-	decon_reg_update_standalone(DECON_INT);
-	decon_lpd_unblock(decon);
+	win_regs->type = IDMA_G0;
 
 	return 0;
 }
@@ -581,15 +567,16 @@ int decon_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
 	 * both start and end addresses are updated to prevent corruption */
 	decon_reg_shadow_protect_win(DECON_INT, win->index, 1);
 
-	decon_activate_window_dma(decon, win->index);
-	decon_reg_activate_window(DECON_INT, win->index);
+	decon_reg_set_regs_data(DECON_INT, win->index, &decon->win_regs);
 
 	writel(info->fix.smem_start + start_boff, decon->regs + VIDW_ADD0(win->index));
-	/* writel(info->fix.smem_start + end_boff, buf + 	sfb->variant.buf_end); */
 
 	decon_reg_shadow_protect_win(DECON_INT, win->index, 0);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+	decon_reg_activate_window(DECON_INT, win->index);
+	decon_activate_window_dma(decon, win->index);
+
+	if (decon->pdata->trig_mode == DECON_HW_TRIG) {
 	decon_reg_set_trigger(DECON_INT, decon->pdata->dsi_mode,
 			decon->pdata->trig_mode, DECON_TRIG_ENABLE);
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
@@ -597,11 +584,20 @@ int decon_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
 	if (v4l2_subdev_call(decon->output_sd, core, ioctl, DSIM_IOC_PKT_GO_ENABLE, NULL))
 		decon_err("Failed to call DSIM packet go enable!\n");
 #endif
-	decon_reg_set_trigger(DECON_INT, decon->pdata->dsi_mode,
-			decon->pdata->trig_mode, DECON_TRIG_DISABLE);
-#endif
+
+	}
+
+	ret = decon_wait_for_vsync(decon, VSYNC_TIMEOUT_MSEC);
+	if (ret) {
+		decon_err("%s:vsync time over\n", __func__);
+		goto pan_display_exit;
+	}
 
 pan_display_exit:
+	if (decon->pdata->trig_mode == DECON_HW_TRIG)
+	decon_reg_set_trigger(DECON_INT, decon->pdata->dsi_mode,
+			decon->pdata->trig_mode, DECON_TRIG_DISABLE);
+
 	decon_lpd_unblock(decon);
 	return ret;
 }
@@ -662,6 +658,7 @@ static void decon_parse_lcd_info(struct decon_device *decon)
 		decon->windows[i]->win_mode.videomode.yres = lcd_info->yres;
 		decon->windows[i]->win_mode.width = lcd_info->width;
 		decon->windows[i]->win_mode.height = lcd_info->height;
+		decon->windows[i]->win_mode.videomode.refresh = lcd_info->fps;
 	}
 }
 

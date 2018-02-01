@@ -695,6 +695,7 @@ struct decon_device {
 	unsigned int			doze_state;
 	unsigned int			pwr_mode;
 #endif
+	struct decon_regs_data win_regs;
 };
 
 static inline struct decon_device *get_decon_drvdata(u32 id)
@@ -749,6 +750,7 @@ int decon_lcd_off(struct decon_device *decon);
 int decon_enable(struct decon_device *decon);
 int decon_disable(struct decon_device *decon);
 void decon_lpd_enable(void);
+int decon_wait_for_vsync(struct decon_device *decon, u32 timeout);
 
 /* internal only function API */
 int decon_fb_config_eint_for_te(struct platform_device *pdev, struct decon_device *decon);
