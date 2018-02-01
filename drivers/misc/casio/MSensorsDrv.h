@@ -87,7 +87,9 @@
 #define SUB_COM_GETID_PRESSURE_CORR		(0x09)
 #define SUB_COM_GETID_STEP_TODAY		(0x0a)
 #define SUB_COM_GETID_STEP_YESTERDAY	(0x0b)
-#define SUB_COM_GETID_NUM	(0x0c)	/* Number of GETIDs */
+#define SUB_COM_GETID_BATTERY_LOG_START	(0x0c)
+#define SUB_COM_GETID_BATTERY_LOG_GET_DATA	(0x0d)
+#define SUB_COM_GETID_NUM	(0x0e)	/* Number of GETIDs */
 
 #define MSENSORS_TYPE_META			(0x00)		/* Sensor Type Meta */
 #define MSENSORS_TYPE_ACCELEROMETER		(0x01)		/* Sensor Type Accelerometer */
@@ -157,6 +159,8 @@
 #define IOC_PRESSURE_CORR	_IOR('K', 6, __u32)
 #define IOC_STEP_TODAY		_IOR('K', 7, __u32)
 #define IOC_STEP_YESTERDAY	_IOR('K', 8, __u32)
+#define IOC_BATTERY_LOG_START		_IOR('K', 9, __u32)
+#define IOC_BATTERY_LOG_GET_DATA	_IOR('K', 10, __u32)
 
 
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))

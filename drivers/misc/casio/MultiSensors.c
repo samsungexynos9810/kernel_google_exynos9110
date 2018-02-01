@@ -574,6 +574,14 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = sub_read_command(SUB_COM_GETID_STEP_YESTERDAY);
 		if (ret >= 0)
 			ret = copy_to_user((void __user *)arg, SubReadData, 4);
+	} else if (cmd == IOC_BATTERY_LOG_START) {
+		ret = sub_read_command(SUB_COM_GETID_BATTERY_LOG_START);
+		if (ret >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, 5);
+	} else if (cmd == IOC_BATTERY_LOG_GET_DATA) {
+		ret = sub_read_command(SUB_COM_GETID_BATTERY_LOG_GET_DATA);
+		if (ret >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, 6);
 	} else {
 		ret = -1;
 		pr_info("%s: unknown command %x\n", __func__, cmd);
