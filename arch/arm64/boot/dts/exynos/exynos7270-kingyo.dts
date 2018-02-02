@@ -875,6 +875,7 @@
 		gpios = <&gpd2 0 0x1 &gpa0 1 0x1>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&reset_oled &pwctl_oled>;
+		regulator_ldo17 = "vdd_lcd_1.8";
 		/* number of data lanes in use */
 		data_lane_cnt = <1>;
 		status = "okay";

@@ -739,17 +739,17 @@ int dsim_enable_regulator(struct dsim_device *dsim)
 
 	int ret = 0;
 	dsim_info("%s + \n", __func__);
-	ret = regulator_set_voltage(res->reg_v33, 3300000, 3300000);
-	if (ret) {
-		dsim_err("%s : dsim regulator set voltage 3.3V failed\n", __func__);
-		return -EINVAL;
-	}
+	//ret = regulator_set_voltage(res->reg_v33, 3300000, 3300000);
+	//if (ret) {
+	//	dsim_err("%s : dsim regulator set voltage 3.3V failed\n", __func__);
+	//	return -EINVAL;
+	//}
 
-	ret = regulator_enable(res->reg_v33);
-	if (ret) {
-		dsim_err("%s : dsim regulator 3.3V enable failed\n", __func__);
-		return -EINVAL;
-	}
+	//ret = regulator_enable(res->reg_v33);
+	//if (ret) {
+	//	dsim_err("%s : dsim regulator 3.3V enable failed\n", __func__);
+	//	return -EINVAL;
+	//}
 
 	ret = regulator_set_voltage(res->reg_v18, 1800000, 1800000);
 	if (ret) {

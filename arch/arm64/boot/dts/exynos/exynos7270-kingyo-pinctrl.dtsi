@@ -160,13 +160,7 @@
 			samsung,pin-drv = <0>;
 		};
 #endif
-		reset_oled: reset_oled {
-			samsung,pins = "gpd2-0";
-			samsung,pin-function = <1>;
-			samsung,pin-pud = <0>;
-			samsung,pin-drv = <0>;
-		};
-
+		/* oled */
 		pwctl_oled: pwctl-oled {
 			samsung,pins = "gpa0-1";
 			samsung,pin-function = <1>;
@@ -894,6 +888,16 @@
 		touch_rst: touch-rst {
 			samsung,pins = "gpc3-2";
 			samsung,pin-function = <0x1>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+			samsung,pin-con-pdn = <3>;
+			samsung,pin-pud-pdn = <0>;
+		};
+
+		/* oled */
+		reset_oled: reset-oled {
+			samsung,pins = "gpd2-0";
+			samsung,pin-function = <1>;
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
 			samsung,pin-con-pdn = <3>;
