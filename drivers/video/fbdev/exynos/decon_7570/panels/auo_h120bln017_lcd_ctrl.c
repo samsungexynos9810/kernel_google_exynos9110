@@ -67,6 +67,12 @@ void auo_h120bln017_lcd_init(struct decon_lcd * lcd)
 		ARRAY_SIZE(cmd_set_8)) == -1)
 		dsim_err("********** failed to send cmd_set_8.\n");
 
+	/* cmd_set_9 */
+	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		(unsigned long) cmd_set_9,
+		ARRAY_SIZE(cmd_set_9)) == -1)
+		dsim_err("********** failed to send cmd_set_9.\n");
+
 	/* sleep out */
 	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
 		0x11, 0);
