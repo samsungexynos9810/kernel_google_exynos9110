@@ -53,6 +53,9 @@ static DECLARE_COMPLETION(dsim_rd_comp);
 static int dsim_runtime_suspend(struct device *dev);
 static int dsim_runtime_resume(struct device *dev);
 
+static struct pinctrl *pinctrl = NULL;
+static struct pinctrl_state *pinctrl_state_default = NULL;
+
 #define MIPI_WR_TIMEOUT msecs_to_jiffies(100)
 #define MIPI_RD_TIMEOUT msecs_to_jiffies(100)
 
@@ -629,6 +632,45 @@ static int dsim_get_gpios(struct dsim_device *dsim)
 	return 0;
 }
 
+int dsim_pinctrl_init(struct dsim_device *dsim)
+{
+
+	struct device *dev = dsim->dev;
+	int ret;
+
+	dsim_info("%s +\n", __func__);
+
+	pinctrl = devm_pinctrl_get(dev);
+	if (IS_ERR_OR_NULL(pinctrl))
+	{
+		ret = PTR_ERR(pinctrl);
+		dsim_err("This board does not use pinctrl ret=%d\n", ret);
+		goto err_pinctrl_get;
+	}
+
+	pinctrl_state_default = pinctrl_lookup_state(pinctrl, "default");
+	if (IS_ERR_OR_NULL(pinctrl_state_default))
+	{
+		ret = PTR_ERR(pinctrl_state_default);
+		dsim_err("Can not lookup pinstate ret=%d\n", ret);
+		goto err_pinctrl_lookup;
+	}
+
+
+	pinctrl_select_state(pinctrl, pinctrl_state_default);
+
+
+	dsim_info("%s -\n", __func__);
+	return 0;
+
+err_pinctrl_lookup:
+	devm_pinctrl_put(pinctrl);
+err_pinctrl_get:
+	pinctrl = NULL;
+
+	return ret;
+}
+
 int dsim_reset_panel(struct dsim_device *dsim)
 {
 	struct dsim_resources *res = &dsim->res;
@@ -1020,7 +1062,6 @@ static int dsim_doze_suspend(struct dsim_device *dsim)
 		goto exit;
 
 	dsim_info("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
-
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
 	dsim_pkt_go_enable(dsim, false);
 #endif
@@ -1534,6 +1575,14 @@ static int dsim_probe(struct platform_device *pdev)
 	dsim->dev = &pdev->dev;
 
 	dsim_get_gpios(dsim);
+/*
+	ret = dsim_pinctrl_init(dsim);
+	if (ret) {
+		dev_err(dev, "failed to pinctrl init\n");
+		ret = -EINVAL;
+		return ret;
+	}
+*/
 	dsim_get_regulator(dsim);
 	dsim_get_clocks(dsim);
 	spin_lock_init(&dsim->slock);
