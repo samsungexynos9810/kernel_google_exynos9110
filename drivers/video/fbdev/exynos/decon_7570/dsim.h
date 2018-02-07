@@ -91,6 +91,8 @@ struct dsim_resources {
 	struct clk *pclk_disp;
 	int lcd_power[2];
 	int lcd_reset;
+	struct regulator *reg_v33;
+	struct regulator *reg_v18;
 };
 
 struct panel_private {

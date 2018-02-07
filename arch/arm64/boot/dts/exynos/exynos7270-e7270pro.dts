@@ -393,7 +393,6 @@
 					regulator-name = "vdd_ldo16";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-always-on;
 					regulator-boot-on;
 					regulator-initial-mode = <1>;
 					regulator-ramp-delay = <12000>;
@@ -403,7 +402,6 @@
 					regulator-name = "vdd_ldo17";
 					regulator-min-microvolt = <1500000>;
 					regulator-max-microvolt = <2000000>;
-					regulator-always-on;
 					regulator-boot-on;
 					regulator-initial-mode = <1>;
 					regulator-ramp-delay = <12000>;
@@ -983,7 +981,8 @@
 		lcd_info = <&rm69080>;
 		/*lcd reset */
 		gpios = <&gpd2 0 0x1>;
-
+		regulator_ldo16 ="vdd_ldo16";
+		regulator_ldo17 ="vdd_ldo17";
 		/* number of data lanes in use */
 		data_lane_cnt = <1>;
 

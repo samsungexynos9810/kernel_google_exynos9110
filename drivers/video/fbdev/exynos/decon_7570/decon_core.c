@@ -2756,6 +2756,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 #endif
 
 	default:
+		decon_info(" default %s(%d)\n", __func__, cmd);
 		ret = -ENOTTY;
 	}
 
@@ -3899,6 +3900,26 @@ decon_init_done:
 		cmu_sfr = ioremap(0x139b0080, SZ_4);
 		reg = __raw_readl(cmu_sfr);
 		pr_info("%s, 0x139b0080 tes_gpio_sfr : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x10460100, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		pr_info("%s, 0x10460100 SHARED0_PLL_CON0 : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x10460120, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		pr_info("%s, 0x10460120 SHARED1_PLL_CON0 : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x10460140, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		pr_info("%s, 0x10460140 SHARED2_PLL_CON0 : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x10460434, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		pr_info("%s, 0x10460434 CLK_CON_DIV_CLKCMU_DISPAUD_DECON_INT_VCLK : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x148D0404, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		pr_info("%s, 0x148D0404 CLK_CON_DIV_CLK_DISPAUD_DECON_INT_VCLK : 0x%08x\n", __func__, reg);
 	}
 #endif
 	return 0;

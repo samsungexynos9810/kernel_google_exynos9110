@@ -655,6 +655,96 @@ int dsim_reset_panel(struct dsim_device *dsim)
 	return 0;
 }
 
+static int dsim_get_regulator(struct dsim_device *dsim)
+{
+	char *str_reg_v33 = NULL;
+	char *str_reg_v18 = NULL;
+
+	struct device *dev = dsim->dev;
+	struct dsim_resources *res = &dsim->res;
+
+	dsim_info("%s +\n", __func__);
+
+	res->reg_v33 = NULL;
+	res->reg_v18 = NULL;
+	of_property_read_string(dev->of_node, "regulator_ldo16", (const char **)&str_reg_v33);
+	if (str_reg_v33) {
+		dsim_info("getting string : %s\n",str_reg_v33);
+		res->reg_v33 = regulator_get(dev, str_reg_v33);
+		if (IS_ERR(res->reg_v33)) {
+			dsim_err("%s : dsim regulator 3.3V get failed\n", __func__);
+			res->reg_v33 = NULL;
+		}
+	}
+
+	of_property_read_string(dev->of_node, "regulator_ldo17", (const char **)&str_reg_v18);
+	if (str_reg_v18) {
+		dsim_info("getting string : %s\n",str_reg_v18);
+		res->reg_v18 = regulator_get(dev, str_reg_v18);
+		if (IS_ERR(res->reg_v18)) {
+			dsim_err("%s : dsim regulator 1.8V get failed\n", __func__);
+			res->reg_v18 = NULL;
+		}
+	}
+	dsim_info("%s -\n", __func__);
+	return 0;
+}
+
+
+int dsim_enable_regulator(struct dsim_device *dsim)
+{
+	struct dsim_resources *res = &dsim->res;
+
+	int ret = 0;
+	dsim_info("%s + \n", __func__);
+	ret = regulator_set_voltage(res->reg_v33, 3300000, 3300000);
+	if (ret) {
+		dsim_err("%s : dsim regulator set voltage 3.3V failed\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = regulator_enable(res->reg_v33);
+	if (ret) {
+		dsim_err("%s : dsim regulator 3.3V enable failed\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = regulator_set_voltage(res->reg_v18, 1800000, 1800000);
+	if (ret) {
+		dsim_err("%s : dsim regulator set voltage 1.8V failed\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = regulator_enable(res->reg_v18);
+	if (ret) {
+		dsim_err("%s : dsim regulator 1.8V enable failed\n", __func__);
+		return -EINVAL;
+	}
+	dsim_err("%s - \n", __func__);
+
+	return 0;
+}
+
+int dsim_disable_regulator(struct dsim_device *dsim)
+{
+	struct dsim_resources *res = &dsim->res;
+
+	int ret = 0;
+
+	ret = regulator_disable(res->reg_v33);
+	if (ret) {
+		dsim_err("%s : dsim regulator 3.3V disable failed\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = regulator_enable(res->reg_v18);
+	if (ret) {
+		dsim_err("%s : dsim regulator 1.8V disable failed\n", __func__);
+		return -EINVAL;
+	}
+
+	return 0;
+}
 int dsim_set_panel_pre_power(struct dsim_device *dsim)
 {
 	dsim_dbg("%s +\n", __func__);
@@ -771,9 +861,11 @@ static int dsim_enable(struct dsim_device *dsim)
 	if (IS_DOZE(dsim->doze_state)) {
 		dsim_info("%s: exit doze\n", __func__);
 	} else {
+		//dsim_enable_regulator(dsim);
 		dsim_set_panel_power(dsim, 1);
 	}
 #else
+	//dsim_enable_regulator(dsim);
 	dsim_set_panel_power(dsim, 1);
 #endif
 
@@ -1442,7 +1534,7 @@ static int dsim_probe(struct platform_device *pdev)
 	dsim->dev = &pdev->dev;
 
 	dsim_get_gpios(dsim);
-
+	dsim_get_regulator(dsim);
 	dsim_get_clocks(dsim);
 	spin_lock_init(&dsim->slock);
 
@@ -1566,9 +1658,11 @@ static int dsim_probe(struct platform_device *pdev)
 		dsim_err("%s: failed to panel power\n", __func__);
 		goto err;
 	}
+	dsim_enable_regulator(dsim);
 	dsim_reset_panel(dsim);
 
 dsim_init_done:
+	dsim_enable_regulator(dsim);
 	dsim_reg_start(dsim->id, &dsim->clks_param.clks, DSIM_LANE_CLOCK | dsim->data_lane);
 
 	dsim->state = DSIM_STATE_HSCLKEN;
