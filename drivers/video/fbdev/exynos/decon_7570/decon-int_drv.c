@@ -545,6 +545,9 @@ int decon_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
 	unsigned int start_boff, end_boff;
 	int ret = 0;
 
+	if (decon->state == DECON_STATE_OFF)
+		return ret;
+
 	decon_lpd_block_exit(decon);
 
 	decon_set_par(info);
@@ -765,6 +768,10 @@ int decon_int_register_irq(struct platform_device *pdev, struct decon_device *de
 	/* Get IRQ resource and register IRQ handler. */
 	/* 0: FIFO irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	if (!res) {
+		decon_err("failed to get platform resource\n");
+		return -EINVAL;
+	}
 	ret = devm_request_irq(dev, res->start, decon_int_irq_handler, 0,
 			pdev->name, decon);
 	if (ret) {
@@ -774,6 +781,10 @@ int decon_int_register_irq(struct platform_device *pdev, struct decon_device *de
 
 	/* 1: frame irq (Vsync) */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+	if (!res) {
+		decon_err("failed to get platform resource\n");
+		return -EINVAL;
+	}
 	ret = devm_request_irq(dev, res->start, decon_int_irq_handler,
 			0, pdev->name, decon);
 	if (ret) {
@@ -784,6 +795,10 @@ int decon_int_register_irq(struct platform_device *pdev, struct decon_device *de
 	if (decon->pdata->psr_mode == DECON_MIPI_COMMAND_MODE) {
 		/* 1: i80 irq (framedone) */
 		res = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
+		if (!res) {
+			decon_err("failed to get platform resource\n");
+			return -EINVAL;
+		}
 		ret = devm_request_irq(dev, res->start, decon_int_irq_handler,
 				0, pdev->name, decon);
 		if (ret) {
