@@ -28,6 +28,7 @@
 #include "regs-dsim.h"
 #include "dsim_common.h"
 
+#define CONFIG_LCD_DOZE_MODE
 #define DSIM_PAD_SINK		0
 #define DSIM_PADS_NUM		1
 #define DSIM_DDI_ID_LEN		3
@@ -62,6 +63,12 @@ extern struct mipi_dsim_lcd_driver s6e8aa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver rm69080_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver auo_h120bln017_mipi_lcd_driver;
+
+#define PANEL_STATE_SUSPENED	0
+#define PANEL_STATE_RESUMED		1
+#define PANEL_STATE_SUSPENDING	2
+#define PANEL_DISCONNEDTED		0
+#define PANEL_CONNECTED			1
 
 enum mipi_dsim_pktgo_state {
 	DSIM_PKTGO_DISABLED,
@@ -125,6 +132,9 @@ struct dsim_device {
 	struct panel_private priv;
 	struct dsim_clks_param clks_param;
 	struct phy *phy;
+#ifdef CONFIG_LCD_DOZE_MODE
+	unsigned int doze_state;
+#endif
 };
 
 /**
@@ -141,6 +151,10 @@ struct mipi_dsim_lcd_driver {
 	int	(*displayon)(struct dsim_device *dsim);
 	int	(*resume)(struct dsim_device *dsim);
 	int	(*dump)(struct dsim_device *dsim);
+#ifdef CONFIG_LCD_DOZE_MODE
+	int	(*enteralpm)(struct dsim_device *dsim);
+	int	(*exitalpm)(struct dsim_device *dsim);
+#endif
 };
 
 int dsim_write_data(struct dsim_device *dsim, unsigned int data_id,
@@ -230,4 +244,12 @@ u32 dsim_reg_get_xres(u32 id);
 #define DSIM_IOC_VSYNC			_IOW('D', 9, u32)
 #define DSIM_IOC_SET_CMD_LPMODE _IOW('D', 50, u32)
 
+enum dsim_pwr_mode {
+	DSIM_REQ_POWER_OFF,
+	DSIM_REQ_POWER_ON,
+#ifdef CONFIG_LCD_DOZE_MODE
+	DSIM_REQ_DOZE_MODE,
+	DSIM_REQ_DOZE_SUSPEND
+#endif
+};
 #endif /* __DSIM_H__ */

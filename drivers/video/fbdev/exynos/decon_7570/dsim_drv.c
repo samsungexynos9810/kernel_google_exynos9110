@@ -655,6 +655,14 @@ int dsim_reset_panel(struct dsim_device *dsim)
 	return 0;
 }
 
+int dsim_set_panel_pre_power(struct dsim_device *dsim)
+{
+	dsim_dbg("%s +\n", __func__);
+	//run_list(dsim->dev, __func__);
+	dsim_dbg("%s -\n", __func__);
+	return 0;
+}
+
 int dsim_set_panel_power(struct dsim_device *dsim, bool on)
 {
 	struct dsim_resources *res = &dsim->res;
@@ -738,8 +746,18 @@ int dsim_set_panel_power(struct dsim_device *dsim, bool on)
 
 static int dsim_enable(struct dsim_device *dsim)
 {
-	if (dsim->state == DSIM_STATE_HSCLKEN)
-		return 0;
+	if (dsim->state == DSIM_STATE_HSCLKEN) {
+#ifdef CONFIG_LCD_DOZE_MODE
+		if (IS_DOZE(dsim->doze_state)) {
+			//call_panel_ops(dsim, exitalpm, dsim);
+		}
+#endif
+		goto exit;
+	}
+	/* Panel power on early*/
+	//dsim_set_panel_pre_power(dsim);
+
+	//call_panel_ops(dsim, prepare, dsim);
 
 #if defined(CONFIG_PM)
 	pm_runtime_get_sync(dsim->dev);
@@ -749,7 +767,16 @@ static int dsim_enable(struct dsim_device *dsim)
 	enable_irq(dsim->irq);
 
 	/* Panel power on */
+#ifdef CONFIG_LCD_DOZE_MODE
+	if (IS_DOZE(dsim->doze_state)) {
+		dsim_info("%s: exit doze\n", __func__);
+	} else {
+		dsim_set_panel_power(dsim, 1);
+	}
+#else
 	dsim_set_panel_power(dsim, 1);
+#endif
+
 	call_panel_ops(dsim, resume, dsim);
 
 	/* DPHY power on */
@@ -757,8 +784,15 @@ static int dsim_enable(struct dsim_device *dsim)
 
 	dsim_reg_set_clocks(dsim->id, &dsim->clks_param.clks, &dsim->lcd_info.dphy_pms, 1);
 	dsim_reg_set_lanes(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane, 1);
-	/* Panel Reset activate */
+#ifdef CONFIG_LCD_DOZE_MODE
+	if (IS_DOZE(dsim->doze_state)) {
+		dsim_info("%s: exit doze\n", __func__);
+	} else {
+		dsim_reset_panel(dsim);
+	}
+#else
 	dsim_reset_panel(dsim);
+#endif
 	dsim_reg_init(dsim->id, &dsim->lcd_info, dsim->data_lane_cnt,
 			&dsim->clks_param.clks);
 
@@ -771,7 +805,16 @@ static int dsim_enable(struct dsim_device *dsim)
 	/* Panel lane # is changed to  2 by using LP mode*/
 	dsim_reg_change_cmd_transfer_mode(dsim->id,1);
 #endif
+
+#ifdef CONFIG_LCD_DOZE_MODE
+	if (IS_DOZE(dsim->doze_state)) {
+		//call_panel_ops(dsim, exitalpm, dsim);
+	} else {
+		call_panel_ops(dsim, displayon, dsim);
+	}
+#else
 	call_panel_ops(dsim, displayon, dsim);
+#endif
 
 	/* for Java W SIP 3aa2 panel */
 #if defined(CONFIG_EXYNOS_DECON_LCD_S6E3AA2)
@@ -779,19 +822,30 @@ static int dsim_enable(struct dsim_device *dsim)
 	dsim_reg_change_cmd_transfer_mode(dsim->id,0);
 #endif
 
+exit:
+#ifdef CONFIG_LCD_DOZE_MODE
+	dsim->doze_state = DOZE_STATE_NORMAL;
+#endif
+	dsim_info("%s: --\n", __func__);
 	return 0;
 }
 
 static int dsim_disable(struct dsim_device *dsim)
 {
 	if (dsim->state == DSIM_STATE_SUSPEND)
-		return 0;
+		goto exit;
+
+	dsim_info("%s: ++\n", __func__);
 
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
 	dsim_pkt_go_enable(dsim, false);
 #endif
 	dsim_set_lcd_full_screen(dsim);
 	call_panel_ops(dsim, suspend, dsim);
+
+#ifdef CONFIG_LCD_DOZE_MODE
+	dsim->doze_state = DOZE_STATE_SUSPEND;
+#endif
 
 	/* Wait for current read & write CMDs. */
 	mutex_lock(&dsim_rd_wr_mutex);
@@ -810,8 +864,101 @@ static int dsim_disable(struct dsim_device *dsim)
 	dsim_runtime_suspend(dsim->dev);
 #endif
 
+exit:
+	dsim_info("%s: --\n", __func__);
+
 	return 0;
 }
+
+#ifdef CONFIG_LCD_DOZE_MODE
+static int dsim_doze_enable(struct dsim_device *dsim)
+{
+	if (dsim->state == DSIM_STATE_HSCLKEN) {
+		if (dsim->doze_state != DOZE_STATE_DOZE) {
+			//call_panel_ops(dsim, enteralpm, dsim);
+		}
+		goto exit;
+	}
+
+	dsim_info("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
+
+#if defined(CONFIG_PM)
+	pm_runtime_get_sync(dsim->dev);
+#else
+	dsim_runtime_resume(dsim->dev);
+#endif
+
+	if (dsim->doze_state == DOZE_STATE_SUSPEND)
+		dsim_set_panel_power(dsim, 1);
+
+	/* DPHY power on */
+	phy_power_on(dsim->phy);
+
+	dsim_reg_set_clocks(dsim->id, &dsim->clks_param.clks, &dsim->lcd_info.dphy_pms, 1);
+	dsim_reg_set_lanes(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane, 1);
+
+	if (dsim->doze_state == DOZE_STATE_SUSPEND)
+		dsim_reset_panel(dsim);
+
+	dsim_reg_init(dsim->id, &dsim->lcd_info, dsim->data_lane_cnt,
+			&dsim->clks_param.clks);
+
+	dsim_reg_start(dsim->id, &dsim->clks_param.clks, DSIM_LANE_CLOCK | dsim->data_lane);
+
+	dsim->state = DSIM_STATE_HSCLKEN;
+
+	enable_irq(dsim->irq);
+
+	if (dsim->doze_state == DOZE_STATE_SUSPEND || dsim->doze_state == DOZE_STATE_DOZE_SUSPEND) {
+		//call_panel_ops(dsim, enteralpm, dsim);
+		call_panel_ops(dsim, displayon, dsim);
+	}
+
+exit:
+	dsim->doze_state = DOZE_STATE_DOZE;
+
+	dsim_info("%s: --\n", __func__);
+
+	return 0;
+}
+
+static int dsim_doze_suspend(struct dsim_device *dsim)
+{
+	if (dsim->state == DSIM_STATE_SUSPEND)
+		goto exit;
+
+	dsim_info("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
+
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+	dsim_pkt_go_enable(dsim, false);
+#endif
+	dsim_set_lcd_full_screen(dsim);
+
+	if (dsim->doze_state == DOZE_STATE_NORMAL)
+		//call_panel_ops(dsim, enteralpm, dsim);
+
+	dsim->doze_state = DOZE_STATE_DOZE_SUSPEND;
+
+	/* Wait for current read & write CMDs. */
+	mutex_lock(&dsim_rd_wr_mutex);
+	dsim->state = DSIM_STATE_SUSPEND;
+	mutex_unlock(&dsim_rd_wr_mutex);
+
+	disable_irq(dsim->irq);
+	dsim_reg_stop(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane);
+	phy_power_off(dsim->phy);
+
+#if defined(CONFIG_PM)
+	pm_runtime_put_sync(dsim->dev);
+#else
+	dsim_runtime_suspend(dsim->dev);
+#endif
+
+exit:
+	dsim_info("%s: --\n", __func__);
+	return 0;
+}
+#endif
 
 static int dsim_enter_ulps(struct dsim_device *dsim)
 {
@@ -919,11 +1066,28 @@ static struct dsim_device *sd_to_dsim(struct v4l2_subdev *sd)
 static int dsim_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct dsim_device *dsim = sd_to_dsim(sd);
+	int ret = 0;
 
-	if (enable)
-		return dsim_enable(dsim);
-	else
-		return dsim_disable(dsim);
+	switch (enable) {
+	case DSIM_REQ_POWER_OFF:
+		ret = dsim_disable(dsim);
+		break;
+	case DSIM_REQ_POWER_ON:
+		ret = dsim_enable(dsim);
+		break;
+#ifdef CONFIG_LCD_DOZE_MODE
+	case DSIM_REQ_DOZE_MODE:
+		dsim_info("decon: dsim_doze_enable\n");
+		ret = dsim_doze_enable(dsim);
+		break;
+	case DSIM_REQ_DOZE_SUSPEND:
+		dsim_info("decon: dsim_doze_suspend\n");
+		ret = dsim_doze_suspend(dsim);
+		break;
+#endif
+	}
+
+	return ret;
 }
 
 static long dsim_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
@@ -1286,6 +1450,7 @@ static int dsim_probe(struct platform_device *pdev)
 	dsim_dbg("using data lane count(%d)\n", dsim->data_lane_cnt);
 
 	dsim_parse_lcd_info(dsim);
+
 	/* added */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
@@ -1390,7 +1555,17 @@ static int dsim_probe(struct platform_device *pdev)
 			goto dsim_init_done;
 
 	/* Panel power on */
-	dsim_set_panel_power(dsim, 1);
+	ret = dsim_set_panel_pre_power(dsim);
+	if (ret) {
+		dsim_err("%s : failed to panel power early\n", __func__);
+		goto err;
+	}
+
+	ret = dsim_set_panel_power(dsim, 1);
+	if (ret) {
+		dsim_err("%s: failed to panel power\n", __func__);
+		goto err;
+	}
 	dsim_reset_panel(dsim);
 
 dsim_init_done:
