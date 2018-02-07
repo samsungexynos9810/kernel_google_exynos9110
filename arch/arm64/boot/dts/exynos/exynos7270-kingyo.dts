@@ -68,6 +68,8 @@
 		supports-cmd23;
 		supports-erase;
 		supports-hs400-enhanced-strobe;
+		mmc_pwr_suspend;
+		mmc_pwr_shut_down;
 		enable-ulp-mode;
 		use-fine-tuning;
 		only_once_tune;
@@ -97,12 +99,14 @@
 			"fast-slew-rate-1x",
 			"fast-slew-rate-2x",
 			"fast-slew-rate-3x",
-			"fast-slew-rate-4x";
+			"fast-slew-rate-4x",
+			"pdn-default";
 		pinctrl-0 = <&sd0_clk &sd0_cmd &sd0_rdqs &sd0_bus1 &sd0_bus4 &sd0_bus8>;
 		pinctrl-1 = <&sd0_clk_fast_slew_rate_1x>;
 		pinctrl-2 = <&sd0_clk_fast_slew_rate_2x>;
 		pinctrl-3 = <&sd0_clk_fast_slew_rate_3x>;
 		pinctrl-4 = <&sd0_clk_fast_slew_rate_4x>;
+		pinctrl-5 = <&sd0_pdn_clk &sd0_pdn_cmd &sd0_pdn_rdqs &sd0_pdn_bus1 &sd0_pdn_bus4 &sd0_pdn_bus8>;
 		slot@0 {
 			reg = <0>;
 			bus-width = <8>;
@@ -116,7 +120,7 @@
 		supports-cmd23;
 		supports-erase;
 		clock-gate;
-		fixed_volt;
+		fixed_voltage;
 		supports-highspeed;
 //		only_once_tune;
 		enable-cclk-on-suspend;
@@ -349,21 +353,17 @@
 				};
 
 				ldo8_reg: LDO8 {
-					regulator-name = "vdd_ldo8";
+					regulator-name = "vqemmc";
 					regulator-min-microvolt = <1500000>;
 					regulator-max-microvolt = <2000000>;
-					regulator-always-on;
-					regulator-boot-on;
 					regulator-initial-mode = <0>;
 					regulator-ramp-delay = <12000>;
 				};
 
 				ldo9_reg: LDO9 {
-					regulator-name = "vdd_ldo9";
+					regulator-name = "vemmc";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-always-on;
-					regulator-boot-on;
 					regulator-initial-mode = <0>;
 					regulator-ramp-delay = <12000>;
 				};
@@ -449,7 +449,7 @@
 				};
 
 				ldo19_reg: LDO19 {
-					regulator-name = "vdd_ldo19";
+					regulator-name = "vqmmc";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
 					regulator-ramp-delay = <12000>;

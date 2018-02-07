@@ -1970,14 +1970,16 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
-		if (!IS_ERR(mmc->supply.vmmc)) {
-			ret = mmc_regulator_set_ocr(mmc, mmc->supply.vmmc,
-					ios->vdd);
-			if (ret) {
-				dev_err(slot->host->dev,
-					"failed to enable vmmc regulator\n");
-				/*return, if failed turn on vmmc*/
-				return;
+		if (!(slot->host->quirks & DW_MMC_QUIRK_FIXED_VOLTAGE)) {
+			if (!IS_ERR(mmc->supply.vmmc)) {
+				ret = mmc_regulator_set_ocr(mmc, mmc->supply.vmmc,
+						ios->vdd);
+				if (ret) {
+					dev_err(slot->host->dev,
+							"failed to enable vmmc regulator\n");
+					/*return, if failed turn on vmmc*/
+					return;
+				}
 			}
 		}
 		set_bit(DW_MMC_CARD_NEED_INIT, &slot->flags);
@@ -1986,43 +1988,45 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		mci_writel(slot->host, PWREN, regs);
 		break;
 	case MMC_POWER_ON:
-		if (!slot->host->vqmmc_enabled) {
-			if (!IS_ERR(mmc->supply.vqmmc)) {
-				ret = regulator_enable(mmc->supply.vqmmc);
-				if (ret < 0)
-					dev_err(slot->host->dev,
-						"failed to enable vqmmc\n");
-				else
+		if (!(slot->host->quirks & DW_MMC_QUIRK_FIXED_VOLTAGE)) {
+			if (!slot->host->vqmmc_enabled) {
+				if (!IS_ERR(mmc->supply.vqmmc)) {
+					ret = regulator_enable(mmc->supply.vqmmc);
+					if (ret < 0)
+						dev_err(slot->host->dev,
+								"failed to enable vqmmc\n");
+					else
+						slot->host->vqmmc_enabled = true;
+
+				} else {
+					/* Keep track so we don't reset again */
 					slot->host->vqmmc_enabled = true;
+				}
 
-			} else {
-				/* Keep track so we don't reset again */
-				slot->host->vqmmc_enabled = true;
+				/* Reset our state machine after powering on */
+				dw_mci_ctrl_reset(slot->host,
+						SDMMC_CTRL_ALL_RESET_FLAGS);
 			}
-
-			/* Reset our state machine after powering on */
-			dw_mci_ctrl_reset(slot->host,
-					  SDMMC_CTRL_ALL_RESET_FLAGS);
 		}
-
 		/* Adjust clock / bus width after power is up */
 		dw_mci_setup_bus(slot, false);
 
 		break;
 	case MMC_POWER_OFF:
-		/* Turn clock off before power goes down */
-		dw_mci_setup_bus(slot, false);
+		if (!(slot->host->quirks & DW_MMC_QUIRK_FIXED_VOLTAGE)) {
+			/* Turn clock off before power goes down */
+			dw_mci_setup_bus(slot, false);
 
-		if (!IS_ERR(mmc->supply.vmmc))
-			mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
+			if (!IS_ERR(mmc->supply.vmmc))
+				mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
+			if (!IS_ERR(mmc->supply.vqmmc) && slot->host->vqmmc_enabled)
+				regulator_disable(mmc->supply.vqmmc);
+			slot->host->vqmmc_enabled = false;
 
-		if (!IS_ERR(mmc->supply.vqmmc) && slot->host->vqmmc_enabled)
-			regulator_disable(mmc->supply.vqmmc);
-		slot->host->vqmmc_enabled = false;
-
-		regs = mci_readl(slot->host, PWREN);
-		regs &= ~(1 << slot->id);
-		mci_writel(slot->host, PWREN, regs);
+			regs = mci_readl(slot->host, PWREN);
+			regs &= ~(1 << slot->id);
+			mci_writel(slot->host, PWREN, regs);
+		}
 		break;
 	default:
 		break;
@@ -2291,6 +2295,7 @@ static void dw_mci_emmc_pwr_control(struct mmc_host *mmc, unsigned int power_mod
 	int ret;
 	struct dw_mci_slot *slot = mmc_priv(mmc);
 	struct dw_mci *host = slot->host;
+	struct dw_mci_exynos_priv_data *priv = host->priv;
 
 	dev_info(host->dev,"emmc power ctrl call : %d (0 = off, 1, = up) \n",power_mode);
 	switch(power_mode){
@@ -2305,8 +2310,15 @@ static void dw_mci_emmc_pwr_control(struct mmc_host *mmc, unsigned int power_mod
 				if (ret)
 					dev_info(host->dev,"vqemmc regulators enable failed\n");
 			}
+
+			if (priv->pinctrl && priv->clk_drive_base)
+				pinctrl_select_state(priv->pinctrl, priv->clk_drive_base);
+
 			break;
 		case MMC_POWER_OFF:
+			if (priv->pinctrl && priv->clk_drive_pdn)
+				pinctrl_select_state(priv->pinctrl, priv->clk_drive_pdn);
+
 			if (regulator_is_enabled(host->vemmc)) {
 				ret = regulator_disable(host->vemmc);
 				if (ret)
@@ -3585,9 +3597,11 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	}
 
 	/*if there are external regulators, get them*/
-	ret = mmc_regulator_get_supply(mmc);
-	if (ret == -EPROBE_DEFER)
-		goto err_host_allocated;
+	if (!(host->quirks & DW_MMC_QUIRK_FIXED_VOLTAGE)) {
+		ret = mmc_regulator_get_supply(mmc);
+		if (ret == -EPROBE_DEFER)
+			goto err_host_allocated;
+	}
 
 	if (!mmc->ocr_avail)
 		mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
@@ -4094,7 +4108,6 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 		pdata->caps2 |= MMC_CAP2_CD_ACTIVE_HIGH;
 	if (of_find_property(np, "card-detect-gpio", NULL))
 		pdata->cd_type = DW_MCI_CD_GPIO;
-
 #ifdef CONFIG_MMC_DW_EXYNOS_EMMC_POWERCTRL
 	if (of_find_property(np, "mmc_pwr_shut_down", NULL))
 		pdata->caps2 |= MMC_CAP2_PWR_SHUT_DOWN;
@@ -4102,18 +4115,20 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "mmc_pwr_suspend", NULL))
 		pdata->caps2 |= MMC_CAP2_PWR_SUSPEND;
 
-	/* enable once to prevent power off use_cnt 0 regulators */
-	host->vemmc = devm_regulator_get_optional(dev, "vemmc");
-	if (!IS_ERR(host->vemmc)) {
-		ret = regulator_enable(host->vemmc);
-		if (ret)
-			dev_info(host->dev,"vemmc regulators failed\n");
-	}
-	host->vqemmc = devm_regulator_get_optional(dev, "vqemmc");
-	if (!IS_ERR(host->vqemmc)) {
-		ret = regulator_enable(host->vqemmc);
-		if (ret)
-			dev_info(host->dev,"vqemmc regulators failed\n");
+	if (pdata->caps2 & MMC_CAP2_PWR_SHUT_DOWN || pdata->caps2 & MMC_CAP2_PWR_SUSPEND) {
+		/* enable once to prevent power off use_cnt 0 regulators */
+		host->vemmc = devm_regulator_get_optional(dev, "vemmc");
+		if (!IS_ERR(host->vemmc)) {
+			ret = regulator_enable(host->vemmc);
+			if (ret)
+				dev_info(host->dev,"vemmc regulators failed\n");
+		}
+		host->vqemmc = devm_regulator_get_optional(dev, "vqemmc");
+		if (!IS_ERR(host->vqemmc)) {
+			ret = regulator_enable(host->vqemmc);
+			if (ret)
+				dev_info(host->dev,"vqemmc regulators failed\n");
+		}
 	}
 #endif
 	return pdata;
@@ -4453,10 +4468,11 @@ int dw_mci_probe(struct dw_mci *host)
 		goto err_workqueue;
 	}
 
-	 if (drv_data && drv_data->misc_control
-			 && host->pdata->cd_type == DW_MCI_CD_GPIO)
-		 drv_data->misc_control(host, CTRL_REQUEST_EXT_IRQ,
-				 dw_mci_detect_interrupt);
+	if (drv_data && drv_data->misc_control) {
+		if (host->pdata->cd_type == DW_MCI_CD_GPIO)
+			drv_data->misc_control(host, CTRL_REQUEST_EXT_IRQ,
+					dw_mci_detect_interrupt);
+	}
 
 	 if(host->pdata->cd_type == DW_MCI_CD_INTERNAL) {
 		 /* Now that slots are all setup, we can enable card detect */

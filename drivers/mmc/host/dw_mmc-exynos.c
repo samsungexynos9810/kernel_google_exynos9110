@@ -627,6 +627,12 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 		}
 	}
 
+#ifdef CONFIG_MMC_DW_EXYNOS_EMMC_POWERCTRL
+		priv->clk_drive_pdn = pinctrl_lookup_state(priv->pinctrl, "pdn-default");
+		if (IS_ERR(priv->clk_drive_pdn))
+			priv->clk_drive_pdn = NULL;
+#endif
+
 	of_property_read_u32(np, "samsung,dw-mshc-ciu-div", &div);
 	priv->ciu_div = div;
 

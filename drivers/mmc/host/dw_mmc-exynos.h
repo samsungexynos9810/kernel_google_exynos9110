@@ -43,6 +43,7 @@ struct dw_mci_exynos_priv_data {
 	u32			clk_drive_tuning;
 	struct pinctrl_state	*clk_drive_base;
 	struct pinctrl_state	*clk_drive_str[6];
+	struct pinctrl_state	*clk_drive_pdn;
 	int			cd_gpio;
 	u32			caps;
 	u32			ctrl_flag;
