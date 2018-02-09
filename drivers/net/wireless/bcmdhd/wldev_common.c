@@ -418,56 +418,6 @@ int wldev_get_mode(
 int wldev_set_country(
 	struct net_device *dev, char *country_code, bool notify, bool user_enforced, int revinfo)
 {
-	int error = -1;
-	wl_country_t cspec = {{0}, 0, {0}};
-	scb_val_t scbval;
-	char smbuf[WLC_IOCTL_SMLEN];
-	struct wireless_dev *wdev = ndev_to_wdev(dev);
-	struct wiphy *wiphy = wdev->wiphy;
-	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
-
-	if (!country_code)
-		return error;
-
-	bzero(&scbval, sizeof(scb_val_t));
-	error = wldev_iovar_getbuf(dev, "country", NULL, 0, &cspec, sizeof(cspec), NULL);
-	if (error < 0) {
-		WLDEV_ERROR(("%s: get country failed = %d\n", __FUNCTION__, error));
-		return error;
-	}
-
-	if ((error < 0) ||
-#ifdef OEM_ANDROID
-		dhd_force_country_change(dev) ||
-#endif /* OEM_ANDROID */
-	    (strncmp(country_code, cspec.ccode, WLC_CNTRY_BUF_SZ) != 0)) {
-
-		if ((user_enforced) && (wl_get_drv_status(cfg, CONNECTED, dev))) {
-			bzero(&scbval, sizeof(scb_val_t));
-			error = wldev_ioctl(dev, WLC_DISASSOC, &scbval, sizeof(scb_val_t), true);
-			if (error < 0) {
-				WLDEV_ERROR(("%s: set country failed due to Disassoc error %d\n",
-					__FUNCTION__, error));
-				return error;
-			}
-		}
-
-		wl_cfg80211_scan_abort(cfg);
-
-		cspec.rev = revinfo;
-		memcpy(cspec.country_abbrev, country_code, WLC_CNTRY_BUF_SZ);
-		memcpy(cspec.ccode, country_code, WLC_CNTRY_BUF_SZ);
-		dhd_get_customized_country_code(dev, (char *)&cspec.country_abbrev, &cspec);
-		error = wldev_iovar_setbuf(dev, "country", &cspec, sizeof(cspec),
-			smbuf, sizeof(smbuf), NULL);
-		if (error < 0) {
-			WLDEV_ERROR(("%s: set country for %s as %s rev %d failed\n",
-				__FUNCTION__, country_code, cspec.ccode, cspec.rev));
-			return error;
-		}
-		dhd_bus_country_set(dev, &cspec, notify);
-		WLDEV_INFO(("%s: set country for %s as %s rev %d\n",
-			__FUNCTION__, country_code, cspec.ccode, cspec.rev));
-	}
-	return 0;
+	WLDEV_ERROR(("%s: not supported\n", __FUNCTION__));
+	return BCME_UNSUPPORTED;
 }
