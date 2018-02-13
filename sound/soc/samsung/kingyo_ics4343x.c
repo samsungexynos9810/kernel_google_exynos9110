@@ -70,8 +70,8 @@
  * this machine driver layer.
  */
 
- int MicGain = 1;
-int IDVol = 16;
+int MicGain = 8;
+int IDVol = 192;
 module_param(MicGain, int, S_IRUGO|S_IWUSR);
 module_param(IDVol, int, S_IRUGO|S_IWUSR);
 
