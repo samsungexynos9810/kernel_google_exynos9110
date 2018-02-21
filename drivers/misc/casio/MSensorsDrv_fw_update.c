@@ -89,20 +89,14 @@ static void get_msensors_version(void)
 
 static int need_update(struct Msensors_state *st, uint8_t *data, size_t size)
 {
-	uint8_t maj, min, rev;
-
-#if 0	// no compress
-	maj = data[36];
-	min = data[37];
-	rev = data[38];
-#else
-	maj = data[4];
-	min = data[5];
-	rev = data[6];
-#endif
-
-	if (st->fw.maj_ver == maj && st->fw.min_ver == min
-			&& st->fw.revision == rev) {
+	/*
+	 * From subcpu-fw ver 15.03.00, endian of version number in
+	 * sub-psoc.bin was changed from big to little. For compatibility,
+	 * check both endian.
+	 */
+	if (((st->fw.maj_ver == data[4] && st->fw.revision == data[6]) ||
+		(st->fw.maj_ver == data[6] && st->fw.revision == data[4])) &&
+		st->fw.min_ver == data[5]) {
 		dev_info(&st->sdev->dev, "subcpu FW is up-to-date\n");
 		return 0;
 	} else {
