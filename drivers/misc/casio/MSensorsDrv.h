@@ -89,7 +89,8 @@
 #define SUB_COM_GETID_STEP_YESTERDAY	(0x0b)
 #define SUB_COM_GETID_BATTERY_LOG_START	(0x0c)
 #define SUB_COM_GETID_BATTERY_LOG_GET_DATA	(0x0d)
-#define SUB_COM_GETID_NUM	(0x0e)	/* Number of GETIDs */
+#define SUB_COM_GETID_RTC_DATE_TIME		(0x0e)
+#define SUB_COM_GETID_NUM	(0x0f)	/* Number of GETIDs */
 
 #define MSENSORS_TYPE_META			(0x00)		/* Sensor Type Meta */
 #define MSENSORS_TYPE_ACCELEROMETER		(0x01)		/* Sensor Type Accelerometer */
@@ -108,12 +109,6 @@
 #define SUB_COM_HEAD_INDEX_TYPE			(0x00)		/* HEADER Information Index Type */
 #define SUB_COM_HEAD_INDEX_PACKET		(0x01)		/* HEADER Information Index Packet */
 #define SUB_COM_HEAD_INDEX_ALART		(0x02)		/* HEADER Information Index Alart */
-#define SUB_COM_HEAD_INDEX_RTC			(0x03)		/* HEADER Information Index RTC */
-#define SUB_COM_HEAD_INDEX_TEMP			(0x08)		/* HEADER Information Index Temperature */
-#define SUB_COM_HEAD_INDEX_BATT_PAR		(0x0C)		/* HEADER Information Index Battery % */
-#define SUB_COM_HEAD_INDEX_USB_STAT		(0x0E)		/* HEADER Information Index USB Status */
-
-#define SUB_COM_HEAD_SIZE_RTC			(0x05)		/* HEADER Information Size RTC */
 
 #define SUB_COM_TYPE_SIZE			(0x01)		/* Type Size */
 #define SUB_COM_ID_SIZE				(0x01)		/* ID Size */

@@ -905,14 +905,24 @@ void SUB_VibratorSet(int timeout)
 
 int SUBCPU_rtc_read_time(uint8_t *data)
 {
-	data[RTC_YEAR]  = (uint8_t)(HeaderData[3] >> 1);
-	data[RTC_MONTH] = (uint8_t)(((HeaderData[3] & 0x01) << 3) |
-			                    ((HeaderData[4] & 0xE0) >> 5));
-	data[RTC_DATE]  = (uint8_t)(HeaderData[4] & 0x1F);
-	data[RTC_WEEKDAY] = BIT((uint8_t)(HeaderData[5] >> 5));
-	data[RTC_HOUR]  = (uint8_t)(HeaderData[5] & 0x1F);
-	data[RTC_MIN]   = HeaderData[6];
-	data[RTC_SEC]   = HeaderData[7];
+	uint8_t *p;
+	uint32_t version;
+
+	version = g_st->fw.maj_ver << 16 | g_st->fw.min_ver << 8 | g_st->fw.revision;
+	if (version >= 0x150a00) {
+		sub_read_command(SUB_COM_GETID_RTC_DATE_TIME);
+		p = SubReadData;
+	} else {
+		p = &HeaderData[3];
+	}
+	data[RTC_YEAR]  = (uint8_t)(p[0] >> 1);
+	data[RTC_MONTH] = (uint8_t)(((p[0] & 0x01) << 3) |
+			                    ((p[1] & 0xE0) >> 5));
+	data[RTC_DATE]  = (uint8_t)(p[1] & 0x1F);
+	data[RTC_WEEKDAY] = BIT((uint8_t)(p[2] >> 5));
+	data[RTC_HOUR]  = (uint8_t)(p[2] & 0x1F);
+	data[RTC_MIN]   = p[3];
+	data[RTC_SEC]   = p[4];
 
 	return 0;
 }
