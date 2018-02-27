@@ -26,6 +26,7 @@
 #include <linux/power_supply.h>
 #include <linux/mfd/samsung/rtc-s2mp.h>
 #include <linux/wakelock.h>
+#include <linux/proc_fs.h>
 
 #include "subcpu_battery.h"
 #include "MSensorsDrv.h"
@@ -686,6 +687,26 @@ static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)
 	return IRQ_HANDLED;
 }
 
+static int subcpu_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "Ver %02x.%02x.%02x\n",
+		g_st->fw.maj_ver, g_st->fw.min_ver,  g_st->fw.revision);
+	return 0;
+}
+
+static int subcpu_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, subcpu_proc_show, PDE_DATA(inode));
+}
+
+static const struct file_operations subcpu_proc_fops = {
+	.owner		= THIS_MODULE,
+	.open		= subcpu_proc_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
 static int Msensors_probe(struct spi_device *spi)
 {
 	int ret, err;
@@ -781,6 +802,9 @@ static int Msensors_probe(struct spi_device *spi)
 #ifdef CFG_SUBCPU_LOG
 	get_subcpu_log();
 #endif
+
+	proc_create_data("subcpu", S_IRUGO, NULL, &subcpu_proc_fops, NULL);
+
 	dev_dbg(&spi->dev, "Msensors_probe End\n");
 	return 0;
 
