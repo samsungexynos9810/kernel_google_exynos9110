@@ -2284,6 +2284,11 @@ windows_config:
 		bool enabled = 0;
 		u32 color_map = WIN_MAP_MAP | WIN_MAP_MAP_COLOUR(0);
 
+		/* INSERT REVERSE FUNCTION */
+		//printk(KERN_INFO "SRC:%d,%d,%d,%d DST:%d,%d,%d,%d\n", config->src.w, config->src.h, config->src.x, config->src.y, config->dst.w, config->dst.h, config->dst.x, config->dst.y);
+		config->dst.x = decon->lcd_info->xres - (config->dst.x+config->dst.w);
+		config->dst.y = decon->lcd_info->yres - (config->dst.y+config->dst.h);
+
 		if (does_layer_need_scale(config)) {
 			decon_err("ERROR: layer(%d) needs scaling"
 				"(%d,%d) -> (%d,%d)\n", i,
@@ -2339,6 +2344,10 @@ windows_config:
 		regs->wincon[i] |= WINCON_BURSTLEN_16WORD;
 
 		regs->winmap[i] = color_map;
+
+		/* INSERT REVERSE FUNCTION */
+		for (i = 0; i < decon->pdata->max_win; i++)
+			regs->wincon[i] |= 0x03000000;
 
 		if (enabled && config->state == DECON_WIN_STATE_BUFFER) {
 			/* Actual width, height are used in calculation of bw */
