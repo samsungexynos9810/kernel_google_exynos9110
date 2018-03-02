@@ -90,7 +90,8 @@
 #define SUB_COM_GETID_BATTERY_LOG_START	(0x0c)
 #define SUB_COM_GETID_BATTERY_LOG_GET_DATA	(0x0d)
 #define SUB_COM_GETID_RTC_DATE_TIME		(0x0e)
-#define SUB_COM_GETID_NUM	(0x0f)	/* Number of GETIDs */
+#define SUB_COM_GETID_FG_VER	(0x0f)
+#define SUB_COM_GETID_NUM	(0x10)	/* Number of GETIDs */
 
 #define MSENSORS_TYPE_META			(0x00)		/* Sensor Type Meta */
 #define MSENSORS_TYPE_ACCELEROMETER		(0x01)		/* Sensor Type Accelerometer */
