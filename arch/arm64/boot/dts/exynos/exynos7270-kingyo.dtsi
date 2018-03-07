@@ -524,7 +524,7 @@
 		pinctrl-0 = <&i2c2_bus>;
 		clocks = <&clock 311>, <&clock 311>;
 		clock-names = "rate_i2c", "gate_i2c";
-		status = "disabled";
+		status = "okay";
 	};
 
 	/* I2C3 Touch */
