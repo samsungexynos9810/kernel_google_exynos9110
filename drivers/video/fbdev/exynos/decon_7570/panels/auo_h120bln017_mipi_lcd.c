@@ -44,6 +44,11 @@ static int auo_h120bln017_set_brightness(struct backlight_device *bd)
 	}
 
 #ifdef CONFIG_BACKLIGHT_SUBCPU
+	if (brightness == 0) {
+		if (!(bd->props.state & BL_CORE_FBBLANK))
+			brightness = 1;
+	}
+
 	if (brightness > 0)
 		SUB_LCDBrightnessSet((brightness >> 4) + 1);
 	else
@@ -70,6 +75,7 @@ static int auo_h120bln017_probe(struct dsim_device *dsim)
 
 	bd->props.max_brightness = MAX_BRIGHTNESS;
 	bd->props.brightness = DEFAULT_BRIGHTNESS;
+	bd->props.state = BL_CORE_FBBLANK;
 
 	return 0;
 }
