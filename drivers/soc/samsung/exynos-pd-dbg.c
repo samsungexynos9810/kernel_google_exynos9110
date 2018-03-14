@@ -261,14 +261,14 @@ static int exynos_pd_dbg_remove(struct platform_device *pdev)
 
 static int exynos_pd_dbg_runtime_suspend(struct device *dev)
 {
-	pr_info("%s %s's Runtime_Suspend\n",
+	pr_debug("%s %s's Runtime_Suspend\n",
 			EXYNOS_PD_DBG_PREFIX, dev_name(dev));
 	return 0;
 }
 
 static int exynos_pd_dbg_runtime_resume(struct device *dev)
 {
-	pr_info("%s %s's Runtime_Resume\n",
+	pr_debug("%s %s's Runtime_Resume\n",
 			EXYNOS_PD_DBG_PREFIX, dev_name(dev));
 	return 0;
 }

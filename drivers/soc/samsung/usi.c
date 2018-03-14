@@ -110,7 +110,7 @@ static int usi_resume_noirq(struct device *dev)
 
 	if (data->mode && data->base) {
 		writel(data->mode, data->base);
-		dev_info(&pdev->dev, "%s mode:%d\n", __func__, data->mode);
+		dev_dbg(&pdev->dev, "%s mode:%d\n", __func__, data->mode);
 		ret = 0;
 	} else {
 		dev_err(&pdev->dev, "%s wrong usi data\n", __func__);

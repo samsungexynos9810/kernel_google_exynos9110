@@ -444,10 +444,6 @@ static int s2mpw01_resume(struct device *dev)
 	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
 	struct s2mpw01_dev *s2mpw01 = i2c_get_clientdata(i2c);
 
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-	dev_info(dev, "%s()\n", __func__);
-#endif /* CONFIG_SAMSUNG_PRODUCT_SHIP */
-
 	if (device_may_wakeup(dev))
 		disable_irq_wake(s2mpw01->irq);
 

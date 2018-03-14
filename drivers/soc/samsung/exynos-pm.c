@@ -101,19 +101,6 @@ static void exynos_show_wakeup_reason_eint(void)
 		pr_info("%s Resume caused by unknown EINT\n", EXYNOS_PM_PREFIX);
 }
 
-static void exynos_show_wakeup_registers(unsigned long wakeup_stat)
-{
-	int i, size;
-
-	pr_info("WAKEUP_STAT: 0x%08lx\n", wakeup_stat);
-
-	pr_info("EINT_PEND: ");
-	for (i = 0, size = 8; i < pm_info->num_eint; i += size)
-		pr_info("0x%02x ", __raw_readl(EXYNOS_EINT_PEND(pm_info->eint_base, i)));
-
-	pr_info("\n");
-}
-
 static void exynos_show_wakeup_reason(bool sleep_abort)
 {
 	unsigned int wakeup_stat;
@@ -135,8 +122,6 @@ static void exynos_show_wakeup_reason(bool sleep_abort)
 	}
 
 	exynos_pmu_read(EXYNOS_PMU_WAKEUP_STAT, &wakeup_stat);
-
-	exynos_show_wakeup_registers(wakeup_stat);
 
 	if (wakeup_stat & WAKEUP_STAT_RTC_ALARM)
 		pr_info("%s Resume caused by RTC alarm\n", EXYNOS_PM_PREFIX);
@@ -255,11 +240,11 @@ static int exynos_pm_syscore_suspend(void)
 	pm_info->is_cp_call = is_cp_aud_enabled();
 	if (pm_info->is_cp_call || pm_dbg->test_cp_call) {
 		exynos_prepare_sys_powerdown(pm_info->cp_call_mode_idx, true);
-		pr_info("%s %s: Enter CP Call scenario. (mode_idx = %d)\n",
+		pr_debug("%s %s: Enter CP Call scenario. (mode_idx = %d)\n",
 				EXYNOS_PM_PREFIX, __func__, pm_info->cp_call_mode_idx);
 	} else {
 		exynos_prepare_sys_powerdown(pm_info->suspend_mode_idx, true);
-		pr_info("%s %s: Enter Suspend scenario. (mode_idx = %d)\n",
+		pr_debug("%s %s: Enter Suspend scenario. (mode_idx = %d)\n",
 				EXYNOS_PM_PREFIX,__func__, pm_info->suspend_mode_idx);
 	}
 

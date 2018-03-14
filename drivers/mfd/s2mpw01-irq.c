@@ -184,7 +184,7 @@ static void s2mpw01_irq_unmask(struct irq_data *data)
 
 	s2mpw01->irq_masks_cur[irq_data->group] &= ~irq_data->mask;
 
-	pr_info("%s : topoff_status %d, irq_masks_cur[3] 0x%x\n", __func__,
+	pr_debug("%s : topoff_status %d, irq_masks_cur[3] 0x%x\n", __func__,
 		s2mpw01->topoff_mask_status, s2mpw01->irq_masks_cur[3]);
 
 	if (s2mpw01->topoff_mask_status == 0)
@@ -219,7 +219,7 @@ static irqreturn_t s2mpw01_irq_thread(int irq, void *data)
 		return IRQ_NONE;
 	}
 
-	dev_info(dev, "%s() intrrupt source(0x%02x)\n", __func__, irq_src);
+	dev_dbg(dev, "%s() intrrupt source(0x%02x)\n", __func__, irq_src);
 
 	if (irq_src & S2MPW01_IRQSRC_PMIC) {
 		/* PMIC_INT */
@@ -231,7 +231,7 @@ static irqreturn_t s2mpw01_irq_thread(int irq, void *data)
 			return IRQ_NONE;
 		}
 
-		dev_info(dev, "%s() pmic intrrupt(0x%02x, 0x%02x, 0x%02x)\n", __func__,
+		dev_dbg(dev, "%s() pmic intrrupt(0x%02x, 0x%02x, 0x%02x)\n", __func__,
 			irq_reg[PMIC_INT1], irq_reg[PMIC_INT2], irq_reg[PMIC_INT3]);
 #if defined(CONFIG_CHARGER_S2MPW01)
 		if ((irq_reg[PMIC_INT1] & 0x30) == 0x30) {

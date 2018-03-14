@@ -725,10 +725,10 @@ static unsigned long long _clk_pll1431x_get_rate(struct pwrcal_clk *clk)
 static int _clk_wpll_usbpll_is_enabled(struct pwrcal_clk *clk)
 {
 	if (pwrcal_getbit(clk->offset, USBPLL_WPLL_SEL) == 1) {
-		pr_err("%s: USBPLL_WPLL_SEL==1\n", __func__);
+		pr_debug("%s: USBPLL_WPLL_SEL==1\n", __func__);
 		return (int)(pwrcal_getbit(clk->offset, USBPLL_WPLL_EN));
 	}
-	pr_err("%s: USBPLL_WPLL_SEL==0\n", __func__);
+	pr_debug("%s: USBPLL_WPLL_SEL==0\n", __func__);
 	return (int)pwrcal_getbit(clk->status, WIFI2AP_USBPLL_ACK);
 }
 
@@ -738,10 +738,10 @@ static int _clk_wpll_usbpll_enable(struct pwrcal_clk *clk)
 
 	/* check changed WPLL input selection to AP (AP2WLBT_USBPLL_WPLL_SEL). */
 	if (pwrcal_getbit(clk->offset, USBPLL_WPLL_SEL) == 0x1) {
-		pr_info("%s AP %p\n", __func__, clk->offset);
+		pr_debug("%s AP %p\n", __func__, clk->offset);
 
 		if (pwrcal_getbit(clk->offset, USBPLL_WPLL_EN) == 0x1) {
-			pr_info("%s USBPLL_WPLL_EN==1\n", __func__);
+			pr_debug("%s USBPLL_WPLL_EN==1\n", __func__);
 			return 0;
 		}
 
