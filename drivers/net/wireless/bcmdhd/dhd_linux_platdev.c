@@ -269,7 +269,7 @@ int wifi_platform_bus_enumerate(wifi_adapter_info_t *adapter, bool device_presen
 		return -EINVAL;
 	}
 
-	DHD_ERROR(("%s device present %d\n", __FUNCTION__, device_present));
+	DHD_INFO(("%s device present %d\n", __FUNCTION__, device_present));
 
 	if (!adapter->wifi_plat_data) {
 		wifi_card_detect(device_present); /* hook for card_detect */
@@ -292,7 +292,7 @@ int wifi_platform_bus_enumerate(wifi_adapter_info_t *adapter, bool device_presen
 		return -EINVAL;
 	plat_data = adapter->wifi_plat_data;
 
-	DHD_ERROR(("%s device present %d\n", __FUNCTION__, device_present));
+	DHD_INFO(("%s device present %d\n", __FUNCTION__, device_present));
 	if (plat_data->set_carddetect) {
 		err = plat_data->set_carddetect(device_present);
 	}
@@ -305,7 +305,7 @@ int wifi_platform_get_mac_addr(wifi_adapter_info_t *adapter, unsigned char *buf)
 {
 	struct wifi_platform_data *plat_data;
 
-	DHD_ERROR(("%s\n", __FUNCTION__));
+	DHD_TRACE(("%s\n", __FUNCTION__));
 	if (!buf || !adapter || !adapter->wifi_plat_data)
 		return -EINVAL;
 	plat_data = adapter->wifi_plat_data;

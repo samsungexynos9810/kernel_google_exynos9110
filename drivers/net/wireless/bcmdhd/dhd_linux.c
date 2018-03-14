@@ -3221,7 +3221,7 @@ dhd_enable_packet_filter(int value, dhd_pub_t *dhd)
 {
 	int i;
 
-	DHD_ERROR(("%s: enter, value = %d\n", __FUNCTION__, value));
+	DHD_INFO(("%s: enter, value = %d\n", __FUNCTION__, value));
 	if ((dhd->op_mode & DHD_FLAG_HOSTAP_MODE) && value) {
 		DHD_ERROR(("%s: DHD_FLAG_HOSTAP_MODE\n", __FUNCTION__));
 		return;
@@ -3376,7 +3376,7 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 				dhd->early_suspended = 1;
 #endif
 				/* Kernel suspended */
-				DHD_ERROR(("%s: force extra suspend setting \n", __FUNCTION__));
+				DHD_INFO(("%s: force extra suspend setting \n", __FUNCTION__));
 
 #ifndef SUPPORT_PM2_ONLY
 				dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
@@ -3542,7 +3542,7 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 				dhd->early_suspended = 0;
 #endif
 				/* Kernel resumed  */
-				DHD_ERROR(("%s: Remove extra suspend setting \n", __FUNCTION__));
+				DHD_INFO(("%s: Remove extra suspend setting \n", __FUNCTION__));
 
 #ifdef SUPPORT_SENSORHUB
 				shub_ctl.enable = 1;
@@ -14199,7 +14199,7 @@ int net_os_rxfilter_add_remove(struct net_device *dev, int add_remove, int num)
 #ifndef GAN_LITE_NAT_KEEPALIVE_FILTER
 	dhd_info_t *dhd = DHD_DEV_INFO(dev);
 
-	DHD_ERROR(("%s: add_remove = %d, num = %d\n", __FUNCTION__, add_remove, num));
+	DHD_INFO(("%s: add_remove = %d, num = %d\n", __FUNCTION__, add_remove, num));
 	if (!dhd || (num == DHD_UNICAST_FILTER_NUM)) {
 		return 0;
 	}
@@ -14245,7 +14245,7 @@ int net_os_enable_packet_filter(struct net_device *dev, int val)
 {
 	dhd_info_t *dhd = DHD_DEV_INFO(dev);
 
-	DHD_ERROR(("%s: val = %d\n", __FUNCTION__, val));
+	DHD_INFO(("%s: val = %d\n", __FUNCTION__, val));
 	return dhd_os_enable_packet_filter(&dhd->pub, val);
 }
 #endif /* PKT_FILTER_SUPPORT */

@@ -220,7 +220,7 @@ bool ap_fw_loaded = FALSE;
 #define CHIPID_MISMATCH	8
 
 #if defined(DHD_VERSION_NO_DATE_TIME)
-const char dhd_version[] = "Dongle Host Driver, version " EPI_VERSION_STR	DHD_COMPILED;
+const char dhd_version[] = "Dongle Host Driver, version " EPI_VERSION_STR;
 #else
 #if defined(DHD_DEBUG)
 const char dhd_version[] = "Dongle Host Driver, version " EPI_VERSION_STR

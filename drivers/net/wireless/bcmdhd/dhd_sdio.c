@@ -5094,7 +5094,7 @@ dhd_bus_init(dhd_pub_t *dhdp, bool enforce_mutex)
 
 #endif /* !BCMSPI */
 
-	DHD_ERROR(("%s: enable 0x%02x, ready 0x%02x (waited %uus)\n",
+	DHD_INFO(("%s: enable 0x%02x, ready 0x%02x (waited %uus)\n",
 	          __FUNCTION__, enable, ready, tmo.elapsed));
 
 
@@ -8915,7 +8915,7 @@ dhdsdio_suspend(void *context)
 	dhd_bus_t *bus = (dhd_bus_t*)context;
 	unsigned long flags;
 
-	DHD_ERROR(("%s Enter\n", __FUNCTION__));
+	DHD_INFO(("%s Enter\n", __FUNCTION__));
 	if (bus->dhd == NULL) {
 		DHD_ERROR(("bus not inited\n"));
 		return BCME_ERROR;
@@ -8988,7 +8988,7 @@ dhdsdio_resume(void *context)
 	dhd_bus_t *bus = (dhd_bus_t*)context;
 	ulong flags;
 
-	DHD_ERROR(("%s Enter\n", __FUNCTION__));
+	DHD_INFO(("%s Enter\n", __FUNCTION__));
 
 	if (bus->dhd->up == FALSE) {
 		return BCME_OK;
