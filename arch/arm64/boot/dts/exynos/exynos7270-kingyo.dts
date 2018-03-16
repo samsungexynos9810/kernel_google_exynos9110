@@ -27,6 +27,25 @@
 		linux,initrd-end = <0x420FFFFF>;
 	};
 
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		ranges;
+
+		ramoops_reserved: ramoops@41f00000 {
+			reg = <0 0x41f00000 0x100000>;
+		};
+	};
+
+	ramoops {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		compatible = "ramoops";
+		record-size = <0 0x20000>;
+		console-size = <0 0x20000>;
+		memory-region = <&ramoops_reserved>;
+	};
+
 	fixed-rate-clocks {
 		oscclk {
 			compatible = "samsung,exynos7570-oscclk";
