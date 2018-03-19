@@ -693,6 +693,7 @@
 		status = "ok";
 	};
 
+#if 0
 	s1403x: s1403x@14880000 {
 		compatible = "samsung,s1403x";
 		reg = <0x0 0x14880000 0x200>;
@@ -704,6 +705,7 @@
 		samsung,lpass-subip;
 		status = "okay";
 	};
+#endif
 
 	i2s0: i2s@148A0000 {
 		compatible = "samsung,i2s-v5";

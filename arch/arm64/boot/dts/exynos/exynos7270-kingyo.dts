@@ -938,9 +938,6 @@
  * we should decide whether the audio mixer should be removed
  */ 
  
- 	s1403x: s1403x@14880000 {
-		status = "okay";
-	};
 
 	i2s0: i2s@148A0000 {
 		pinctrl-names = "default", "idle";
@@ -949,8 +946,12 @@
 		status = "okay";
 	};
 
-	/* sound */
+	lpass: lpass@148F0000 {
+		vdd_i2s-supply = <&ldo11_reg>;
+		status = "okay";
+	};
 
+	/* sound */
 	audio_codec: ics43432 {
 		compatible = "invensense,ics43432";
 		status = "okay";
@@ -958,12 +959,10 @@
 
 	sound {
 		compatible = "samsung,kingyo-4343X";
-		vdd_18-supply = <&ldo11_reg>;
 		clocks = <&clock 740>, <&clock 742>;
 		clock-names = "fout_aud_pll", "audmixer_dout";
 		samsung,audio-cpu = <&i2s0>;
 		samsung,audio-codec = <&audio_codec>;
-		samsung,auxdev = <&s1403x>;
 		status = "okay";
 	};
 
