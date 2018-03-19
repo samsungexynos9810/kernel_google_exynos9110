@@ -1350,7 +1350,7 @@ static int i2s_resume(struct snd_soc_dai *dai)
 
 	if (dai->active) {
 		i2s_reg_restore(i2s);
-		i2s_cfg_gpio(i2s, "default");
+		i2s_cfg_gpio(i2s, "active");
 	}
 
 	return 0;
@@ -1371,7 +1371,7 @@ static int i2s_resume_force(struct snd_soc_dai *dai)
 	struct i2s_dai *i2s = to_info(dai);
 
 	i2s_reg_restore(i2s);
-	i2s_cfg_gpio(i2s, "default");
+	i2s_cfg_gpio(i2s, "active");
 
 	return 0;
 }
@@ -1661,7 +1661,7 @@ static int i2s_runtime_resume(struct device *dev)
 	clk_prepare_enable(i2s->opclk1);
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
-	i2s_cfg_gpio(i2s, "default");
+	i2s_cfg_gpio(i2s, "active");
 
 	return 0;
 }
@@ -1705,7 +1705,7 @@ static int i2s_enable(struct device *dev)
 	clk_prepare_enable(i2s->opclk1);
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
-	i2s_cfg_gpio(i2s, "default");
+	i2s_cfg_gpio(i2s, "active");
 
 	return 0;
 }
