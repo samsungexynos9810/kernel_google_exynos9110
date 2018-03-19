@@ -21,6 +21,7 @@
 #include <linux/proc_fs.h>
 #include <linux/mfd/syscon.h>
 #include <linux/regmap.h>
+#include <linux/regulator/consumer.h>
 #include <soc/samsung/exynos-powermode.h>
 
 #include <sound/exynos.h>
@@ -32,6 +33,12 @@
 #endif
 #define dev_dbg dev_err
 #endif
+
+/*
+ * We must set i2s power must supply at first before startup of cpu_dai driver.
+ * i2s driver is general source so lpass driver should be modified than i2s driver.
+ */
+#define I2S_POWER_SUPPLY
 
 #define AUD_PLL_FREQ			(98304020U)
 #define AUD_MI2S_FREQ			(110000000U + 100)
@@ -96,6 +103,40 @@ struct subip_info {
 	atomic_t		use_cnt;
 	struct list_head	node;
 };
+
+
+#ifdef I2S_POWER_SUPPLY
+static struct regulator_bulk_data core_supplies[] = {
+	{
+	.supply = "vdd_i2s",
+	}
+};
+
+static int i2s_power_init(struct device *dev) {
+		int ret;
+		ret = devm_regulator_bulk_get(dev, 1, core_supplies);
+		if (ret != 0) {
+			dev_err(dev, "Failed to request core supplies: %d\n",ret);
+			return -ENOMEM;
+		}
+	return ret;
+}
+
+static void i2s_power_enable(struct device *dev) {
+	int ret;
+	ret = regulator_bulk_enable(ARRAY_SIZE(core_supplies), core_supplies);
+	if (ret != 0)
+		dev_err(dev, "Failed to enable supplies: %d\n", ret);
+}
+
+static void i2s_power_disable(struct device *dev) {
+	int ret;
+	ret = regulator_bulk_disable(ARRAY_SIZE(core_supplies), core_supplies);
+	if (ret != 0)
+		dev_err(dev, "Failed to disable supplies: %d\n", ret);
+}
+#endif
+
 
 static LIST_HEAD(reg_list);
 static LIST_HEAD(subip_list);
@@ -336,10 +377,16 @@ void lpass_get_sync(struct device *ip_dev)
 			atomic_inc(&lpass.use_cnt);
 			dev_dbg(ip_dev, "%s: %s (use:%d)\n", __func__,
 				si->name, atomic_read(&si->use_cnt));
+#ifdef CONFIG_PM_RUNTIME
 			pm_runtime_get_sync(&lpass.pdev->dev);
+#endif
+#ifdef I2S_POWER_SUPPLY
+			/* we must supply i2s power supply here */
+			if (atomic_read(&lpass.use_cnt) == 1)
+				i2s_power_enable(&lpass.pdev->dev);
+#endif
 		}
 	}
-
 	lpass_update_qos();
 }
 
@@ -353,7 +400,14 @@ void lpass_put_sync(struct device *ip_dev)
 			atomic_dec(&lpass.use_cnt);
 			dev_dbg(ip_dev, "%s: %s (use:%d)\n", __func__,
 				si->name, atomic_read(&si->use_cnt));
+#ifdef CONFIG_PM_RUNTIME
 			pm_runtime_put_sync(&lpass.pdev->dev);
+#endif
+#ifdef I2S_POWER_SUPPLY
+			/* we must supply i2s power supply here */
+			if (atomic_read(&lpass.use_cnt) == 0)
+				i2s_power_disable(&lpass.pdev->dev);
+#endif
 		}
 	}
 
@@ -615,6 +669,10 @@ static int lpass_probe(struct platform_device *pdev)
 		dev_err(dev, "SFR ioremap failed\n");
 		return -ENOMEM;
 	}
+
+#ifdef I2S_POWER_SUPPLY
+	if ( i2s_power_init(&pdev->dev)) return -ENOMEM;
+#endif
 
 	ret = lpass_set_clk_hierarchy(&pdev->dev);
 	if (ret) {
