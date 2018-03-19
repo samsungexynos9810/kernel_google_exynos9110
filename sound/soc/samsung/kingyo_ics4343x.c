@@ -65,6 +65,12 @@
 //#define DAI_DEFINE_BY_DTS
 
 /*
+ * We must move I2S IO power-supply from this card driver to cpu_dai driver(i2s)
+ * because i2s power must supply at first before startup of cpu_dai driver.
+ */
+//#define I2S_POWER_SUPPLY
+
+/*
  * The following paramters are set in bootloader. These paramters are no longer
  * used here, they are accessed by audio_fw.c in platform HAL layser throgh
  * this machine driver layer.
@@ -95,6 +101,7 @@ static struct snd_soc_dai_driver smdk7270_ext_dai[] = {
 };
 #endif
 
+#ifdef I2S_POWER_SUPPLY
 static struct regulator_bulk_data core_supplies[] = {
 	{
 	.supply = "vdd_18",
@@ -132,6 +139,7 @@ static void kingyo_aif_shutdown(struct snd_pcm_substream *substream)
 	}
 
 }
+#endif
 
 #ifndef CONFIG_SND_SAMSUNG_MIXER_COMPONENT
 static int set_mixer_clock(struct snd_soc_card *card)
@@ -248,8 +256,10 @@ static int kingyo_hw_params(struct snd_pcm_substream *substream,
 
 
 static struct snd_soc_ops kingyo_ops = {
+#ifdef I2S_POWER_SUPPLY
 	.startup = kingyo_aif_startup,
 	.shutdown = kingyo_aif_shutdown,
+#endif
 	.hw_params = kingyo_hw_params,
 };
 
@@ -305,15 +315,19 @@ static struct snd_soc_dai_link kingyo_dai[] = {
 };
 
 static int kingyo_probe(struct snd_soc_card *card) {
-	int ret;
 
 	gprintk("\n");
 
-	ret = devm_regulator_bulk_get(card->dev, 1, core_supplies);
-	if (ret != 0) {
-		dev_err(card->dev, "Failed to request core supplies: %d\n",ret);
-		return -ENOMEM;
+#ifdef I2S_POWER_SUPPLY
+	{
+		int ret;
+		ret = devm_regulator_bulk_get(card->dev, 1, core_supplies);
+		if (ret != 0) {
+			dev_err(card->dev, "Failed to request core supplies: %d\n",ret);
+			return -ENOMEM;
+		}
 	}
+#endif
 
 #ifndef CONFIG_SND_SAMSUNG_MIXER_COMPONENT
 	/* set CLK_DISPAUD_MIXER DIV_RATIO */
