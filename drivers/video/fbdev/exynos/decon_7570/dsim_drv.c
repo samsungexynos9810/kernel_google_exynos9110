@@ -1043,7 +1043,7 @@ static int dsim_doze_enable(struct dsim_device *dsim)
 
 	enable_irq(dsim->irq);
 
-	if (dsim->doze_state == DOZE_STATE_SUSPEND || dsim->doze_state == DOZE_STATE_DOZE_SUSPEND) {
+	if (dsim->doze_state == DOZE_STATE_SUSPEND) {
 		//call_panel_ops(dsim, enteralpm, dsim);
 		call_panel_ops(dsim, displayon, dsim);
 	}

@@ -2565,13 +2565,6 @@ int decon_doze_suspend(struct decon_device *decon)
 #endif
 	}
 
-	if (decon->out_type == DECON_OUT_DSI && decon->pdata->psr_mode == DECON_VIDEO_MODE) {
-		/* stop output device (mipi-dsi) */
-		ret = v4l2_subdev_call(decon->output_sd, video, s_stream, 0);
-		if (ret)
-			decon_err("stopping stream failed for %s\n", decon->output_sd->name);
-	}
-
 	decon_to_psr_info(decon, &psr);
 	decon_reg_stop(DECON_INT, decon->pdata->dsi_mode, &psr);
 	decon_reg_clear_int(DECON_INT);
@@ -2705,6 +2698,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		break;
 
 	case S3CFB_WIN_CONFIG:
+		decon_dbg("%s: S3CFB_WIN_CONFIG\n", __func__);
 		if (copy_from_user(&decon->ioctl_data.win_data,
 				   (struct decon_win_config_data __user *)arg,
 				   sizeof(decon->ioctl_data.win_data))) {
