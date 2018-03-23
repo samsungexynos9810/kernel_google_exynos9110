@@ -2346,8 +2346,7 @@ windows_config:
 		regs->winmap[i] = color_map;
 
 		/* INSERT REVERSE FUNCTION */
-		for (i = 0; i < decon->pdata->max_win; i++)
-			regs->wincon[i] |= 0x03000000;
+		regs->wincon[i] |= 0x03000000;
 
 		if (enabled && config->state == DECON_WIN_STATE_BUFFER) {
 			/* Actual width, height are used in calculation of bw */
