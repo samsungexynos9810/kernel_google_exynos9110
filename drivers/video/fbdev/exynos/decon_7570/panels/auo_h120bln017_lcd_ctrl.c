@@ -152,7 +152,7 @@ void auo_h120bln017_lcd_highbrightness_mode(int on)
 			dsim_err("********** failed to send cmd_hbm_on_1.\n");
 
 		reg_hbm_set[0] = 0x29;
-		reg_hbm_set[1] = 0x42;
+		reg_hbm_set[1] = 0x43;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
@@ -193,26 +193,19 @@ void auo_h120bln017_lcd_highbrightness_mode(int on)
 			ARRAY_SIZE(reg_hbm_set)) == -1)
 			dsim_err("********** failed to send cmd_hbm_on_7.\n");
 
-		reg_hbm_set[0] = 0x19;
-		reg_hbm_set[1] = 0x44;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_8.\n");
-
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x00;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_9.\n");
+			dsim_err("********** failed to send cmd_hbm_on_8.\n");
 
 		reg_hbm_set[0] = 0xB0;
 		reg_hbm_set[1] = 0x06;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_10.\n");
+			dsim_err("********** failed to send cmd_hbm_on_9.\n");
 
 		usleep_range(30000, 31000);
 
@@ -221,55 +214,106 @@ void auo_h120bln017_lcd_highbrightness_mode(int on)
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_11.\n");
+			dsim_err("********** failed to send cmd_hbm_on_10.\n");
 
 		reg_hbm_set[0] = 0x29;
 		reg_hbm_set[1] = 0x40;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_12.\n");
+			dsim_err("********** failed to send cmd_hbm_on_11.\n");
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x00;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_13.\n");
+			dsim_err("********** failed to send cmd_hbm_on_12.\n");
 	} else {
 		reg_hbm_set[0] = 0xFE;
-		reg_hbm_set[1] = 0x00;
+		reg_hbm_set[1] = 0x01;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
 			dsim_err("********** failed to send cmd_hbm_off_1.\n");
 
-		reg_hbm_set[0] = 0xB0;
-		reg_hbm_set[1] = 0x04;
+		reg_hbm_set[0] = 0x29;
+		reg_hbm_set[1] = 0x43;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
 			dsim_err("********** failed to send cmd_hbm_off_2.\n");
 
 		reg_hbm_set[0] = 0xFE;
-		reg_hbm_set[1] = 0x01;
+		reg_hbm_set[1] = 0x05;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
 			dsim_err("********** failed to send cmd_hbm_off_3.\n");
 
-		reg_hbm_set[0] = 0x25;
-		reg_hbm_set[1] = 0x03;
+		reg_hbm_set[0] = 0x2A;
+		reg_hbm_set[1] = 0x02;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
 			dsim_err("********** failed to send cmd_hbm_off_4.\n");
+
+		reg_hbm_set[0] = 0x30;
+		reg_hbm_set[1] = 0x41;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_5.\n");
+
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x01;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_6.\n");
+
+		reg_hbm_set[0] = 0x11;
+		reg_hbm_set[1] = 0x80;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_7.\n");
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x00;
 		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_5.\n");
+			dsim_err("********** failed to send cmd_hbm_off_8.\n");
+
+		reg_hbm_set[0] = 0xB0;
+		reg_hbm_set[1] = 0x04;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_9.\n");
+
+		usleep_range(30000, 31000);
+
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x01;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_10.\n");
+
+		reg_hbm_set[0] = 0x29;
+		reg_hbm_set[1] = 0x40;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_11.\n");
+
+		reg_hbm_set[0] = 0xFE;
+		reg_hbm_set[1] = 0x00;
+		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) == -1)
+			dsim_err("********** failed to send cmd_hbm_off_12.\n");
 	}
 }
