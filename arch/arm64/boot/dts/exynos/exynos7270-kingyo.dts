@@ -41,8 +41,9 @@
 		#address-cells = <2>;
 		#size-cells = <1>;
 		compatible = "ramoops";
-		record-size = <0 0x20000>;
-		console-size = <0 0x20000>;
+		record-size = <0 0x40000>;
+		console-size = <0 0x40000>;
+		pmsg-size = <0 0x40000>;
 		memory-region = <&ramoops_reserved>;
 	};
 
