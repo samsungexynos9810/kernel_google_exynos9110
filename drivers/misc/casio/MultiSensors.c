@@ -499,7 +499,11 @@ retrywait:
 	return buf_index;
 }
 
-static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count, loff_t* offset )
+void auo_h120bln017_notify_seglcd(int seglcd_on);
+void auo_h120bln017_notify_2layer(int mode_2layer);
+
+static ssize_t Msensors_Write(struct file* file, const char* buf, size_t count,
+						loff_t* offset)
 {
 	struct Msensors_state *st;
 	int ret;
@@ -511,10 +515,20 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 	ret = copy_from_user(&write_buff[1], buf, count);
 
 	if (!ret) {
+#ifdef CONFIG_BACKLIGHT_SUBCPU
+		if (write_buff[1] == SUB_COM_SETID_SEG_CMD) {
+			if (write_buff[2] == 0) {	// SegLCD On/Off Control
+				auo_h120bln017_notify_seglcd((write_buff[3] & 0x80) ? 1 : 0);
+			} else if (write_buff[2] == 9) {	// NotifyOnOff2layer
+				auo_h120bln017_notify_2layer(write_buff[3]);
+				goto finish;
+			}
+		}
+#endif
 		write_buff[0] = SUB_COM_TYPE_WRITE;	//0xA1
 		Msensors_PushData(&write_buff[0]);
 	}
-
+finish:
 	return ret;
 }
 
@@ -957,9 +971,14 @@ int SUBCPU_rtc_read_time(uint8_t *data)
 }
 
 #ifdef CONFIG_BACKLIGHT_SUBCPU
+static int last_brightness = -1;
 int SUB_LCDBrightnessSet(unsigned char LCDBrightness)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
+
+	if (last_brightness == LCDBrightness)
+		return 0;
+	last_brightness = LCDBrightness;
 
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 

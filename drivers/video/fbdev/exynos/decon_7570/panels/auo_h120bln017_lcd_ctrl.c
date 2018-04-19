@@ -103,7 +103,7 @@ void auo_h120bln017_lcd_disable(void)
 	usleep_range(120000, 130000);
 }
 
-void auo_h120bln017_lcd_brightness_set(int brightness)
+int auo_h120bln017_lcd_brightness_set(int brightness)
 {
 	unsigned char reg_brightness_set[2] = "";
 
@@ -112,10 +112,11 @@ void auo_h120bln017_lcd_brightness_set(int brightness)
 	//printk(KERN_INFO "---------- brightness:%d\n", brightness);
 
 	/* brightness_set */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) reg_brightness_set,
-		ARRAY_SIZE(reg_brightness_set)) == -1)
-		dsim_err("failed to brightness_set.\n");
+		ARRAY_SIZE(reg_brightness_set)) < 0) {
+		return -1;
+	}
 
 	if (brightness == 255) {
 		auo_h120bln017_lcd_highbrightness_mode(1);
@@ -126,6 +127,7 @@ void auo_h120bln017_lcd_brightness_set(int brightness)
 			sunlightmode = 0;
 		}
 	}
+	return 0;
 }
 
 void auo_h120bln017_lcd_idle_mode(int on)

@@ -18,7 +18,7 @@
 #define MIN_BRIGHTNESS 0
 #define DEFAULT_BRIGHTNESS 72
 
-struct backlight_device *bd;
+static struct backlight_device *bd;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static struct early_suspend    auo_h120bln017_early_suspend;
 #endif
@@ -28,11 +28,32 @@ static int auo_h120bln017_get_brightness(struct backlight_device *bd)
 	return bd->props.brightness;
 }
 
-static int update_brightness(int brightness)
+#ifdef CONFIG_BACKLIGHT_SUBCPU
+static int bl_force_off;
+void auo_h120bln017_notify_seglcd(int seglcd_on)
 {
-	auo_h120bln017_lcd_brightness_set(brightness);
-	return 0;
+	bl_force_off = seglcd_on;
+	backlight_update_status(bd);
 }
+
+static int two_layer_mode;	/* 1: 2layer watchface, 0: other watchface */
+void auo_h120bln017_notify_2layer(int mode_2layer)
+{
+	two_layer_mode = mode_2layer;
+}
+
+static int ambient_in_2layer;
+void auo_h120bln017_notify_ambient(void)
+{
+	if (!two_layer_mode)
+		return;
+	ambient_in_2layer = 1;
+	backlight_update_status(bd);
+	ambient_in_2layer = 0;
+}
+#endif
+
+static int last_brightness = -1;
 
 static int auo_h120bln017_set_brightness(struct backlight_device *bd)
 {
@@ -53,9 +74,15 @@ static int auo_h120bln017_set_brightness(struct backlight_device *bd)
 		SUB_LCDBrightnessSet((brightness >> 4) + 1);
 	else
 		SUB_LCDBrightnessSet(0);
+
+	if (bl_force_off || ambient_in_2layer)
+		brightness = 0;
 #endif
 
-	update_brightness(brightness);
+	if (last_brightness != brightness) {
+		if (auo_h120bln017_lcd_brightness_set(brightness) == 0)
+			last_brightness = brightness;
+	}
 
 	return 0;
 }

@@ -2621,6 +2621,8 @@ err:
 }
 #endif
 
+void auo_h120bln017_notify_ambient(void);
+
 static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg)
 {
@@ -2741,6 +2743,9 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			break;
 		case DECON_POWER_MODE_DOZE_SUSPEND:
 			decon_info("%s: DECON_POWER_MODE_DOZE_SUSPEND\n", __func__);
+#ifdef CONFIG_BACKLIGHT_SUBCPU
+			auo_h120bln017_notify_ambient();
+#endif
 			ret = decon_doze_suspend(decon);
 			if (ret) {
 				decon_err("%s: failed to decon_doze_suspend: %d\n", __func__, ret);

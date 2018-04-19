@@ -72,8 +72,7 @@
 #define SUB_COM_SETID_CTRL_GREEN_LED	(0x55)	/* on/off green led */
 #define SUB_COM_SETID_LIMIT_CHARGING	(0x56)	/* limit charging by threshold */
 #define SUB_COM_SETID_SUB_FIRM_UPDATE		(0x99)		/* SUB-CPU Firmware Update */
-#define SUB_COM_SETID_DEMO_CMD			(0xFE)		/* Demo Command */
-#define SUB_COM_SETID_DEMO			(0xFF)		/* Demo ID */
+#define SUB_COM_SETID_SEG_CMD		(0xFE)		/* SegLcd Command */
 
 #define SUB_COM_GETID_SUB_CPU_VER		(0x00)		/* SUB-CPU Version */
 #define SUB_COM_GETID_POWER_PROP1		(0x01)		/* Power Property1 */

@@ -13,7 +13,7 @@ void auo_h120bln017_lcd_disable(void);
 void auo_h120bln017_lcd_lane_ctl(unsigned int lane_num);
 int auo_h120bln017_lcd_gamma_ctrl(unsigned int backlightlevel);
 int auo_h120bln017_lcd_gamma_update(void);
-void auo_h120bln017_lcd_brightness_set(int brightness);
+int auo_h120bln017_lcd_brightness_set(int brightness);
 void auo_h120bln017_lcd_idle_mode(int on);
 void auo_h120bln017_lcd_highbrightness_mode(int on);
 
