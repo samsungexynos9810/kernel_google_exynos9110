@@ -463,7 +463,7 @@
 		samsung,fifo-size = <256>;
 		interrupts = <0 423 0>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&uart2_bus>;
+		pinctrl-0 = <&uart2_txd &uart2_rxd>;
 		clocks = <&clock 360>, <&clock 20>;
 		clock-names = "gate_pclk2", "gate_uart2";
 		status = "disabled";

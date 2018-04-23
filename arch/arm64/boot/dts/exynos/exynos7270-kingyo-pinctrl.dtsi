@@ -70,10 +70,15 @@
 		};
 
 		/* UART2 DEBUG */
-		uart2_bus: uart2-bus {
-			samsung,pins = "gpa1-6", "gpa1-5";
+		uart2_txd: uart2-txd {
+			samsung,pins = "gpa1-6";
 			samsung,pin-function = <3>;
 			samsung,pin-pud = <0>;
+		};
+		uart2_rxd: uart2-rxd {
+			samsung,pins = "gpa1-5";
+			samsung,pin-function = <3>;
+			samsung,pin-pud = <3>;
 		};
 #if 0
 		/* I2C6 (unused) */
