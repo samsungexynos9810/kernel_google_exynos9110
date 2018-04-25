@@ -19,88 +19,93 @@
 
 static int sunlightmode = 0;
 
-void auo_h120bln017_lcd_init(struct decon_lcd * lcd)
+int auo_h120bln017_lcd_init(struct decon_lcd * lcd)
 {
 	/* cmd_set_1 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_set_1,
-		ARRAY_SIZE(cmd_set_1)) == -1)
-		dsim_err("********** failed to send cmd_set_1.\n");
+		ARRAY_SIZE(cmd_set_1)) < 0)
+		return -1;
 
 	/* cmd_set_2 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_set_2,
-		ARRAY_SIZE(cmd_set_2)) == -1)
-		dsim_err("********** failed to send cmd_set_2.\n");
+		ARRAY_SIZE(cmd_set_2)) < 0)
+		return -1;
 
 	/* cmd_set_3 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_set_3,
-		ARRAY_SIZE(cmd_set_3)) == -1)
-		dsim_err("********** failed to send cmd_set_3.\n");
+		ARRAY_SIZE(cmd_set_3)) < 0)
+		return -1;
 
 	/* cmd_set_4 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_set_4,
-		ARRAY_SIZE(cmd_set_4)) == -1)
-		dsim_err("********** failed to send cmd_set_4.\n");
+		ARRAY_SIZE(cmd_set_4)) < 0)
+		return -1;
 
 	/* cmd_set_5 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_set_5,
-		ARRAY_SIZE(cmd_set_5)) == -1)
-		dsim_err("********** failed to send cmd_set_5.\n");
+		ARRAY_SIZE(cmd_set_5)) < 0)
+		return -1;
 
 	/* cmd_set_6 */
-	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-		0x12, 0);
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x12, 0) < 0)
+		return -1;
 
 	/* cmd_set_7 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_set_7,
-		ARRAY_SIZE(cmd_set_7)) == -1)
-		dsim_err("********** failed to send cmd_set_7.\n");
+		ARRAY_SIZE(cmd_set_7)) < 0)
+		return -1;
 
 	/* cmd_set_8 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_set_8,
-		ARRAY_SIZE(cmd_set_8)) == -1)
-		dsim_err("********** failed to send cmd_set_8.\n");
+		ARRAY_SIZE(cmd_set_8)) < 0)
+		return -1;
 
 	/* cmd_set_9 */
-	while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_set_9,
-		ARRAY_SIZE(cmd_set_9)) == -1)
-		dsim_err("********** failed to send cmd_set_9.\n");
+		ARRAY_SIZE(cmd_set_9)) < 0)
+		return -1;
 
 	/* sleep out */
-	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-		0x11, 0);
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x11, 0) < 0)
+		return -1;
 
 	/* 150ms delay */
 	usleep_range(150000, 160000);
 
 	/* display on */
-	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x29, 0) < 0)
+		return -1;
+
+	return 0;
 }
 
-void auo_h120bln017_lcd_enable(void)
+int auo_h120bln017_lcd_enable(void)
 {
+	return 0;
 }
 
-void auo_h120bln017_lcd_disable(void)
+int auo_h120bln017_lcd_disable(void)
 {
 	/* display off */
-	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-		0x28, 0);
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x28, 0) < 0)
+		return -1;
 
 	/* sleep in */
-	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-		0x10, 0);
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x10, 0) < 0)
+		return -1;
 
 	/* 120ms delay */
 	usleep_range(120000, 130000);
+
+	return 0;
 }
 
 int auo_h120bln017_lcd_brightness_set(int brightness)
@@ -130,192 +135,194 @@ int auo_h120bln017_lcd_brightness_set(int brightness)
 	return 0;
 }
 
-void auo_h120bln017_lcd_idle_mode(int on)
+int auo_h120bln017_lcd_idle_mode(int on)
 {
 	if (on) {
-		dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			0x39, 0x00);
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x39, 0x00) < 0)
+			return -1;
 	} else {
-		dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			0x38, 0x00);
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x38, 0x00) < 0)
+			return -1;
 	}
+	return 0;
 }
 
-void auo_h120bln017_lcd_highbrightness_mode(int on)
+int auo_h120bln017_lcd_highbrightness_mode(int on)
 {
 	unsigned char reg_hbm_set[2] = "";
 
 	if (on) {
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x01;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_1.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x29;
 		reg_hbm_set[1] = 0x43;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_2.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x05;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_3.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x2A;
 		reg_hbm_set[1] = 0x02;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_4.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x30;
 		reg_hbm_set[1] = 0x33;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_5.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x01;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_6.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x11;
 		reg_hbm_set[1] = 0x93;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_7.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x00;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_8.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xB0;
 		reg_hbm_set[1] = 0x06;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_9.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		usleep_range(30000, 31000);
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x01;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_10.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x29;
 		reg_hbm_set[1] = 0x40;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_11.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x00;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_on_12.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 	} else {
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x01;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_1.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x29;
 		reg_hbm_set[1] = 0x43;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_2.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x05;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_3.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x2A;
 		reg_hbm_set[1] = 0x02;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_4.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x30;
 		reg_hbm_set[1] = 0x41;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_5.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x01;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_6.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x11;
 		reg_hbm_set[1] = 0x80;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_7.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x00;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_8.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xB0;
 		reg_hbm_set[1] = 0x04;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_9.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		usleep_range(30000, 31000);
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x01;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_10.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0x29;
 		reg_hbm_set[1] = 0x40;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_11.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 
 		reg_hbm_set[0] = 0xFE;
 		reg_hbm_set[1] = 0x00;
-		while (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
-			ARRAY_SIZE(reg_hbm_set)) == -1)
-			dsim_err("********** failed to send cmd_hbm_off_12.\n");
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
 	}
+	return 0;
 }
