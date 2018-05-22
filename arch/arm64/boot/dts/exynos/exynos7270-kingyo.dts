@@ -931,7 +931,7 @@
 		/* DISP I/F resolution width : 300, height : 507 */
 		dispif_resol = <300 507>;
 		size = <32 32>;
-		timing,refresh = <45>;
+		timing,refresh = <60>;
 		/* dsim H porch : hbp, hfp, hsa */
 		timing,dsim_h-porch = <1 1 1>;
 		/* dsim V porch : VBP, VFP, VSA */
