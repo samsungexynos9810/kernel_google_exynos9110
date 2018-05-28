@@ -70,6 +70,7 @@ void Msensors_set_fw_version(struct Msensors_state *st, uint8_t *data)
 	st->fw.maj_ver  = data[0];
 	st->fw.min_ver  = data[1];
 	st->fw.revision = data[2];
+	st->fw.subcpu_reset_cause = data[3];
 	dev_info(&st->sdev->dev, "subcpu FW version:%02x:%02x:%02x\n",
 		st->fw.maj_ver, st->fw.min_ver, st->fw.revision);
 

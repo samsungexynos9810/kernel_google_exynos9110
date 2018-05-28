@@ -181,6 +181,7 @@ struct Msensors_fw {
 	uint8_t maj_ver;
 	uint8_t min_ver;
 	uint8_t revision;
+	uint8_t subcpu_reset_cause;
 };
 
 struct Msensors_spi {

@@ -709,6 +709,7 @@ static int subcpu_proc_show(struct seq_file *m, void *v)
 	sub_read_command(SUB_COM_GETID_FG_VER);
 	seq_printf(m, "subcpu %02x.%02x.%02x\n",
 		g_st->fw.maj_ver, g_st->fw.min_ver,  g_st->fw.revision);
+	seq_printf(m, "subcpu reset cause %02x\n", g_st->fw.subcpu_reset_cause);
 	seq_printf(m, "fg %04x, par %04x\n", p[0], p[1]);
 	return 0;
 }
