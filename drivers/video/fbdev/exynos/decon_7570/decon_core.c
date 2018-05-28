@@ -2630,7 +2630,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 	struct decon_device *decon = win->decon;
 	int ret;
 	u32 crtc;
-	int blank = 0;
+	//int blank = 0;
 
 	/* enable lpd only when system is ready to interact with driver */
 	decon_lpd_enable();
@@ -2733,6 +2733,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		switch (decon->pwr_mode) {
 		case DECON_POWER_MODE_DOZE:
 			decon_info("%s: DECON_POWER_MODE_DOZE\n", __func__);
+#if 0
 			ret = decon_doze_enable(decon);
 			if (ret) {
 				decon_err("%s: failed to decon_doze_enable: %d\n", __func__, ret);
@@ -2740,9 +2741,11 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			}
 			blank = FB_BLANK_UNBLANK;
 			//decon_notifier_call_chain(FB_EVENT_BLANK, &v);
+#endif
 			break;
 		case DECON_POWER_MODE_DOZE_SUSPEND:
 			decon_info("%s: DECON_POWER_MODE_DOZE_SUSPEND\n", __func__);
+#if 0
 #ifdef CONFIG_BACKLIGHT_SUBCPU
 			auo_h120bln017_notify_ambient();
 #endif
@@ -2753,6 +2756,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			}
 			blank = FB_BLANK_POWERDOWN;
 			//decon_notifier_call_chain(FB_EVENT_BLANK, &v);
+#endif
 			break;
 		default:
 			decon_info("%s: pwr_mode: %d\n", __func__, decon->pwr_mode);
@@ -2885,9 +2889,35 @@ static int decon_runtime_suspend(struct device *dev)
 	return 0;
 }
 
+static int decon_system_suspend(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct decon_device *decon = platform_get_drvdata(pdev);
+
+	printk(KERN_INFO "##### decon_system_suspend\n");
+
+	decon_doze_suspend(decon);
+
+	return 0;
+}
+
+static int decon_system_resume(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct decon_device *decon = platform_get_drvdata(pdev);
+
+	printk(KERN_INFO "##### decon_system_resume\n");
+
+	decon_doze_enable(decon);
+
+	return 0;
+}
+
 static const struct dev_pm_ops decon_pm_ops = {
 	.runtime_suspend = decon_runtime_suspend,
 	.runtime_resume	 = decon_runtime_resume,
+	.suspend = decon_system_suspend,
+	.resume = decon_system_resume,
 };
 
 /* ---------- MEDIA CONTROLLER MANAGEMENT ----------- */
