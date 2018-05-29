@@ -140,6 +140,7 @@ int auo_h120bln017_lcd_idle_mode(int on)
 	if (on) {
 		if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x39, 0x00) < 0)
 			return -1;
+		msleep(100);
 	} else {
 		if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x38, 0x00) < 0)
 			return -1;

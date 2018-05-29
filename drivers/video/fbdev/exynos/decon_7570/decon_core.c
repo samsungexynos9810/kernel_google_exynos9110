@@ -844,6 +844,8 @@ static int decon_reg_set_regs_data_init(struct fb_info *info)
 	return 0;
 }
 
+static int decon_ambient_enter = 0;
+
 /* ---------- FB_BLANK INTERFACE ----------- */
 int decon_enable(struct decon_device *decon)
 {
@@ -895,6 +897,8 @@ int decon_enable(struct decon_device *decon)
 				decon->doze_state = DOZE_STATE_NORMAL;
 			}
 		}
+		call_panel_ops(dsim, exitidle, dsim);
+		decon_ambient_enter = 0;
 #endif
 		goto err;
 	}
@@ -2631,6 +2635,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 	int ret;
 	u32 crtc;
 	//int blank = 0;
+	struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
 
 	/* enable lpd only when system is ready to interact with driver */
 	decon_lpd_enable();
@@ -2733,6 +2738,8 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		switch (decon->pwr_mode) {
 		case DECON_POWER_MODE_DOZE:
 			decon_info("%s: DECON_POWER_MODE_DOZE\n", __func__);
+			call_panel_ops(dsim, enteridle, dsim);
+			decon_ambient_enter = 1;
 #if 0
 			ret = decon_doze_enable(decon);
 			if (ret) {
@@ -2894,9 +2901,10 @@ static int decon_system_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct decon_device *decon = platform_get_drvdata(pdev);
 
-	printk(KERN_INFO "##### decon_system_suspend\n");
+	printk(KERN_INFO "##### decon_system_suspend : %d\n", decon_ambient_enter);
 
-	decon_doze_suspend(decon);
+	if (decon_ambient_enter)
+		decon_doze_suspend(decon);
 
 	return 0;
 }
@@ -2906,9 +2914,10 @@ static int decon_system_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct decon_device *decon = platform_get_drvdata(pdev);
 
-	printk(KERN_INFO "##### decon_system_resume\n");
+	printk(KERN_INFO "##### decon_system_resume : %d\n", decon_ambient_enter);
 
-	decon_doze_enable(decon);
+	if (decon_ambient_enter)
+		decon_doze_enable(decon);
 
 	return 0;
 }
