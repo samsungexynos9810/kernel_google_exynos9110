@@ -1165,6 +1165,8 @@ static int decon_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_POWERDOWN:
 	case FB_BLANK_NORMAL:
 		DISP_SS_EVENT_LOG(DISP_EVT_BLANK, &decon->sd, ktime_set(0, 0));
+		if (blank_mode == FB_BLANK_POWERDOWN)
+			decon_ambient_enter = 0;
 		ret = decon_disable(decon);
 		if (ret) {
 			decon_err("failed to disable decon\n");
