@@ -44,8 +44,6 @@
 
 #include "mm.h"
 
-#include <linux/vmalloc.h>
-
 u64 idmap_t0sz = TCR_T0SZ(VA_BITS);
 
 u64 kimage_voffset __read_mostly;
@@ -852,37 +850,4 @@ int pmd_clear_huge(pmd_t *pmd)
 		return 0;
 	pmd_clear(pmd);
 	return 1;
-}
-
-void * __init __vmap_reserved_mem_request(unsigned long addr,
-					  unsigned int size,
-					  pgprot_t prot)
-{
-	int i;
-	unsigned int num_pages = (size >> PAGE_SHIFT);
-
-	/* Usecase:
-	 * noncacheable : prot = __pgprot(PROT_NORMAL_NC);
-	 * cacheable    : prot = __pgprot(PROT_NORMAL);
-	 */
-
-	struct page **pages = NULL;
-	void *v_addr = NULL;
-
-	if (!addr)
-		return NULL;
-
-	pages = kmalloc(sizeof(struct page *) * num_pages, GFP_ATOMIC);
-	if (!pages)
-		return NULL;
-
-	for (i = 0; i < num_pages; i++) {
-		pages[i] = phys_to_page(addr);
-		addr += PAGE_SIZE;
-	}
-
-	v_addr = vmap(pages, num_pages, VM_MAP, prot);
-	kfree(pages);
-
-	return v_addr;
 }
