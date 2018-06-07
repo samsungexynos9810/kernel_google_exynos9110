@@ -665,6 +665,7 @@
 		decon_te_off: decon_te_off {
 			samsung,pins = "gpe0-2";
 			samsung,pin-function = <0>;
+			samsung,pin-con-pdn = <2>;
 		};
 #if 0
 		/* UART1 (unused) */
