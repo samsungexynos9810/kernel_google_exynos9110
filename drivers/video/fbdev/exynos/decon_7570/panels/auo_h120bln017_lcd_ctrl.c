@@ -137,12 +137,56 @@ int auo_h120bln017_lcd_brightness_set(int brightness)
 
 int auo_h120bln017_lcd_idle_mode(int on)
 {
+	unsigned char reg_idle_mode_set[2] = "";
+
 	if (on) {
+		reg_idle_mode_set[0] = 0xFE;
+		reg_idle_mode_set[1] = 0x01;
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_idle_mode_set,
+			ARRAY_SIZE(reg_idle_mode_set)) < 0)
+			return -1;
+
+		reg_idle_mode_set[0] = 0x30;
+		reg_idle_mode_set[1] = 0x41;
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_idle_mode_set,
+			ARRAY_SIZE(reg_idle_mode_set)) < 0)
+			return -1;
+
+		reg_idle_mode_set[0] = 0xFE;
+		reg_idle_mode_set[1] = 0x00;
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_idle_mode_set,
+			ARRAY_SIZE(reg_idle_mode_set)) < 0)
+			return -1;
+
 		if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x39, 0x00) < 0)
 			return -1;
 		msleep(100);
 	} else {
 		if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x38, 0x00) < 0)
+			return -1;
+
+		reg_idle_mode_set[0] = 0xFE;
+		reg_idle_mode_set[1] = 0x01;
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_idle_mode_set,
+			ARRAY_SIZE(reg_idle_mode_set)) < 0)
+			return -1;
+
+		reg_idle_mode_set[0] = 0x30;
+		reg_idle_mode_set[1] = 0x43;
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_idle_mode_set,
+			ARRAY_SIZE(reg_idle_mode_set)) < 0)
+			return -1;
+
+		reg_idle_mode_set[0] = 0xFE;
+		reg_idle_mode_set[1] = 0x00;
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_idle_mode_set,
+			ARRAY_SIZE(reg_idle_mode_set)) < 0)
 			return -1;
 	}
 	return 0;
@@ -197,6 +241,13 @@ int auo_h120bln017_lcd_highbrightness_mode(int on)
 
 		reg_hbm_set[0] = 0x11;
 		reg_hbm_set[1] = 0x93;
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
+
+		reg_hbm_set[0] = 0x19;
+		reg_hbm_set[1] = 0x44;
 		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) < 0)
@@ -283,6 +334,13 @@ int auo_h120bln017_lcd_highbrightness_mode(int on)
 
 		reg_hbm_set[0] = 0x11;
 		reg_hbm_set[1] = 0x80;
+		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long) reg_hbm_set,
+			ARRAY_SIZE(reg_hbm_set)) < 0)
+			return -1;
+
+		reg_hbm_set[0] = 0x19;
+		reg_hbm_set[1] = 0x22;
 		if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long) reg_hbm_set,
 			ARRAY_SIZE(reg_hbm_set)) < 0)
