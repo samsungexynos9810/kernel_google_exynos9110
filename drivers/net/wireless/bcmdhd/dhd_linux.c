@@ -4929,6 +4929,7 @@ dhd_start_xmit(struct sk_buff *skb, struct net_device *net)
 	struct ether_header *eh;
 	uint8 *iph;
 #endif /* DHD_WMF */
+	static uint8 first_xmit_error = true;
 
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 
@@ -4962,8 +4963,10 @@ dhd_start_xmit(struct sk_buff *skb, struct net_device *net)
 
 	DHD_GENERAL_LOCK(&dhd->pub, flags);
 	if (DHD_BUS_CHECK_SUSPEND_OR_SUSPEND_IN_PROGRESS(&dhd->pub)) {
-		DHD_ERROR(("%s: bus is in suspend(%d) or suspending(0x%x) state!!\n",
-			__FUNCTION__, dhd->pub.busstate, dhd->pub.dhd_bus_busy_state));
+		if(first_xmit_error)
+			DHD_ERROR(("%s: bus is in suspend(%d) or suspending(0x%x) state!!\n",
+				__FUNCTION__, dhd->pub.busstate, dhd->pub.dhd_bus_busy_state));
+		first_xmit_error = false;
 		DHD_BUS_BUSY_CLEAR_IN_TX(&dhd->pub);
 #ifdef PCIE_FULL_DONGLE
 		/* Stop tx queues if suspend is in progress */
@@ -4978,6 +4981,8 @@ dhd_start_xmit(struct sk_buff *skb, struct net_device *net)
 #else
 		return NETDEV_TX_BUSY;
 #endif
+	} else if (first_xmit_error == false) {
+		first_xmit_error = true;
 	}
 
 	DHD_OS_WAKE_LOCK(&dhd->pub);
