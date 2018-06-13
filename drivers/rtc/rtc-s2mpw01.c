@@ -152,7 +152,7 @@ static int s2m_rtc_read_time(struct device *dev, struct rtc_time *tm)
 		goto out;
 	}
 
-	dev_info(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
+	dev_dbg(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
 			__func__, data[RTC_YEAR] + 2000, data[RTC_MONTH],
 			data[RTC_DATE], data[RTC_HOUR] & 0x1f, data[RTC_MIN],
 			data[RTC_SEC], data[RTC_WEEKDAY],
@@ -343,7 +343,7 @@ static int s2m_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	if (ret < 0)
 		goto out;
 
-	dev_info(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
+	dev_dbg(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
 			__func__, data[RTC_YEAR] + 2000, data[RTC_MONTH],
 			data[RTC_DATE], data[RTC_HOUR] & 0x1f, data[RTC_MIN],
 			data[RTC_SEC], data[RTC_WEEKDAY],

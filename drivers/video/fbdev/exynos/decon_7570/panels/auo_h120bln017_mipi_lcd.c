@@ -109,7 +109,7 @@ static int auo_h120bln017_probe(struct dsim_device *dsim)
 
 static int auo_h120bln017_displayon(struct dsim_device *dsim)
 {
-	printk(KERN_INFO "***** auo_h120bln017_displayon \n");
+	pr_debug("***** auo_h120bln017_displayon \n");
 	if (auo_h120bln017_lcd_init(&dsim->lcd_info) < 0)
 		printk(KERN_ERR "***** auo_h120bln017_displayon error!\n");
 	return 0;
@@ -117,7 +117,7 @@ static int auo_h120bln017_displayon(struct dsim_device *dsim)
 
 static int auo_h120bln017_suspend(struct dsim_device *dsim)
 {
-	printk(KERN_INFO "***** auo_h120bln017_suspend \n");
+	pr_debug("***** auo_h120bln017_suspend \n");
 	if (auo_h120bln017_lcd_disable() < 0)
 		printk(KERN_ERR "***** auo_h120bln017_suspend error!\n");
 	return 0;
@@ -125,13 +125,13 @@ static int auo_h120bln017_suspend(struct dsim_device *dsim)
 
 static int auo_h120bln017_resume(struct dsim_device *dsim)
 {
-	printk(KERN_INFO "***** auo_h120bln017_resume\n");
+	pr_debug("***** auo_h120bln017_resume\n");
 	return 0;
 }
 
 static int auo_h120bln017_enteridle(struct dsim_device *dsim)
 {
-	printk(KERN_INFO "***** auo_h120bln017_enteridle\n");
+	pr_debug("***** auo_h120bln017_enteridle\n");
 	if (auo_h120bln017_lcd_idle_mode(1) < 0)
 		printk(KERN_ERR "***** auo_h120bln017_enteridle error!\n");
 	return 0;
@@ -139,7 +139,7 @@ static int auo_h120bln017_enteridle(struct dsim_device *dsim)
 
 static int auo_h120bln017_exitidle(struct dsim_device *dsim)
 {
-	printk(KERN_INFO "***** auo_h120bln017_exitidle\n");
+	pr_debug("***** auo_h120bln017_exitidle\n");
 	if (auo_h120bln017_lcd_idle_mode(0) < 0)
 		printk(KERN_ERR "***** auo_h120bln017_exitidle error!\n");
 	return 0;

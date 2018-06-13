@@ -54,7 +54,7 @@ static const struct of_device_id decon_device_table[] = {
 MODULE_DEVICE_TABLE(of, decon_device_table);
 #endif
 
-int decon_log_level = DECON_LOG_LEVEL_INFO;
+int decon_log_level = DECON_LOG_LEVEL_WARN;
 module_param(decon_log_level, int, 0644);
 
 struct decon_device *decon_int_drvdata;
@@ -936,7 +936,7 @@ int decon_enable(struct decon_device *decon)
 		if (decon->out_type == DECON_OUT_DSI) {
 			decon->force_fullupdate = 0;
 			pm_stay_awake(decon->dev);
-			dev_warn(decon->dev, "pm_stay_awake");
+			dev_dbg(decon->dev, "pm_stay_awake");
 			ret = v4l2_subdev_call(decon->output_sd, video, s_stream, 1);
 			if (ret) {
 				decon_err("starting stream failed for %s\n",
@@ -2462,7 +2462,7 @@ int decon_doze_enable(struct decon_device *decon)
 	if (decon->out_type == DECON_OUT_DSI) {
 		decon->force_fullupdate = 0;
 		pm_stay_awake(decon->dev);
-		dev_warn(decon->dev, "pm_stay_awake");
+		dev_dbg(decon->dev, "pm_stay_awake");
 		ret = v4l2_subdev_call(decon->output_sd, video, s_stream, DSIM_REQ_DOZE_MODE);
 		if (ret) {
 			decon_err("starting stream failed for %s\n",
@@ -2903,7 +2903,7 @@ static int decon_system_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct decon_device *decon = platform_get_drvdata(pdev);
 
-	printk(KERN_INFO "##### decon_system_suspend : %d\n", decon_ambient_enter);
+	decon_dbg("##### decon_system_suspend : %d\n", decon_ambient_enter);
 
 	if (decon_ambient_enter)
 		decon_doze_suspend(decon);
@@ -2916,7 +2916,7 @@ static int decon_system_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct decon_device *decon = platform_get_drvdata(pdev);
 
-	printk(KERN_INFO "##### decon_system_resume : %d\n", decon_ambient_enter);
+	decon_dbg("##### decon_system_resume : %d\n", decon_ambient_enter);
 
 	if (decon_ambient_enter)
 		decon_doze_enable(decon);
@@ -3896,7 +3896,7 @@ decon_init_done:
 	decon->state = DECON_STATE_INIT;
 
 	pm_stay_awake(decon->dev);
-	dev_warn(decon->dev, "pm_stay_awake");
+	dev_dbg(decon->dev, "pm_stay_awake");
 	cam_stat = of_get_child_by_name(decon->dev->of_node, "cam-stat");
 	if (!cam_stat) {
 		decon_info("No DT node for cam-stat\n");
