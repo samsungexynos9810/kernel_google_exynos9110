@@ -203,4 +203,7 @@ source "drivers/fpga/Kconfig"
 source "drivers/bts/Kconfig"
 
 source "drivers/trace/Kconfig"
+
+source "drivers/tee/Kconfig"
+
 endmenu
