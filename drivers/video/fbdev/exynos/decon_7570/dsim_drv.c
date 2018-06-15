@@ -735,6 +735,7 @@ static int dsim_get_regulator(struct dsim_device *dsim)
 
 int dsim_enable_regulator(struct dsim_device *dsim)
 {
+#if 0
 	struct dsim_resources *res = &dsim->res;
 
 	int ret = 0;
@@ -763,7 +764,7 @@ int dsim_enable_regulator(struct dsim_device *dsim)
 		return -EINVAL;
 	}
 	dsim_err("%s - \n", __func__);
-
+#endif
 	return 0;
 }
 
