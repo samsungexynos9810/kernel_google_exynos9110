@@ -885,6 +885,7 @@
 			linux,code = <115>;
 			gpios = <&gpa0 4 0xf>;
 			gpio-key,wakeup = <1>;
+			debounce-interval = <30>;
 		};
 		button@2 {
 			label = "gpio-keys: VOLUME_DOWN";
@@ -893,6 +894,7 @@
 			linux,code = <114>;
 			gpios = <&gpa0 7 0xf>;
 			gpio-key,wakeup = <1>;
+			debounce-interval = <30>;
 		};
 	};
 

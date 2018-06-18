@@ -363,8 +363,11 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 		if (state)
 			input_event(input, type, button->code, button->value);
 	} else {
-		input_event(input, type, button->code,
-				irqd_is_wakeup_set(&desc->irq_data) ? 1 : !!state);
+		if (bdata->software_debounce)
+			input_event(input, type, button->code, !!state);
+		else
+			input_event(input, type, button->code,
+					irqd_is_wakeup_set(&desc->irq_data) ? 1 : !!state);
 	}
 	input_sync(input);
 }
