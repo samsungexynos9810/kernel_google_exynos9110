@@ -853,9 +853,9 @@
 					cy,inp_dev_name = "cyttsp5_mt";
 					cy,abs =
 						/* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
-						<0x35 0 390 0 0
+						<0x35 0 320 0 0
 						/* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
-						0x36 0 390 0 0
+						0x36 0 320 0 0
 						/* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
 						0x3a 0 255 0 0
 						/* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
