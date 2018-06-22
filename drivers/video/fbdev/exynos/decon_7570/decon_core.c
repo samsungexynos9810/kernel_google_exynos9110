@@ -897,7 +897,6 @@ int decon_enable(struct decon_device *decon)
 				decon->doze_state = DOZE_STATE_NORMAL;
 			}
 		}
-		call_panel_ops(dsim, exitidle, dsim);
 		decon_ambient_enter = 0;
 #endif
 		goto err;
@@ -2292,8 +2291,8 @@ windows_config:
 
 		/* INSERT REVERSE FUNCTION */
 		//printk(KERN_INFO "SRC:%d,%d,%d,%d DST:%d,%d,%d,%d\n", config->src.w, config->src.h, config->src.x, config->src.y, config->dst.w, config->dst.h, config->dst.x, config->dst.y);
-		config->dst.x = decon->lcd_info->xres - (config->dst.x+config->dst.w);
-		config->dst.y = decon->lcd_info->yres - (config->dst.y+config->dst.h);
+		//config->dst.x = decon->lcd_info->xres - (config->dst.x+config->dst.w);
+		//config->dst.y = decon->lcd_info->yres - (config->dst.y+config->dst.h);
 
 		if (does_layer_need_scale(config)) {
 			decon_err("ERROR: layer(%d) needs scaling"
@@ -2352,7 +2351,7 @@ windows_config:
 		regs->winmap[i] = color_map;
 
 		/* INSERT REVERSE FUNCTION */
-		regs->wincon[i] |= 0x03000000;
+		//regs->wincon[i] |= 0x03000000;
 
 		if (enabled && config->state == DECON_WIN_STATE_BUFFER) {
 			/* Actual width, height are used in calculation of bw */
@@ -2637,7 +2636,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 	int ret;
 	u32 crtc;
 	//int blank = 0;
-	struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
+	//struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
 
 	/* enable lpd only when system is ready to interact with driver */
 	decon_lpd_enable();
@@ -2750,7 +2749,6 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			auo_h120bln017_notify_ambient();
 #endif
 			}
-			call_panel_ops(dsim, enteridle, dsim);
 			decon_ambient_enter = 1;
 #if 0
 			ret = decon_doze_enable(decon);
@@ -2913,7 +2911,7 @@ static int decon_system_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct decon_device *decon = platform_get_drvdata(pdev);
 
-	decon_dbg("##### decon_system_suspend : %d\n", decon_ambient_enter);
+	printk(KERN_INFO "##### decon_system_suspend : %d\n", decon_ambient_enter);
 
 	if (decon_ambient_enter)
 		decon_doze_suspend(decon);
@@ -2926,7 +2924,7 @@ static int decon_system_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct decon_device *decon = platform_get_drvdata(pdev);
 
-	decon_dbg("##### decon_system_resume : %d\n", decon_ambient_enter);
+	printk(KERN_INFO "##### decon_system_resume : %d\n", decon_ambient_enter);
 
 	if (decon_ambient_enter)
 		decon_doze_enable(decon);

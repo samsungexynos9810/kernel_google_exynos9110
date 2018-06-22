@@ -520,7 +520,7 @@ void decon_reg_set_regs_data(u32 id, int win_idx,
 	u32 val;
 
 	/* x/y flip setting - for recovery mode */
-	regs->wincon |= 0x03000000;
+	//regs->wincon |= 0x03000000;
 
 	if (regs->wincon & WINCON_ENWIN)
 		decon_reg_config_win_channel(id, win_idx, regs->type);

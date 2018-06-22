@@ -508,8 +508,8 @@ retrywait:
 	return buf_index;
 }
 
-void auo_h120bln017_notify_seglcd(int seglcd_on);
-void auo_h120bln017_notify_2layer(int mode_2layer);
+void sharp_lcd_notify_seglcd(int seglcd_on);
+void sharp_lcd_notify_2layer(int mode_2layer);
 
 static ssize_t Msensors_Write(struct file* file, const char* buf, size_t count,
 						loff_t* offset)
@@ -527,9 +527,9 @@ static ssize_t Msensors_Write(struct file* file, const char* buf, size_t count,
 #ifdef CONFIG_BACKLIGHT_SUBCPU
 		if (write_buff[1] == SUB_COM_SETID_SEG_CMD) {
 			if (write_buff[2] == 0) {	// SegLCD On/Off Control
-				auo_h120bln017_notify_seglcd((write_buff[3] & 0x80) ? 1 : 0);
+				sharp_lcd_notify_seglcd((write_buff[3] & 0x80) ? 1 : 0);
 			} else if (write_buff[2] == 9) {	// NotifyOnOff2layer
-				auo_h120bln017_notify_2layer(write_buff[3]);
+				sharp_lcd_notify_2layer(write_buff[3]);
 				goto finish;
 			}
 		}

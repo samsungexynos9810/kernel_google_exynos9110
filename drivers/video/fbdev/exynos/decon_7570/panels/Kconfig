@@ -26,6 +26,10 @@ config EXYNOS_DECON_LCD_AUO_H120BLN017
 	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
 	tristate "AUO_H120BLN017 AMOLED LCD driver(390 x 390)"
 
+config EXYNOS_DECON_LCD_SHARP_LCD
+	depends on EXYNOS_DECON_LCD && EXYNOS_MIPI_DSI
+	tristate "SHARP LCD driver(320 x 300)"
+
 config BACKLIGHT_SUBCPU
-	depends on EXYNOS_DECON_LCD_AUO_H120BLN017
+	depends on EXYNOS_DECON_LCD_SHARP_LCD
 	tristate "Notify backlight brightness to SubCpu"

@@ -676,17 +676,19 @@ int dsim_reset_panel(struct dsim_device *dsim)
 	struct dsim_resources *res = &dsim->res;
 	int ret;
 
-	dsim_dbg("%s +\n", __func__);
+	dsim_info("%s +\n", __func__);
 
-	ret = gpio_request_one(res->lcd_reset, GPIOF_OUT_INIT_HIGH, "lcd_reset");
+	ret = gpio_request_one(res->lcd_reset, GPIOF_OUT_INIT_LOW, "lcd_reset");
 	if (ret < 0) {
 		dsim_err("failed to get LCD reset GPIO\n");
 		return -EINVAL;
 	}
 
-	usleep_range(5000, 6000);
+	usleep_range(10000, 11000);
+	gpio_set_value(res->lcd_reset, 1);
+	usleep_range(10000, 11000);
 	gpio_set_value(res->lcd_reset, 0);
-	usleep_range(5000, 6000);
+	usleep_range(1000, 1100);
 	gpio_set_value(res->lcd_reset, 1);
 
 	gpio_free(res->lcd_reset);
@@ -709,7 +711,7 @@ static int dsim_get_regulator(struct dsim_device *dsim)
 
 	res->reg_v33 = NULL;
 	res->reg_v18 = NULL;
-	of_property_read_string(dev->of_node, "regulator_ldo16", (const char **)&str_reg_v33);
+	of_property_read_string(dev->of_node, "regulator_ldo18", (const char **)&str_reg_v33);
 	if (str_reg_v33) {
 		dsim_info("getting string : %s\n",str_reg_v33);
 		res->reg_v33 = regulator_get(dev, str_reg_v33);
@@ -735,22 +737,21 @@ static int dsim_get_regulator(struct dsim_device *dsim)
 
 int dsim_enable_regulator(struct dsim_device *dsim)
 {
-#if 0
 	struct dsim_resources *res = &dsim->res;
 
 	int ret = 0;
-	dsim_info("%s + \n", __func__);
-	//ret = regulator_set_voltage(res->reg_v33, 3300000, 3300000);
-	//if (ret) {
-	//	dsim_err("%s : dsim regulator set voltage 3.3V failed\n", __func__);
-	//	return -EINVAL;
-	//}
+	dsim_info("%s +\n", __func__);
+	ret = regulator_set_voltage(res->reg_v33, 3100000, 3100000);
+	if (ret) {
+		dsim_err("%s : dsim regulator set voltage 3.1V failed\n", __func__);
+		return -EINVAL;
+	}
 
-	//ret = regulator_enable(res->reg_v33);
-	//if (ret) {
-	//	dsim_err("%s : dsim regulator 3.3V enable failed\n", __func__);
-	//	return -EINVAL;
-	//}
+	ret = regulator_enable(res->reg_v33);
+	if (ret) {
+		dsim_err("%s : dsim regulator 3.1V enable failed\n", __func__);
+		return -EINVAL;
+	}
 
 	ret = regulator_set_voltage(res->reg_v18, 1800000, 1800000);
 	if (ret) {
@@ -764,12 +765,13 @@ int dsim_enable_regulator(struct dsim_device *dsim)
 		return -EINVAL;
 	}
 	dsim_err("%s - \n", __func__);
-#endif
+
 	return 0;
 }
 
 int dsim_disable_regulator(struct dsim_device *dsim)
 {
+#if 0
 	struct dsim_resources *res = &dsim->res;
 
 	int ret = 0;
@@ -780,12 +782,12 @@ int dsim_disable_regulator(struct dsim_device *dsim)
 		return -EINVAL;
 	}
 
-	ret = regulator_enable(res->reg_v18);
+	ret = regulator_disable(res->reg_v18);
 	if (ret) {
 		dsim_err("%s : dsim regulator 1.8V disable failed\n", __func__);
 		return -EINVAL;
 	}
-
+#endif
 	return 0;
 }
 int dsim_set_panel_pre_power(struct dsim_device *dsim)
@@ -904,11 +906,11 @@ static int dsim_enable(struct dsim_device *dsim)
 	if (IS_DOZE(dsim->doze_state)) {
 		dsim_info("%s: exit doze\n", __func__);
 	} else {
-		//dsim_enable_regulator(dsim);
+		dsim_enable_regulator(dsim);
 		dsim_set_panel_power(dsim, 1);
 	}
 #else
-	//dsim_enable_regulator(dsim);
+	dsim_enable_regulator(dsim);
 	dsim_set_panel_power(dsim, 1);
 #endif
 
@@ -961,7 +963,7 @@ exit:
 #ifdef CONFIG_LCD_DOZE_MODE
 	dsim->doze_state = DOZE_STATE_NORMAL;
 #endif
-	dsim_dbg("%s: --\n", __func__);
+	dsim_info("%s: --\n", __func__);
 	return 0;
 }
 
@@ -970,7 +972,7 @@ static int dsim_disable(struct dsim_device *dsim)
 	if (dsim->state == DSIM_STATE_SUSPEND)
 		goto exit;
 
-	dsim_dbg("%s: ++\n", __func__);
+	dsim_info("%s: ++\n", __func__);
 
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
 	dsim_pkt_go_enable(dsim, false);
@@ -992,6 +994,7 @@ static int dsim_disable(struct dsim_device *dsim)
 
 	phy_power_off(dsim->phy);
 	dsim_set_panel_power(dsim, 0);
+	dsim_disable_regulator(dsim);
 
 #if defined(CONFIG_PM)
 	pm_runtime_put_sync(dsim->dev);
@@ -1000,7 +1003,7 @@ static int dsim_disable(struct dsim_device *dsim)
 #endif
 
 exit:
-	dsim_dbg("%s: --\n", __func__);
+	dsim_info("%s: --\n", __func__);
 
 	return 0;
 }
@@ -1015,7 +1018,7 @@ static int dsim_doze_enable(struct dsim_device *dsim)
 		goto exit;
 	}
 
-	dsim_dbg("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
+	dsim_info("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
 
 #if defined(CONFIG_PM)
 	pm_runtime_get_sync(dsim->dev);
@@ -1062,7 +1065,7 @@ static int dsim_doze_suspend(struct dsim_device *dsim)
 	if (dsim->state == DSIM_STATE_SUSPEND)
 		goto exit;
 
-	dsim_dbg("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
+	dsim_info("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
 	dsim_pkt_go_enable(dsim, false);
 #endif
@@ -1646,6 +1649,8 @@ static int dsim_probe(struct platform_device *pdev)
 	dsim->panel_ops = &rm69080_mipi_lcd_driver;
 #elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_AUO_H120BLN017)
 	dsim->panel_ops = &auo_h120bln017_mipi_lcd_driver;
+#elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_SHARP_LCD)
+	dsim->panel_ops = &sharp_mipi_lcd_driver;
 #else
 	dsim->panel_ops = &s6d78a_mipi_lcd_driver;
 #endif

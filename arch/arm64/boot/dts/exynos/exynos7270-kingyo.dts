@@ -496,19 +496,23 @@
 					regulator-ramp-delay = <12000>;
 				};
 
-				/* LCD */
+				/* LCD 1.8V */
 				ldo17_reg: LDO17 {
 					regulator-name = "vdd_lcd_1.8";
 					regulator-min-microvolt = <1500000>;
 					regulator-max-microvolt = <2000000>;
+					regulator-boot-on;
+					regulator-initial-mode = <3>;
 					regulator-ramp-delay = <12000>;
 				};
 
-				/* OTS */
+				/* LCD 3.1V */
 				ldo18_reg: LDO18 {
-					regulator-name = "vdd_ots_3.1";
+					regulator-name = "vdd_lcd_3.1";
 					regulator-min-microvolt = <3100000>;
 					regulator-max-microvolt = <3100000>;
+					regulator-boot-on;
+					regulator-initial-mode = <3>;
 					regulator-ramp-delay = <12000>;
 				};
 
@@ -936,26 +940,27 @@
 	};
 
 	dsim_0: dsim@14800000 {
-		lcd_info = <&auo_h120bln017>;
-		/* lcd reset, lcd power */
-		gpios = <&gpd2 0 0x1 &gpa0 1 0x1>;
+		lcd_info = <&sharp_lcd>;
+		/* lcd reset */
+		gpios = <&gpd2 0 0x1>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&reset_oled &pwctl_oled>;
+		pinctrl-0 = <&reset_lcd>;
+		regulator_ldo18 = "vdd_lcd_3.1";
 		regulator_ldo17 = "vdd_lcd_1.8";
 		/* number of data lanes in use */
 		data_lane_cnt = <1>;
 		status = "okay";
 	};
 
-	auo_h120bln017: auo_h120bln017_custom {
+	sharp_lcd: sharp_lcd_custom {
 		/* 0: video mode, 1: DP command mode, 2: MIPI command mode */
 		mode = <2>;
-		/* custom (390 x 390) */
-		panel_name = "auo_h120bln017";
-		resolution = <390 390>;
-		/* DISP I/F resolution width : 300, height : 507 */
-		dispif_resol = <300 507>;
-		size = <32 32>;
+		/* custom (320 x 300) */
+		panel_name = "sharp_lcd";
+		resolution = <320 300>;
+		/* DISP I/F resolution width : 300, height : 320 */
+		dispif_resol = <300 320>;
+		size = <34 32>;
 		timing,refresh = <60>;
 		/* dsim H porch : hbp, hfp, hsa */
 		timing,dsim_h-porch = <1 1 1>;

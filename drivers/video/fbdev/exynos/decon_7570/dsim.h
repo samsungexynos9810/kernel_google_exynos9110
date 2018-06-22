@@ -63,6 +63,7 @@ extern struct mipi_dsim_lcd_driver s6e8aa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver rm69080_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver auo_h120bln017_mipi_lcd_driver;
+extern struct mipi_dsim_lcd_driver sharp_mipi_lcd_driver;
 
 #define PANEL_STATE_SUSPENED	0
 #define PANEL_STATE_RESUMED		1
@@ -157,8 +158,6 @@ struct mipi_dsim_lcd_driver {
 	int	(*enteralpm)(struct dsim_device *dsim);
 	int	(*exitalpm)(struct dsim_device *dsim);
 #endif
-	int	(*enteridle)(struct dsim_device *dsim);
-	int	(*exitidle)(struct dsim_device *dsim);
 };
 
 int dsim_write_data(struct dsim_device *dsim, unsigned int data_id,
