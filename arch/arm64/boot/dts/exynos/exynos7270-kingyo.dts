@@ -501,8 +501,6 @@
 					regulator-name = "vdd_lcd_1.8";
 					regulator-min-microvolt = <1500000>;
 					regulator-max-microvolt = <2000000>;
-					regulator-boot-on;
-					regulator-initial-mode = <3>;
 					regulator-ramp-delay = <12000>;
 				};
 
@@ -511,8 +509,6 @@
 					regulator-name = "vdd_lcd_3.1";
 					regulator-min-microvolt = <3100000>;
 					regulator-max-microvolt = <3100000>;
-					regulator-boot-on;
-					regulator-initial-mode = <3>;
 					regulator-ramp-delay = <12000>;
 				};
 

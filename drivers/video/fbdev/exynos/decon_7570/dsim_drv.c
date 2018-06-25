@@ -771,14 +771,13 @@ int dsim_enable_regulator(struct dsim_device *dsim)
 
 int dsim_disable_regulator(struct dsim_device *dsim)
 {
-#if 0
 	struct dsim_resources *res = &dsim->res;
 
 	int ret = 0;
 
 	ret = regulator_disable(res->reg_v33);
 	if (ret) {
-		dsim_err("%s : dsim regulator 3.3V disable failed\n", __func__);
+		dsim_err("%s : dsim regulator 3.1V disable failed\n", __func__);
 		return -EINVAL;
 	}
 
@@ -787,7 +786,7 @@ int dsim_disable_regulator(struct dsim_device *dsim)
 		dsim_err("%s : dsim regulator 1.8V disable failed\n", __func__);
 		return -EINVAL;
 	}
-#endif
+
 	return 0;
 }
 int dsim_set_panel_pre_power(struct dsim_device *dsim)
