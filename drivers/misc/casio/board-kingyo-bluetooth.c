@@ -26,6 +26,10 @@ static int dbg_level = DBG_INFO;
 module_param(dbg_level, int, 0644);
 MODULE_PARM_DESC(dbg_level, "set debug level");
 
+static char bdaddress[20];
+module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
+MODULE_PARM_DESC(bdaddress, "bluetooth address");
+
 #define dbg_err(fmt, ...) do { pr_err(fmt, ## __VA_ARGS__); } while(0)
 #define dbg_info(fmt, ...) do { if (dbg_level & DBG_INFO) pr_info(fmt, ## __VA_ARGS__); } while(0)
 #define dbg_trace(fmt, ...) do { if (dbg_level & DBG_TRACE) pr_info(fmt, ## __VA_ARGS__); } while(0)
@@ -325,7 +329,12 @@ static struct platform_driver bluetooth_platform_driver = {
 
 static int __init bluetooth_init(void)
 {
-    dbg_trace("%s()\n", __func__);
+	char *pstr;
+
+	dbg_trace("%s()\n", __func__);
+	pstr = strstr(boot_command_line, "board_shiri_bluetooth.btmac=");
+	if (pstr)
+		memcpy(bdaddress, pstr + 28, 17);
 	return platform_driver_register(&bluetooth_platform_driver);
 }
 
