@@ -5,6 +5,7 @@
 #include <linux/spi/spi.h>
 #include <linux/sysfs.h>
 #include <linux/stat.h>
+#include <linux/reboot.h>
 #include "MSensorsDrv.h"
 
 #define MSENSORS_FW_UPDATE_FILE_NAME "msensors_fw_update"
@@ -121,18 +122,13 @@ static void _msensors_firmware_cont(const struct firmware *fw, void *context)
 	struct device *dev = context;
 	struct Msensors_state *st = get_msensors_state();
 
-	if (!fw) {
-		st->fw.status = MSENSORS_FW_UP_IDLE;
-		show_fw_status(st);
-		return;
-	}
+	if (!fw)
+		goto idle;
 
 	if (!fw->data || !fw->size) {
 		dev_err(dev, "%s: No firmware received\n", __func__);
 		release_firmware(fw);
-		st->fw.status = MSENSORS_FW_UP_IDLE;
-		show_fw_status(st);
-		return;
+		goto idle;
 	}
 
 	if (st->fw.ver_loaded == 0)
@@ -140,9 +136,7 @@ static void _msensors_firmware_cont(const struct firmware *fw, void *context)
 
 	if (!(need_update(st, (uint8_t *)fw->data, fw->size))) {
 		release_firmware(fw);
-		st->fw.status = MSENSORS_FW_UP_IDLE;
-		show_fw_status(st);
-		return;
+		goto idle;
 	}
 
 	start_msensors_update();
@@ -151,8 +145,12 @@ static void _msensors_firmware_cont(const struct firmware *fw, void *context)
 	msensor_do_update(st, (uint8_t *)fw->data, fw->size);
 	release_firmware(fw);
 	st->fw.status = MSENSORS_FW_UP_WAIT_RESET;
-	show_fw_status(st);
 	wake_up(&st->fw.wait);
+	kernel_power_off();
+idle:
+	st->fw.status = MSENSORS_FW_UP_IDLE;
+	show_fw_status(st);
+	SUBCPU_send_lowtemp_burnoff_enable();
 }
 
 static int update_firmware_from_class(struct device *dev)

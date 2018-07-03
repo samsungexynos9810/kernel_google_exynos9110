@@ -971,6 +971,18 @@ int SUBCPU_rtc_read_time(uint8_t *data)
 	return 0;
 }
 
+void SUBCPU_send_lowtemp_burnoff_enable(void)
+{
+	unsigned char write_buff[WRITE_DATA_SIZE];
+
+	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
+	write_buff[0] = SUB_COM_TYPE_WRITE;
+	write_buff[1] = SUB_COM_SETID_LOWTEMP_BURNOFF;
+	write_buff[2] = 1;
+
+	Msensors_PushData(&write_buff[0]);
+}
+
 #ifdef CONFIG_BACKLIGHT_SUBCPU
 static int last_brightness = -1;
 int SUB_LCDBrightnessSet(unsigned char LCDBrightness)

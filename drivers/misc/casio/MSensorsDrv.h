@@ -65,6 +65,7 @@
 #define SUB_COM_SETID_VIB_SET			(0x40)		/* Vibrator Settiong */
 #define SUB_COM_SETID_BUZ_SET			(0x41)		/* Buzzer Settiong (no used) */
 #define SUB_COM_SETID_LCD_SET			(0x42)		/* LCD Brightness Settiong */
+#define SUB_COM_SETID_LOWTEMP_BURNOFF	(0x44)
 #define SUB_COM_SETID_RTC			(0x50)		/* RTC */
 #define SUB_COM_SETID_ALERM			(0x51)		/* Alarm */
 #define SUB_COM_SETID_KEYMODE			(0x52)		/* Key Mode */
@@ -236,6 +237,7 @@ void Msensors_SetTimestamp(void);
 void msensors_fw_up_init(struct Msensors_state *st);
 void Msensors_set_fw_version(struct Msensors_state *st, uint8_t *data);
 void spi_send_wrapper_for_fwup(uint8_t *sendbuf, uint8_t *recvbuf, size_t count);
+void SUBCPU_send_lowtemp_burnoff_enable(void);
 
 #endif	/* __MULTISENSORS_H */
 /* PET nishino ADD End */
