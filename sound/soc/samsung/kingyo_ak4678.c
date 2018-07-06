@@ -185,10 +185,12 @@ static struct snd_soc_ops kingyo_ops = {
 
 static int kingyo_ak4678_init_paiftx(struct snd_soc_pcm_runtime *rtd)
 {
+	#if 0
 	struct snd_soc_codec *codec = rtd->codec;
 	struct snd_soc_dapm_context *dapm = snd_soc_codec_get_dapm(codec);
 
 	snd_soc_dapm_sync(dapm);
+	#endif
 	return 0;
 }
 
