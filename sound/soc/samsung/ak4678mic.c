@@ -469,9 +469,10 @@ static int ak4678_set_dai_pll(struct snd_soc_dai* dai, int pll_id, int source,
 {
 	struct snd_soc_codec* codec = dai->codec;
 
-	// external slave mode only
+	// pll slave mode only 64fs, 48K
 	gprintk("\n");
-	snd_soc_write(codec, AK4678_04_PLL_MODE_SELECT1, 0x40);
+	snd_soc_update_bits( codec, AK4678_03_PLL_MODE_SELECT0, 0xF, 0x3);
+	snd_soc_write(codec, AK4678_04_PLL_MODE_SELECT1, AK4678_PMPLL | AK4678_BCKO);
 	return 0;
 }
 

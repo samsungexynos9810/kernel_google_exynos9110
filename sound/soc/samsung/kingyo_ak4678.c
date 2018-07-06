@@ -152,7 +152,7 @@ static int kingyo_hw_params(struct snd_pcm_substream *substream,
 		dev_err(card->dev, "Failed to set codec mode fmt: %d\n", ret);
 		return ret;
 	}
-	ret = snd_soc_dai_set_pll(codec_dai, AK4678_EXT_SLAVE, AK4678_PLL_24MHZ, 0, 0);
+	ret = snd_soc_dai_set_pll(codec_dai,  AK4678_PMPLL | AK4678_BCKO , 0, 0, 0);
 	if (ret < 0) {
 		dev_err(card->dev, "Failed to set PLL master mode codec fmt: %d\n", ret);
 		return ret;
