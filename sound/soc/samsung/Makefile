@@ -63,6 +63,8 @@ snd-soc-bells-objs := bells.o
 snd-soc-odroidx2-max98090-objs := odroidx2_max98090.o
 snd-soc-arndale-rt5631-objs := arndale_rt5631.o
 snd-soc-kingyo-ics4343x-objs := kingyo_ics4343x.o
+snd-soc-ak4678mic-objs := ak4678mic.o
+snd-soc-kingyo-ak4678-objs := kingyo_ak4678.o
 
 obj-$(CONFIG_SND_SOC_SAMSUNG_JIVE_WM8750) += snd-soc-jive-wm8750.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_NEO1973_WM8753) += snd-soc-neo1973-wm8753.o
@@ -90,3 +92,5 @@ obj-$(CONFIG_SND_SOC_BELLS) += snd-soc-bells.o
 obj-$(CONFIG_SND_SOC_ODROIDX2) += snd-soc-odroidx2-max98090.o
 obj-$(CONFIG_SND_SOC_ARNDALE_RT5631_ALC5631) += snd-soc-arndale-rt5631.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_KINGYO) += snd-soc-kingyo-ics4343x.o
+obj-$(CONFIG_SND_SOC_SAMSUNG_KINGYO_AK4678) += snd-soc-ak4678mic.o
+obj-$(CONFIG_SND_SOC_SAMSUNG_KINGYO_AK4678) += snd-soc-kingyo-ak4678.o

@@ -260,6 +260,16 @@ config SND_SOC_SAMSUNG_KINGYO
 	help
 	  Say Y if you want to add support for SoC audio on the Kingyo board.
 
+config SND_SOC_SAMSUNG_KINGYO_AK4678
+	tristate "SoC I2S Audio support for AK4678 on KINGYO board"
+	depends on SND_SOC_SAMSUNG
+	select SND_SAMSUNG_I2S
+	select SND_SAMSUNG_AUDSS
+	depends on I2C=y
+	select SND_SOC_AK4678
+	help
+	  Say Y if you want to add support for SoC audio on Kingyo board.
+
 config SND_SOC_SAMSUNG_VERBOSE_DEBUG
 	tristate "Audio debug message for Samsung"
 	depends on SND_SOC_SAMSUNG
