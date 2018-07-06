@@ -1008,7 +1008,7 @@
 
 	i2c_4: i2c@13830000 {
 		status = "okay";
-		samsung,i2c-max-bus-freq = <400000>;
+		samsung,i2c-max-bus-freq = <360000>;
 		ak4678@12{
 			compatible = "akm,ak4678";
 			reg = <0x12>;
