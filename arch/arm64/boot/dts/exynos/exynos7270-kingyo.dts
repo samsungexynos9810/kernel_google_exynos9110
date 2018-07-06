@@ -984,8 +984,8 @@
 
 /*
  * we should decide whether the audio mixer should be removed
- */ 
- 
+ */
+
 
 	i2s0: i2s@148A0000 {
 		pinctrl-names = "default", "idle","active";
@@ -996,18 +996,34 @@
 	};
 
 	lpass: lpass@148F0000 {
-		vdd_i2s-supply = <&ldo11_reg>;
+//		vdd_i2s-supply = <&ldo11_reg>;
 		status = "okay";
 	};
 
 	/* sound */
-	audio_codec: ics43432 {
-		compatible = "invensense,ics43432";
+	audio_codec: ak4678 {
+		compatible = "akm,ak4678";
 		status = "okay";
 	};
 
+	i2c_4: i2c@13830000 {
+		status = "okay";
+		samsung,i2c-max-bus-freq = <400000>;
+		ak4678@12{
+			compatible = "akm,ak4678";
+			reg = <0x12>;
+			ak4678,pdn-gpio = <&gpz1 5 0x1>;
+			vdd_18-supply = <&ldo11_reg>;
+			vdd_30-supply = <&ldo12_reg>;
+//			pinctrl-names = "i2c_active",
+//							"i2c_suspend";
+//			pinctrl-0 = <&i2c4_bus>;
+//			pinctrl-1 = <&i2c4_bus_suspend>;
+		};
+	};
+
 	sound {
-		compatible = "samsung,kingyo-4343X";
+		compatible = "samsung,kingyo-ak4678";
 		clocks = <&clock 740>, <&clock 742>;
 		clock-names = "fout_aud_pll", "audmixer_dout";
 		samsung,audio-cpu = <&i2s0>;
@@ -1065,8 +1081,8 @@
 	#define SENSOR_SCENARIO_OIS_FACTORY 3
 	#define SENSOR_SCENARIO_VIRTUAL     9
 	#define FLITE_ID_NOTHING 100
-	
-# // it is for external isp	
+
+# // it is for external isp
 	fimc_is@14400000 {
 		front_sensor_id = <57>; /* 4EC */
 		use_module_check;
