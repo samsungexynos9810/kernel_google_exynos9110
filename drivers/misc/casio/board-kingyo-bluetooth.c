@@ -26,7 +26,12 @@ static int dbg_level = DBG_INFO;
 module_param(dbg_level, int, 0644);
 MODULE_PARM_DESC(dbg_level, "set debug level");
 
-static char bdaddress[20];
+static char bdaddress[20] = {
+	'0', '0', ':', '0', '0', ':', '0', '0', ':',
+	'0', '0', ':', '0', '0', ':', '0', '0',
+	0x00, 0x00, 0x00
+};
+
 module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
 MODULE_PARM_DESC(bdaddress, "bluetooth address");
 
