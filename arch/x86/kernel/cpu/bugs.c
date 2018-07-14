@@ -328,4 +328,9 @@ ssize_t cpu_show_spectre_v2(struct device *dev,
 	return sprintf(buf, "%s%s\n", spectre_v2_strings[spectre_v2_enabled],
 		       spectre_v2_module_string());
 }
+
+ssize_t cpu_show_spec_store_bypass(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return cpu_show_common(dev, attr, buf, X86_BUG_SPEC_STORE_BYPASS);
+}
 #endif
