@@ -466,6 +466,9 @@ void spi_send_wrapper_for_fwup(uint8_t *sendbuf, uint8_t *recvbuf, size_t count)
 	Msensors_Spi_Send(g_st, sendbuf, recvbuf, count);
 }
 
+int cyttsp5_get_palm_on(void);
+#define MSENSORS_HANDLE_WRIST_TILT		(0x09)		/* Sensor Type Wrist Tilt  */
+
 static ssize_t Msensors_Read( struct file* file, char* buf, size_t count, loff_t* offset )
 {
 	int cnt=0;
@@ -488,6 +491,12 @@ retrywait:
 				goto retrywait;
 			else
 				break;	/* no data */
+		}
+		if (cyttsp5_get_palm_on()) {
+			if (Msensors_data_buff[dataBuffReadIndex].sensor_type == MSENSORS_HANDLE_WRIST_TILT) {
+				INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
+				continue;
+			}
 		}
 		if (copy_to_user(buf+buf_index, &Msensors_data_buff[dataBuffReadIndex], size))
 			return -EFAULT;

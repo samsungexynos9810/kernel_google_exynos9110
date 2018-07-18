@@ -311,6 +311,15 @@ static void work_palm_ignore_off(struct work_struct *work)
 	palm_ignore = 0;
 }
 
+static int palm_on;
+int cyttsp5_get_palm_on(void)
+{
+	if ((palm_on == 1) || (palm_ignore == 1))
+		return 1;
+	else
+		return 0;
+}
+
 /* read xy_data for all current touches */
 static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 {
@@ -321,7 +330,6 @@ static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 	struct cyttsp5_touch tch;
 	u8 num_cur_tch;
 	int rc = 0;
-	static int palm_on;
 
 	cyttsp5_get_touch_hdr(md, &tch, si->xy_mode + 3);
 
