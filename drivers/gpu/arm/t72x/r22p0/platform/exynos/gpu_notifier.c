@@ -176,24 +176,17 @@ static void gpu_power_suspend(struct kbase_device *kbdev)
 }
 
 #ifdef CONFIG_MALI_RT_PM
-extern int kbase_device_suspend(struct kbase_device *kbdev);
-extern int kbase_device_resume(struct kbase_device *kbdev);
 
 static int gpu_pm_notifier(struct notifier_block *nb, unsigned long event, void *cmd)
 {
 	int err = NOTIFY_OK;
-	struct kbase_device *kbdev = pkbdev;
 
 	switch (event) {
 	case PM_SUSPEND_PREPARE:
-		if (kbdev)
-			kbase_device_suspend(kbdev);
-		GPU_LOG(DVFS_DEBUG, LSI_SUSPEND, 0u, 0u, "%s: suspend event\n", __func__);
+		GPU_LOG(DVFS_DEBUG, LSI_SUSPEND, 0u, 0u, "%s: PM_SUSPEND_PREPARE event\n", __func__);
 		break;
 	case PM_POST_SUSPEND:
-		if (kbdev)
-			kbase_device_resume(kbdev);
-		GPU_LOG(DVFS_DEBUG, LSI_RESUME, 0u, 0u, "%s: resume event\n", __func__);
+		GPU_LOG(DVFS_DEBUG, LSI_RESUME, 0u, 0u, "%s: PM_POST_SUSPEND event\n", __func__);
 		break;
 	default:
 		break;

@@ -3933,14 +3933,10 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
  */
 
 /* MALI_SEC_INTEGRATION */
-static int kbase_device_suspend_dummy(struct device *dev)
+static int kbase_device_suspend(struct device *dev)
 {
-	return 0;
-}
+	struct kbase_device *kbdev = to_kbase_device(dev);
 
-/* MALI_SEC_INTEGRATION */
-int kbase_device_suspend(struct kbase_device *kbdev)
-{
 	if (!kbdev)
 		return -ENODEV;
 
@@ -3965,14 +3961,10 @@ int kbase_device_suspend(struct kbase_device *kbdev)
  */
 
 /* MALI_SEC_INTEGRATION */
-static int kbase_device_resume_dummy(struct device *dev)
+int kbase_device_resume(struct device *dev)
 {
-	return 0;
-}
+	struct kbase_device *kbdev = to_kbase_device(dev);
 
-/* MALI_SEC_INTEGRATION */
-int kbase_device_resume(struct kbase_device *kbdev)
-{
 	if (!kbdev)
 		return -ENODEV;
 
@@ -4091,8 +4083,8 @@ static int kbase_device_runtime_idle(struct device *dev)
  */
 static const struct dev_pm_ops kbase_pm_ops = {
 	/* MALI_SEC_INTEGRATION */
-	.suspend = kbase_device_suspend_dummy,
-	.resume = kbase_device_resume_dummy,
+	.suspend = kbase_device_suspend,
+	.resume = kbase_device_resume,
 #ifdef KBASE_PM_RUNTIME
 	.runtime_suspend = kbase_device_runtime_suspend,
 	.runtime_resume = kbase_device_runtime_resume,
