@@ -996,7 +996,7 @@
 	};
 
 	lpass: lpass@148F0000 {
-//		vdd_i2s-supply = <&ldo11_reg>;
+		vdd_i2s-supply = <&ldo11_reg>;
 		status = "okay";
 	};
 

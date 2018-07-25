@@ -682,7 +682,7 @@
 		i2c4_bus: i2c4-bus {
 			samsung,pins = "gpc4-1", "gpc4-0";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <3>;
+			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
 			samsung,pin-con-pdn = <2>;
 			samsung,pin-pud-pdn = <0>;

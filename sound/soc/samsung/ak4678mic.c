@@ -72,7 +72,7 @@
 	to control regulatoer for i2c should be done in domain pm instead of here
 	since codec driver is a client driver of i2c parent driver
 */
-#define REGLATORCTL_CODEC
+// #define REGLATORCTL_CODEC
 
 /*
 	control pm for i2c to disable interrupt. Before pincontorl for i2c is done.
