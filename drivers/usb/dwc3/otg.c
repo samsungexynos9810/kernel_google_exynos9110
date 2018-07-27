@@ -622,8 +622,6 @@ int dwc3_otg_init(struct dwc3 *dwc)
 	if (!ops)
 		return 0;
 
-	/* Set initial flag to resolve USB connection issue in booting */
-	dwc->is_on = 1;
 	/* Allocate and init otg instance */
 	dotg = devm_kzalloc(dwc->dev, sizeof(struct dwc3_otg), GFP_KERNEL);
 	if (!dotg) {
