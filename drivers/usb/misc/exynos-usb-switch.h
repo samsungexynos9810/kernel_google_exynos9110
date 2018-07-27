@@ -40,7 +40,6 @@ struct exynos_usb_switch {
 	atomic_t usb_status;
 	int (*get_usb_mode)(void);
 	int (*change_usb_mode)(int mode);
-	struct delayed_work	notify_work;
 };
 
 struct exynos_usbswitch_drvdata {
