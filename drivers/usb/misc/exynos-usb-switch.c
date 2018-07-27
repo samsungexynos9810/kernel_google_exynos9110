@@ -324,7 +324,7 @@ static int exynos_usbswitch_probe(struct platform_device *pdev)
 		exynos_usb_status_init(usb_switch);
 
 	INIT_DELAYED_WORK(&usb_switch->notify_work, usbgadget_ready);
-	schedule_delayed_work(&usb_switch->notify_work, msecs_to_jiffies(16000));
+	schedule_delayed_work(&usb_switch->notify_work, msecs_to_jiffies(10000));
 
 	ret = sysfs_create_group(&dev->kobj, &exynos_usbswitch_attr_group);
 	if (ret)
