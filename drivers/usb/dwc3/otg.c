@@ -288,11 +288,10 @@ static int dwc3_otg_start_gadget(struct otg_fsm *fsm, int on)
 		}
 
 	} else {
-		if (dwc->is_not_vbus_pad)
-			dwc3_gadget_disconnect_proc(dwc);
-		/* avoid missing disconnect interrupt */
-		wait_for_completion_timeout(&dwc->disconnect,
-				msecs_to_jiffies(200));
+		if (!dwc->is_not_vbus_pad)
+			/* avoid missing disconnect interrupt */
+			wait_for_completion_timeout(&dwc->disconnect,
+					msecs_to_jiffies(200));
 		ret = usb_gadget_vbus_disconnect(otg->gadget);
 		if (ret)
 			dev_err(dwc->dev, "%s: vbus disconnect failed\n",

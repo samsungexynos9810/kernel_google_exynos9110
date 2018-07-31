@@ -918,7 +918,7 @@ struct dwc3 {
 	const char		*hsphy_interface;
 
 	bool			vbus_session;
-	bool			softconnect;
+	struct usb_gadget_driver	*driver_bak;
 
 	struct completion	disconnect;
 
