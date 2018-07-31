@@ -760,7 +760,7 @@ static int ak4678_probe(struct snd_soc_codec* codec)
 
 	ak4678->codec = codec;
 
-	// ak4678_init_reg(codec);
+	ak4678->suspended = true;
 
 	ak4678->externClkMode = 0;
 	ak4678->onStereoEF = 0;
