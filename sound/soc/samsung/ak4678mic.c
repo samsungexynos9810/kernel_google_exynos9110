@@ -80,6 +80,12 @@
 */
 // #define PINCTL_I2C
 
+/*
+	runtime pm support
+*/
+//#define RUNTIME_PM_I2C
+
+
 #define AK4678_PORTIIS 0
 
 static int ak4678_runtime_suspend(struct device* dev);
@@ -859,6 +865,7 @@ static int ak4678_runtime_resume(struct device* dev)
 	return 0;
 }
 
+#ifdef RUNTIME_PM_I2C
 static int ak4678_runtime_idle(struct device* dev)
 {
 	gprintk("\n");
@@ -870,6 +877,7 @@ static const struct dev_pm_ops ak4678_pm_ops = {
 	.runtime_resume = ak4678_runtime_resume,
 	.runtime_idle = ak4678_runtime_idle,
 };
+#endif
 
 static struct snd_soc_codec_driver soc_codec_dev_ak4678 = {
 	.probe = ak4678_probe,
@@ -1105,7 +1113,9 @@ static struct i2c_driver ak4678_i2c_driver = {
 			.name = "ak4678mic",
 			.owner = THIS_MODULE,
 			.of_match_table = of_match_ptr(ak4678_i2c_dt_ids),
+#ifdef RUNTIME_PM_I2C
 			.pm = &ak4678_pm_ops,
+#endif
 		},
 	.probe = ak4678_i2c_probe,
 	.remove = ak4678_i2c_remove,
