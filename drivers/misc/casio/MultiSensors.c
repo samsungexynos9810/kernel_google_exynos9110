@@ -222,11 +222,8 @@ static void sub_HeaderInfoProc(void)
 	}
 }
 
-
-#define STSOBJ_NUM 5
-
-static uint32_t cnt_num[STSOBJ_NUM];	// number of samples
-static uint32_t cnt_idx[STSOBJ_NUM];
+static uint32_t cnt_num[NORMAL_SENSOR_NUM];	// number of samples
+static uint32_t cnt_idx[NORMAL_SENSOR_NUM];
 static int64_t meas_tri;
 
 static void timestamp_estimate_ts(int64_t measTri)
@@ -238,7 +235,7 @@ static void timestamp_count(uint8_t *recv, int packetnum)
 {
 	int i, type;
 
-	for (i = 0; i < STSOBJ_NUM; i++) {
+	for (i = 0; i < NORMAL_SENSOR_NUM; i++) {
 		cnt_num[i] = 0;
 		cnt_idx[i] = 0;
 	}
@@ -248,8 +245,9 @@ static void timestamp_count(uint8_t *recv, int packetnum)
 		recv += (SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE);
 		if (type == 0)
 			continue;
-		else if ((type & 0xf) < MSENSORS_TYPE_BHA)
-			++cnt_num[(type & 0xf) - 1];
+		type = (type & 0x1f) - 1;
+		if (type < NORMAL_SENSOR_NUM)
+			++cnt_num[type];
 	}
 }
 
@@ -383,11 +381,11 @@ static int SensorReadThread(void *p)
 										recv_buf[recv_index+1]<<8 | recv_buf[recv_index];
 						event_time = soc_time - elapsed_time * 1000000LL;
 					} else {
-						if ((sensor_type & 0xf) >= MSENSORS_TYPE_LIGHT) {
+						if ((sensor_type & 0x1f) > NORMAL_SENSOR_NUM) {
 							Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
 						} else {
 							Msensors_data_buff[dataBuffWriteIndex].timestamp =
-								get_timestamp((sensor_type & 0xf)-1);
+								get_timestamp((sensor_type & 0x1f) - 1);
 						}
 						Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
 						memcpy(&Msensors_data_buff[dataBuffWriteIndex].sensor_value[0],

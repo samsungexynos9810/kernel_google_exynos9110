@@ -93,19 +93,10 @@
 #define SUB_COM_GETID_FG_VER	(0x0f)
 #define SUB_COM_GETID_NUM	(0x10)	/* Number of GETIDs */
 
-#define MSENSORS_TYPE_META			(0x00)		/* Sensor Type Meta */
-#define MSENSORS_TYPE_ACCELEROMETER		(0x01)		/* Sensor Type Accelerometer */
-#define MSENSORS_TYPE_MAGNETIC_FIELD		(0x02)		/* Sensor Type Magnetic */
-#define MSENSORS_TYPE_GYRO			(0x03)		/* Sensor Type Gyroscope */
-#define MSENSORS_TYPE_PRESSURE			(0x04)		/* Sensor Type Pressure */
-#define MSENSORS_TYPE_LIGHT		(0x05)		/* Sensor Type Light */
-#define MSENSORS_TYPE_BHA		(0x06)		/* Sensor Type Bha */
-#define MSENSORS_TYPE_STEP_COUNTER		(0x07)		/* Sensor Type Step Counter */
-#define MSENSORS_TYPE_STEP_DETECTOR		(0x08)		/* Sensor Type Step Detector */
-#define MSENSORS_TYPE_WRIST_TILT	(0x09)	/* Sensor Type Wrist Tilt  */
-#define MSENSORS_TYPE_SIGNIFICANT_MOTION	(0x0a)	/* Sensor Type SignificantMotion */
-#define MSENSORS_TYPE_SUBCPU_LOG			(0x0e)		/* subcpu log */
-#define MSENSORS_TYPE_TIMESTAMP			(0x0f)		/* timestamp */
+#define MSENSORS_TYPE_META			0x00		/* Sensor Type Meta */
+#define MSENSORS_TYPE_SUBCPU_LOG	0x1e		/* subcpu log */
+#define MSENSORS_TYPE_TIMESTAMP		0x1f		/* timestamp */
+#define NORMAL_SENSOR_NUM	6
 
 #define SUB_COM_HEAD_INDEX_TYPE			(0x00)		/* HEADER Information Index Type */
 #define SUB_COM_HEAD_INDEX_PACKET		(0x01)		/* HEADER Information Index Packet */
