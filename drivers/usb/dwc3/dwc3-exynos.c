@@ -301,14 +301,31 @@ int dwc3_exynos_rsw_start(struct device *dev)
 
 	/* B-device by default */
 	rsw->fsm->id = 1;
-	rsw->fsm->b_sess_vld = 0;
 
 	return 0;
 }
 
 void dwc3_exynos_rsw_stop(struct device *dev)
 {
+	struct dwc3_exynos	*exynos;
+	struct dwc3_exynos_rsw	*rsw;
+	struct otg_fsm		*fsm;
+
 	dev_dbg(dev, "%s\n", __func__);
+
+	exynos = dev_get_drvdata(dev);
+	if (!exynos)
+		return;
+
+	rsw = &exynos->rsw;
+	fsm = rsw->fsm;
+	if (!fsm)
+		return;
+
+	if (fsm->b_sess_vld) {
+		fsm->b_sess_vld = 0;
+		dwc3_otg_run_sm(rsw->fsm);
+	}
 }
 
 static void dwc3_exynos_rsw_work(struct work_struct *w)
