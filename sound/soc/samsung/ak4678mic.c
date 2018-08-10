@@ -85,24 +85,24 @@
 */
 //#define RUNTIME_PM_I2C
 
-
 #define AK4678_PORTIIS 0
 
-static int ak4678_runtime_suspend(struct device* dev);
-static int ak4678_runtime_resume(struct device* dev);
+static int ak4678_runtime_suspend(struct device *dev);
+static int ak4678_runtime_resume(struct device *dev);
 
-static const char* ak4678_core_supply_names[] = {
+static const char *ak4678_core_supply_names[] = {
 #ifdef REGLATORCTL_CODEC
 	"vdd_18",
 #endif
 	"vdd_30",
 };
-#define AK4678_NUM_CORE_SUPPLIES (sizeof(ak4678_core_supply_names)/sizeof(ak4678_core_supply_names[0]))
+#define AK4678_NUM_CORE_SUPPLIES                                               \
+	(sizeof(ak4678_core_supply_names) / sizeof(ak4678_core_supply_names[0]))
 
 /* AK4678 Codec Private Data */
 struct ak4678_priv {
-	struct snd_soc_codec* codec;
-	struct i2c_client* i2c;
+	struct snd_soc_codec *codec;
+	struct i2c_client *i2c;
 	u16 externClkMode;
 	u16 onStereoEF; /* Stereo Enpahsis Filter ON */
 	u16 onDvlcDrc;  /* DVLC and DRC ON */
@@ -304,11 +304,8 @@ static const struct reg_default ak4678_reg[] = {
 
 #define AK4678__NUM 3
 
-static u8 hpf2[AK4678_FS_NUM][4] = {
-	{0xDE, 0x1D, 0x43, 0x24},
-	{0xE6, 0x1E, 0x34, 0x22},
-	{0x71, 0x1F, 0x1F, 0x21}
-	};
+static u8 hpf2[AK4678_FS_NUM][4] = {{0xDE, 0x1D, 0x43, 0x24},
+	{0xE6, 0x1E, 0x34, 0x22}, {0x71, 0x1F, 0x1F, 0x21}};
 
 static u8 fil3band[AK4678_FS_NUM][16] = {
 	{0x87, 0x02, 0x0D, 0x25, 0x79, 0x1D, 0x0D, 0x25,
@@ -325,7 +322,7 @@ static u8 fil2ns[AK4678_FS_NUM][8] = {
 	{0x40, 0x07, 0x80, 0x2E, 0xA9, 0x1F, 0xAD, 0x20},
 };
 
-static int set_fschgpara(struct snd_soc_codec* codec, int fsno)
+static int set_fschgpara(struct snd_soc_codec *codec, int fsno)
 {
 	u16 i, nAddr, nWtm;
 	gprintk("\n");
@@ -364,11 +361,11 @@ static int set_fschgpara(struct snd_soc_codec* codec, int fsno)
 	return (0);
 }
 
-static int ak4678_hw_params(struct snd_pcm_substream* substream,
-	struct snd_pcm_hw_params* params, struct snd_soc_dai* dai)
+static int ak4678_hw_params(struct snd_pcm_substream *substream,
+	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 {
-	struct snd_soc_codec* codec = dai->codec;
-	struct ak4678_priv* ak4678 = snd_soc_codec_get_drvdata(codec);
+	struct snd_soc_codec *codec = dai->codec;
+	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 	u8 fs;
 	u8 mode = 0;
 	u16 fsno2 = ak4678->fsno;
@@ -407,15 +404,15 @@ static int ak4678_hw_params(struct snd_pcm_substream* substream,
 }
 
 static int ak4678_set_dai_sysclk(
-	struct snd_soc_dai* dai, int clk_id, unsigned int freq, int dir)
+	struct snd_soc_dai *dai, int clk_id, unsigned int freq, int dir)
 {
 	gprintk("\n");
 	return 0;
 }
 
-static int ak4678_set_dai_fmt(struct snd_soc_dai* dai, unsigned int fmt)
+static int ak4678_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 {
-	struct snd_soc_codec* codec = dai->codec;
+	struct snd_soc_codec *codec = dai->codec;
 	u8 mode;
 	u8 format;
 
@@ -470,19 +467,20 @@ static int ak4678_set_dai_fmt(struct snd_soc_dai* dai, unsigned int fmt)
 	return 0;
 }
 
-static int ak4678_set_dai_pll(struct snd_soc_dai* dai, int pll_id, int source,
+static int ak4678_set_dai_pll(struct snd_soc_dai *dai, int pll_id, int source,
 	unsigned int freq_in, unsigned int freq_out)
 {
-	struct snd_soc_codec* codec = dai->codec;
+	struct snd_soc_codec *codec = dai->codec;
 
 	// pll slave mode only 64fs, 48K
 	gprintk("\n");
-	snd_soc_update_bits( codec, AK4678_03_PLL_MODE_SELECT0, 0xF, 0x3);
-	snd_soc_write(codec, AK4678_04_PLL_MODE_SELECT1, AK4678_PMPLL | AK4678_BCKO);
+	snd_soc_update_bits(codec, AK4678_03_PLL_MODE_SELECT0, 0xF, 0x3);
+	snd_soc_write(
+		codec, AK4678_04_PLL_MODE_SELECT1, AK4678_PMPLL | AK4678_BCKO);
 	return 0;
 }
 
-static int ak4678_set_dai_clkdiv(struct snd_soc_dai* dai, int div_id, int div)
+static int ak4678_set_dai_clkdiv(struct snd_soc_dai *dai, int div_id, int div)
 {
 	u8 ret = 0;
 
@@ -492,7 +490,7 @@ static int ak4678_set_dai_clkdiv(struct snd_soc_dai* dai, int div_id, int div)
 }
 
 static int ak4678_hw_free(
-	struct snd_pcm_substream* substream, struct snd_soc_dai* dai)
+	struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 {
 	int ret = 0;
 	gprintk("\n");
@@ -503,29 +501,28 @@ static int ak4678_hw_free(
 }
 
 void ak4678_set_dai_shutdown(
-	struct snd_pcm_substream* substream, struct snd_soc_dai* dai)
+	struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 {
 	gprintk("\n");
 	/* this function is called after i2s_shut down
 	 so we can do nothing here */
-
 }
 
 static int ak4678_set_prepare(
-	struct snd_pcm_substream* substream, struct snd_soc_dai* dai)
+	struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 {
 	int ret = 0;
-	struct snd_soc_codec* codec = dai->codec;
+	struct snd_soc_codec *codec = dai->codec;
 	gprintk("\n");
 	/* record prepare */
 	/*  <ctl name="PFSEL" value="ADC"/> */
 	/*  <ctl name="PFSDO" value="PFSEL"/> */
-	snd_soc_update_bits( codec, AK4678_19_FILTER_SELECT0, 3, 2);
-	/*  <ctl name="SDOL" value="PFSDO Lch"/>
-        <ctl name="SDOR" value="PFSDO Rch"/> */
-	snd_soc_update_bits( codec, AK4678_28_DMIX_CONTROL3, 0xF, 0);
+	snd_soc_update_bits(codec, AK4678_19_FILTER_SELECT0, 3, 2);
+	/*  <ctl name="SDOL" value="PFSDO Lch"/> */
+	/*  <ctl name="SDOR" value="PFSDO Rch"/> */
+	snd_soc_update_bits(codec, AK4678_28_DMIX_CONTROL3, 0xF, 0);
 	/* <ctl name="SDTO Capture Switch" value="Enable"/> */
-	// snd_soc_update_bits(codec, AK4678_05_FORMAT_SELECT, 0x10, 0);
+	/* snd_soc_update_bits(codec, AK4678_05_FORMAT_SELECT, 0x10, 0); */
 	snd_soc_update_bits(codec, AK4678_00_POWER_MANAGEMENT0, 0x032, 0x012);
 	gprintk("done \n");
 
@@ -533,9 +530,9 @@ static int ak4678_set_prepare(
 }
 
 static int ak4678_set_dai_startup(
-	struct snd_pcm_substream* substream, struct snd_soc_dai* dai)
+	struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 {
-	struct snd_soc_codec* codec = dai->codec;
+	struct snd_soc_codec *codec = dai->codec;
 	int ret = 0;
 
 	gprintk("\n");
@@ -548,31 +545,26 @@ static int ak4678_set_dai_startup(
 }
 
 static int ak4678_trigger(
-	struct snd_pcm_substream* substream, int cmd, struct snd_soc_dai* dai)
+	struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
 {
 	int ret = 0;
-//	struct snd_soc_codec* codec = dai->codec;
-
 	gprintk("cmd = %d\n", cmd);
-	switch(cmd) {
-		case SNDRV_PCM_TRIGGER_START:
-//			ret = snd_soc_update_bits(codec, AK4678_00_POWER_MANAGEMENT0, 0x02, 0x02);
-			break;
 
-		case SNDRV_PCM_TRIGGER_STOP:
-	        /*	<ctl name="ADCL Mux" value="OFF"/>
-        		<ctl name="ADCR Mux" value="OFF"/> */
-			break;
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+		break;
+
+	case SNDRV_PCM_TRIGGER_STOP:
+		break;
 	}
-
 
 	return ret;
 }
 
 static int ak4678_set_bias_level(
-	struct snd_soc_codec* codec, enum snd_soc_bias_level level)
+	struct snd_soc_codec *codec, enum snd_soc_bias_level level)
 {
-	struct ak4678_priv* ak4678 = snd_soc_codec_get_drvdata(codec);
+	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 
 	gprintk("BIAS LEVLE =%d\n", level);
 
@@ -594,9 +586,9 @@ static int ak4678_set_bias_level(
 	return 0;
 }
 
-static int ak4678_set_dai_mute(struct snd_soc_dai* dai, int mute)
+static int ak4678_set_dai_mute(struct snd_soc_dai *dai, int mute)
 {
-	struct snd_soc_codec* codec = dai->codec;
+	struct snd_soc_codec *codec = dai->codec;
 	int ret = 0;
 	u32 mute_reg;
 
@@ -649,7 +641,7 @@ struct snd_soc_dai_driver ak4678_dai[] = {
 };
 
 static int ak4678_write_def_reg(
-	struct snd_soc_codec* codec, unsigned int regs, unsigned int rege)
+	struct snd_soc_codec *codec, unsigned int regs, unsigned int rege)
 {
 	unsigned int reg;
 	reg = regs;
@@ -660,7 +652,7 @@ static int ak4678_write_def_reg(
 	return (0);
 }
 
-static int ak4678_set_reg_digital_effect(struct snd_soc_codec* codec)
+static int ak4678_set_reg_digital_effect(struct snd_soc_codec *codec)
 {
 	ak4678_write_def_reg(
 		codec, AK4678_13_ALCREF_SELECT, AK4678_16_ALCMODE_CONTROL);
@@ -676,9 +668,9 @@ static int ak4678_set_reg_digital_effect(struct snd_soc_codec* codec)
 	return (0);
 }
 
-static int ak4678_init_reg(struct snd_soc_codec* codec)
+static int ak4678_init_reg(struct snd_soc_codec *codec)
 {
-	struct ak4678_priv* ak4678 = snd_soc_codec_get_drvdata(codec);
+	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 
 	gprintk("\n");
 
@@ -706,7 +698,7 @@ static int ak4678_init_reg(struct snd_soc_codec* codec)
 }
 
 #ifdef PINCTL_I2C
-static int i2c_pinctrl_init(struct ak4678_priv* ak4678)
+static int i2c_pinctrl_init(struct ak4678_priv *ak4678)
 {
 	int err;
 	struct device *dev = &ak4678->i2c->dev;
@@ -718,16 +710,16 @@ static int i2c_pinctrl_init(struct ak4678_priv* ak4678)
 		return err;
 	}
 
-	ak4678->pinctrl_state_active = pinctrl_lookup_state(ak4678->pinctrl,
-			"i2c_active");
+	ak4678->pinctrl_state_active =
+		pinctrl_lookup_state(ak4678->pinctrl, "i2c_active");
 	if (IS_ERR_OR_NULL(ak4678->pinctrl_state_active)) {
 		err = PTR_ERR(ak4678->pinctrl_state_active);
 		dev_err(dev, "Can not lookup active pinctrl state %d\n", err);
 		return err;
 	}
 
-	ak4678->pinctrl_state_suspend = pinctrl_lookup_state(ak4678->pinctrl,
-			"i2c_suspend");
+	ak4678->pinctrl_state_suspend =
+		pinctrl_lookup_state(ak4678->pinctrl, "i2c_suspend");
 	if (IS_ERR_OR_NULL(ak4678->pinctrl_state_suspend)) {
 		err = PTR_ERR(ak4678->pinctrl_state_suspend);
 		dev_err(dev, "Can not lookup suspend pinctrl state %d\n", err);
@@ -737,9 +729,9 @@ static int i2c_pinctrl_init(struct ak4678_priv* ak4678)
 }
 #endif
 
-static int ak4678_probe(struct snd_soc_codec* codec)
+static int ak4678_probe(struct snd_soc_codec *codec)
 {
-	struct ak4678_priv* ak4678 = snd_soc_codec_get_drvdata(codec);
+	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 	int ret = 0;
 
 	gprintk("\n");
@@ -772,9 +764,9 @@ static int ak4678_probe(struct snd_soc_codec* codec)
 	return ret;
 }
 
-static int ak4678_remove(struct snd_soc_codec* codec)
+static int ak4678_remove(struct snd_soc_codec *codec)
 {
-	struct ak4678_priv* ak4678 = snd_soc_codec_get_drvdata(codec);
+	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 	gprintk("\n");
 
 	ak4678_set_bias_level(codec, SND_SOC_BIAS_OFF);
@@ -787,22 +779,22 @@ static int ak4678_remove(struct snd_soc_codec* codec)
 	return 0;
 }
 
-static int ak4678_suspend(struct snd_soc_codec* codec)
+static int ak4678_suspend(struct snd_soc_codec *codec)
 {
 	gprintk("\n");
 	return 0;
 }
 
-static int ak4678_resume(struct snd_soc_codec* codec)
+static int ak4678_resume(struct snd_soc_codec *codec)
 {
 	gprintk("\n");
 	return 0;
 }
 
-static int ak4678_runtime_suspend(struct device* dev)
+static int ak4678_runtime_suspend(struct device *dev)
 {
 	int ret;
-	struct ak4678_priv* ak4678 = dev_get_drvdata(dev);
+	struct ak4678_priv *ak4678 = dev_get_drvdata(dev);
 
 	gprintk("\n");
 
@@ -817,7 +809,8 @@ static int ak4678_runtime_suspend(struct device* dev)
 
 #ifdef PINCTL_I2C
 	if (ak4678->pinctrl) {
-		ret = pinctrl_select_state(ak4678->pinctrl,	ak4678->pinctrl_state_suspend);
+		ret = pinctrl_select_state(
+			ak4678->pinctrl, ak4678->pinctrl_state_suspend);
 		if (ret < 0)
 			dev_err(dev, "Could not set pin to suspend state %d\n", ret);
 	}
@@ -835,10 +828,10 @@ static int ak4678_runtime_suspend(struct device* dev)
 	return 0;
 }
 
-static int ak4678_runtime_resume(struct device* dev)
+static int ak4678_runtime_resume(struct device *dev)
 {
 
-	struct ak4678_priv* ak4678 = dev_get_drvdata(dev);
+	struct ak4678_priv *ak4678 = dev_get_drvdata(dev);
 	int ret;
 
 	gprintk("\n");
@@ -866,7 +859,7 @@ static int ak4678_runtime_resume(struct device* dev)
 }
 
 #ifdef RUNTIME_PM_I2C
-static int ak4678_runtime_idle(struct device* dev)
+static int ak4678_runtime_idle(struct device *dev)
 {
 	gprintk("\n");
 	return 0;
@@ -897,7 +890,6 @@ static const struct regmap_config ak4678_regmap = {
 	.cache_type = REGCACHE_RBTREE,
 };
 
-
 #ifdef SYSFS_CODEC
 
 static u32 addr1, addr2;
@@ -905,27 +897,30 @@ static u32 addr1, addr2;
 /*
  * store format :
  * 		wrte data :	"w <address> <data>" => @(paddres + offset) = data
- * 		read data :	"r <address> <data-data>" => @(paddres + offset) | "echo mixer"
+ * 		read data :	"r <address> <data-data>"
+ * 							=> @(paddres + offset) | "echo mixer"
  */
 
-static ssize_t codec_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t codec_store(struct device *dev, struct device_attribute *attr,
+	const char *buf, size_t count)
 {
 	char s[16];
 	char *string = s;
 	char *argv[3];
 	int argc;
 	unsigned int data1;
-	struct ak4678_priv* ak4678 = dev_get_drvdata(dev);
+	struct ak4678_priv *ak4678 = dev_get_drvdata(dev);
 	unsigned int result;
 
 	strncpy(s, buf, sizeof(s));
-	for (argc=0; argc<3 ;argc++) {
+	for (argc = 0; argc < 3; argc++) {
 		argv[argc] = strsep(&string, " ");
-		if (argv[argc] == NULL) break;
+		if (argv[argc] == NULL)
+			break;
 	}
 
-	if (count < 2) 	return count;
+	if (count < 2)
+		return count;
 
 	switch (*argv[0]) {
 	case 'w':
@@ -939,7 +934,7 @@ static ssize_t codec_store(struct device *dev,
 	case 'r':
 		if (argc >= 2) {
 			gprintk("argv[1] %s\n", argv[1]);
-			argv[2] = strchr(argv[1],'-');
+			argv[2] = strchr(argv[1], '-');
 			if (argv[2] != NULL)
 				*argv[2]++ = '\0';
 			gprintk("argv %s-%s\n", argv[1], argv[2]);
@@ -955,33 +950,32 @@ static ssize_t codec_store(struct device *dev,
 	return count;
 }
 
-static ssize_t codec_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+static ssize_t codec_show(
+	struct device *dev, struct device_attribute *attr, char *buf)
 {
-	unsigned int count=0;
-	struct ak4678_priv* ak4678 = dev_get_drvdata(dev);
+	unsigned int count = 0;
+	struct ak4678_priv *ak4678 = dev_get_drvdata(dev);
 	u8 reg_data;
-	int i=0, imax;
+	int i = 0, imax;
 
-	if (addr2 > 255) addr2 = 255;
+	if (addr2 > 255)
+		addr2 = 255;
 	imax = addr2 - addr1 + 1;
 
-	for (i=0; i<imax ;i++) {
-		if (i%16 == 0)
-			count += sprintf(buf+count, "@0x%x: ", addr1+i);
-		reg_data = snd_soc_read(ak4678->codec, addr1+i);
-		count += sprintf(buf+count, "0x%02x", reg_data);
-		if (i == imax-1 || i%16 == 15)
-			count += sprintf(buf+count, "\n");
+	for (i = 0; i < imax; i++) {
+		if (i % 16 == 0)
+			count += sprintf(buf + count, "@0x%x: ", addr1 + i);
+		reg_data = snd_soc_read(ak4678->codec, addr1 + i);
+		count += sprintf(buf + count, "0x%02x", reg_data);
+		if (i == imax - 1 || i % 16 == 15)
+			count += sprintf(buf + count, "\n");
 		else
-			count += sprintf(buf+count, ",");
+			count += sprintf(buf + count, ",");
 	}
 	return count;
 }
 
-
-static DEVICE_ATTR(codec, S_IRUGO | S_IWUSR | S_IWGRP,
-		codec_show, codec_store);
+static DEVICE_ATTR(codec, S_IRUGO | S_IWUSR | S_IWGRP, codec_show, codec_store);
 
 static struct attribute *kaudioc_attr_list[] = {
 	&dev_attr_codec.attr,
@@ -995,11 +989,11 @@ static struct attribute_group kaudioc_attr_grp = {
 #endif
 
 static int ak4678_i2c_probe(
-	struct i2c_client* i2c, const struct i2c_device_id* id)
+	struct i2c_client *i2c, const struct i2c_device_id *id)
 {
-	struct ak4678_priv* ak4678;
-	struct regmap* regmap;
-	struct device_node* np = i2c->dev.of_node;
+	struct ak4678_priv *ak4678;
+	struct regmap *regmap;
+	struct device_node *np = i2c->dev.of_node;
 	int ret, i;
 
 	gprintk("\n");
@@ -1053,20 +1047,21 @@ static int ak4678_i2c_probe(
 	pm_request_idle(&i2c->dev);
 
 	gprintk("snd_soc_register_codec\n");
-	ret = snd_soc_register_codec(
-		&i2c->dev, &soc_codec_dev_ak4678, ak4678_dai, 1);
+	ret =
+		snd_soc_register_codec(&i2c->dev, &soc_codec_dev_ak4678, ak4678_dai, 1);
 	if (ret != 0) {
 		gprintk("failed probe\n");
-err_regx:
+	err_regx:
 		regulator_bulk_disable(
 			ARRAY_SIZE(ak4678->core_supplies), ak4678->core_supplies);
-err:
+	err:
 		gprintk("failed probe\n");
 		return ret;
 	}
 
 #ifdef SYSFS_CODEC
-	gprintk("kobj.name=%s, p.name=%s", i2c->dev.kobj.name, i2c->dev.kobj.parent->name);
+	gprintk("kobj.name=%s, p.name=%s", i2c->dev.kobj.name,
+		i2c->dev.kobj.parent->name);
 	ret = sysfs_create_group(&(i2c->dev.kobj), &kaudioc_attr_grp);
 	if (ret) {
 		dev_err(&i2c->dev, "Failed to create sysfs group, errno:%d\n", ret);
@@ -1077,9 +1072,9 @@ err:
 	return 0;
 }
 
-static int ak4678_i2c_remove(struct i2c_client* client)
+static int ak4678_i2c_remove(struct i2c_client *client)
 {
-	struct ak4678_priv* ak4678 = i2c_get_clientdata(client);
+	struct ak4678_priv *ak4678 = i2c_get_clientdata(client);
 
 	gprintk("\n");
 
