@@ -1036,14 +1036,6 @@ static int ak4678_i2c_probe(
 		goto err;
 	}
 
-	ret = regulator_bulk_enable(
-		ARRAY_SIZE(ak4678->core_supplies), ak4678->core_supplies);
-	if (ret != 0) {
-		gprintk("Fialed to bulk enable\n");
-		dev_err(&i2c->dev, "Failed to enable core supplies: %d\n", ret);
-		goto err;
-	}
-
 	regmap = devm_regmap_init_i2c(i2c, &ak4678_regmap);
 	if (IS_ERR(regmap)) {
 		ret = PTR_ERR(regmap);

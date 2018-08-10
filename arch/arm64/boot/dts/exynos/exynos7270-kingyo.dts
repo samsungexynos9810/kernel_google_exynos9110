@@ -1013,12 +1013,8 @@
 			compatible = "akm,ak4678";
 			reg = <0x12>;
 			ak4678,pdn-gpio = <&gpz1 5 0x1>;
-			vdd_18-supply = <&ldo11_reg>;
+//			vdd_18-supply = <&ldo11_reg>;
 			vdd_30-supply = <&ldo12_reg>;
-//			pinctrl-names = "i2c_active",
-//							"i2c_suspend";
-//			pinctrl-0 = <&i2c4_bus>;
-//			pinctrl-1 = <&i2c4_bus_suspend>;
 		};
 	};
 
