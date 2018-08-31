@@ -80,8 +80,9 @@ static int set_mixer_clock(struct snd_soc_card *card)
 
 static unsigned int mixer_config_regs[] = {
 	AUDMIXER_REG_10_DMIX1, 0x00,
-	AUDMIXER_REG_11_DMIX2, 0x80,
-	AUDMIXER_REG_0F_DIG_EN, 0x08,
+	AUDMIXER_REG_0F_DIG_EN, 0x00,
+	AUDMIXER_REG_11_DMIX2, 0x00,
+	AUDMIXER_REG_16_DOUTMX1, 0x01,
 	AUDMIXER_REG_0D_RMIX_CTL, 0x80,
 };
 static int map_audiomixer(void)
