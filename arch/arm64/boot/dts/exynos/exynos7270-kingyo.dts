@@ -989,9 +989,9 @@
 
 	i2s0: i2s@148A0000 {
 		pinctrl-names = "default", "idle","active";
-		pinctrl-0 = <&i2s_pmic_bus_idle>;
-		pinctrl-1 = <&i2s_pmic_bus_idle>;
-		pinctrl-2 = <&i2s_pmic_bus>;
+		pinctrl-0 = <&i2s_pmic_bus_idle &i2s_amp_bus_idle>;
+		pinctrl-1 = <&i2s_pmic_bus_idle &i2s_amp_bus_idle>;
+		pinctrl-2 = <&i2s_pmic_bus &i2s_amp_bus>;
 		status = "okay";
 	};
 
