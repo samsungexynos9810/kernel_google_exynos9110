@@ -116,6 +116,7 @@ static int kingyo_hw_params(
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	int rfs = 256, bfs = 64;
 	int ret;
+	unsigned int data;
 
 	gprintk("fs=%u\n", params_rate(params));
 
@@ -131,17 +132,9 @@ static int kingyo_hw_params(
 	snd_soc_dai_set_clkdiv(cpu_dai, SAMSUNG_I2S_DIV_BCLK, bfs);
 	snd_soc_dai_set_clkdiv(cpu_dai, SAMSUNG_I2S_DIV_RCLK, rfs);
 
-#if 0
-	/* Set CPU DAI configuration */
-	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S
-					 | SND_SOC_DAIFMT_NB_NF
-					 | SND_SOC_DAIFMT_CBM_CFM);
-	if (ret < 0) {
-		dev_err(card->dev, "Failed to set aif1 cpu fmt: %d\n", ret);
-		return ret;
-	}
-#endif
+	/* Do not set CPU DAI configuration */
 
+	/* configuration audio mixer without itself own driver */
 	ret = config_audmixer();
 
 	ret = snd_soc_dai_set_fmt(codec_dai,
@@ -156,6 +149,13 @@ static int kingyo_hw_params(
 			card->dev, "Failed to set PLL master mode codec fmt: %d\n", ret);
 		return ret;
 	}
+
+	/* Set mic volume dependig on units */
+	data = (MicGain & 0xF) |  ((MicGain & 0xF) << 4);
+	gprintk("update MicGain=%d, IDVol=%d\n", MicGain, IDVol);
+	snd_soc_write(rtd->codec, AK4678_07_MIC_AMP_GAIN, data);
+	snd_soc_write(rtd->codec, AK4678_11_LIN_VOLUME, IDVol);
+	snd_soc_write(rtd->codec, AK4678_12_RIN_VOLUME, IDVol);
 
 	return ret;
 }

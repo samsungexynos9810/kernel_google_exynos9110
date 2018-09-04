@@ -686,12 +686,6 @@ static int ak4678_init_reg(struct snd_soc_codec *codec)
 	snd_soc_write(codec, AK4678_00_POWER_MANAGEMENT0, 0x0);
 	ak4678_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 
-	snd_soc_write(codec, AK4678_11_LIN_VOLUME, 0xA9);
-	snd_soc_write(codec, AK4678_12_RIN_VOLUME, 0xA9);
-
-	// set mic gain 12 dB
-	snd_soc_write(codec, AK4678_07_MIC_AMP_GAIN, 0xDD);
-
 	ak4678_set_reg_digital_effect(codec);
 
 	return 0;
