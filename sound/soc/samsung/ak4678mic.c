@@ -2,7 +2,7 @@
  * ak4678.c  --  audio driver for ak4678
  *
  * Copyright (C) 2012 Asahi Kasei Microdevices Corporation
- *  Author                Date        Revistion
+ *  Author                Date        Revision
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *     Linfeng            12/09/28       1.0
  *to test:
@@ -372,7 +372,7 @@ static int ak4678_hw_params(struct snd_pcm_substream *substream,
 
 	gprintk("\n");
 
-	/* exynos requiure codec to run 48KHz */
+	/* exynos require codec to run 48KHz */
 	fs = snd_soc_read(codec, AK4678_03_PLL_MODE_SELECT0);
 	fs &= ~AK4678_FS;
 	fs |= AK4678_FS_48KHZ;
@@ -564,7 +564,7 @@ static int ak4678_set_bias_level(
 {
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 
-	gprintk("BIAS LEVLE =%d\n", level);
+	gprintk("BIAS LEVEL =%d\n", level);
 
 	switch (level) {
 	case SND_SOC_BIAS_ON:

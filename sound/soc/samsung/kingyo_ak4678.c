@@ -43,7 +43,7 @@
 /* for sysfs to rd/wr register */
 #define SYSFS_MIXER
 
-/* for power mangement of device e.g. codec and mic amp */
+/* for power management of device e.g. codec and mic amp */
 #define AUDIOIF_POWER_SUPPLY
 
 /* for configuration to codec */
@@ -150,7 +150,7 @@ static int kingyo_hw_params(
 		return ret;
 	}
 
-	/* Set mic volume dependig on units */
+	/* Set mic volume depending on units */
 	data = (MicGain & 0xF) |  ((MicGain & 0xF) << 4);
 	gprintk("update MicGain=%d, IDVol=%d\n", MicGain, IDVol);
 	snd_soc_write(rtd->codec, AK4678_07_MIC_AMP_GAIN, data);
