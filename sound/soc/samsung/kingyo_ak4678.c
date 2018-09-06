@@ -239,7 +239,7 @@ static void __iomem *basevaddr = NULL;
 /*
  * store format :
  * 		set baseaddres : "a <paddress>"
- * 		wrte data :	"w <offset>> <data>" => @(paddres + offset) = data
+ * 		write data :"w <offset>> <data>" => @(paddres + offset) = data
  * 		read data :	"r <offset>>" => @(paddres + offset) ! "echo mixer"
  */
 static ssize_t mixer_store(struct device *dev, struct device_attribute *attr,

@@ -27,7 +27,7 @@
  *
  *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *      keisak@casio     18/06/06         2.0 Kernel 4.4
- *  limitted version only to mic usage
+ *  limited version only to mic usage
  *  No support kcontrol, dpam_widget
  *
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
@@ -69,10 +69,10 @@
 #define SYSFS_CODEC
 
 /*
-	to control regulatoer for i2c should be done in domain pm instead of here
+	to control regulator for i2c should be done in domain pm instead of here
 	since codec driver is a client driver of i2c parent driver
 */
-// #define REGLATORCTL_CODEC
+// #define REGULATORCTL_CODEC
 
 /*
 	control pm for i2c to disable interrupt. Before pincontorl for i2c is done.
@@ -91,7 +91,7 @@ static int ak4678_runtime_suspend(struct device *dev);
 static int ak4678_runtime_resume(struct device *dev);
 
 static const char *ak4678_core_supply_names[] = {
-#ifdef REGLATORCTL_CODEC
+#ifdef REGULATORCTL_CODEC
 	"vdd_18",
 #endif
 	"vdd_30",
@@ -104,7 +104,7 @@ struct ak4678_priv {
 	struct snd_soc_codec *codec;
 	struct i2c_client *i2c;
 	u16 externClkMode;
-	u16 onStereoEF; /* Stereo Enpahsis Filter ON */
+	u16 onStereoEF; /* Stereo Emphasis Filter ON */
 	u16 onDvlcDrc;  /* DVLC and DRC ON */
 	u16 fsno; 		/* fs  0 : fs <= 12kHz,  1: 12kHz < fs <= 24kHz, 2: fs > 24kHz */
 	u16 pllMode;
@@ -423,12 +423,10 @@ static int ak4678_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBS_CFS:
-		gprintk("(Slave)\n");
 		mode &= ~(AK4678_M_S);
 		mode &= ~(AK4678_BCKO);
 		break;
 	case SND_SOC_DAIFMT_CBM_CFM:
-		gprintk("(Master)\n");
 		mode |= (AK4678_M_S);
 		// mode |= (AK4678_BCKO);  //CONFIG_LINF  BICKO 64FS
 		break;
@@ -890,7 +888,7 @@ static u32 addr1, addr2;
 
 /*
  * store format :
- * 		wrte data :	"w <address> <data>" => @(paddres + offset) = data
+ * 		write data:	"w <address> <data>" => @(paddres + offset) = data
  * 		read data :	"r <address> <data-data>"
  * 							=> @(paddres + offset) | "echo mixer"
  */
@@ -999,15 +997,12 @@ static int ak4678_i2c_probe(
 	if (np) {
 		ak4678->pdn = of_get_named_gpio(np, "ak4678,pdn-gpio", 0);
 		if (ak4678->pdn < 0) {
-			gprintk("Looking up %s property in node %s failed %d\n",
-				"ak4678,pdn-gpio", np->full_name, ak4678->pdn);
 			ak4678->pdn = -1;
 			dev_err(&i2c->dev, "ak4678 PDN pin error\n");
 			goto err;
 		}
 
 		if (!gpio_is_valid(ak4678->pdn)) {
-			gprintk("gpio is unvalid\n");
 			dev_err(&i2c->dev, "ak4678 pdn pin(%u) is invalid\n", ak4678->pdn);
 			goto err;
 		}
@@ -1020,7 +1015,6 @@ static int ak4678_i2c_probe(
 		&i2c->dev, ARRAY_SIZE(ak4678->core_supplies), ak4678->core_supplies);
 	if (ret != 0) {
 		dev_err(&i2c->dev, "Failed to request core supplies: %d\n", ret);
-		gprintk("Fialed to core supply\n");
 		goto err;
 	}
 
@@ -1031,7 +1025,6 @@ static int ak4678_i2c_probe(
 		goto err_regx;
 	}
 
-	gprintk("client data\n");
 	i2c_set_clientdata(i2c, ak4678);
 
 	ak4678->i2c = i2c;
@@ -1040,11 +1033,9 @@ static int ak4678_i2c_probe(
 	pm_runtime_enable(&i2c->dev);
 	pm_request_idle(&i2c->dev);
 
-	gprintk("snd_soc_register_codec\n");
 	ret =
 		snd_soc_register_codec(&i2c->dev, &soc_codec_dev_ak4678, ak4678_dai, 1);
 	if (ret != 0) {
-		gprintk("failed probe\n");
 	err_regx:
 		regulator_bulk_disable(
 			ARRAY_SIZE(ak4678->core_supplies), ak4678->core_supplies);
@@ -1054,15 +1045,11 @@ static int ak4678_i2c_probe(
 	}
 
 #ifdef SYSFS_CODEC
-	gprintk("kobj.name=%s, p.name=%s", i2c->dev.kobj.name,
-		i2c->dev.kobj.parent->name);
 	ret = sysfs_create_group(&(i2c->dev.kobj), &kaudioc_attr_grp);
 	if (ret) {
 		dev_err(&i2c->dev, "Failed to create sysfs group, errno:%d\n", ret);
 	}
 #endif
-
-	gprintk("exit\n");
 	return 0;
 }
 
