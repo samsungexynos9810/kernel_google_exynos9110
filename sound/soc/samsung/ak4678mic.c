@@ -565,6 +565,9 @@ static int ak4678_set_bias_level(
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 
 	gprintk("BIAS LEVEL =%d\n", level);
+	/* This function is called when register card but i2c was not prepared */
+	if (ak4678->suspended)
+		return 0;
 
 	switch (level) {
 	case SND_SOC_BIAS_ON:
@@ -1028,10 +1031,6 @@ static int ak4678_i2c_probe(
 	i2c_set_clientdata(i2c, ak4678);
 
 	ak4678->i2c = i2c;
-
-	pm_runtime_set_active(&i2c->dev);
-	pm_runtime_enable(&i2c->dev);
-	pm_request_idle(&i2c->dev);
 
 	ret =
 		snd_soc_register_codec(&i2c->dev, &soc_codec_dev_ak4678, ak4678_dai, 1);
