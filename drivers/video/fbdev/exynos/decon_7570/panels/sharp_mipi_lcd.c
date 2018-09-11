@@ -52,7 +52,7 @@ void sharp_lcd_notify_ambient(void)
 }
 #endif
 
-//static int last_brightness = -1;
+static int last_brightness = -1;
 
 static int sharp_lcd_set_brightness(struct backlight_device *bd)
 {
@@ -68,20 +68,23 @@ static int sharp_lcd_set_brightness(struct backlight_device *bd)
 		if (!(bd->props.state & BL_CORE_FBBLANK))
 			brightness = 1;
 	}
-
+#if 0
 	if (brightness > 0)
 		SUB_LCDBrightnessSet((brightness >> 4) + 1);
 	else
 		SUB_LCDBrightnessSet(0);
-
+#endif
 	if (bl_force_off || ambient_in_2layer)
 		brightness = 0;
-#endif
 
-	//if (last_brightness != brightness) {
-	//	if (sharp_lcd_brightness_set(brightness) == 0)
-	//		last_brightness = brightness;
-	//}
+	if (last_brightness != brightness) {
+		if (brightness > 0)
+			SUB_LCDBrightnessSet((brightness >> 4) + 1);
+		else
+			SUB_LCDBrightnessSet(0);
+		last_brightness = brightness;
+	}
+#endif
 
 	return 0;
 }
@@ -122,7 +125,6 @@ static int sharp_mipi_lcd_suspend(struct dsim_device *dsim)
 
 static int sharp_mipi_lcd_resume(struct dsim_device *dsim)
 {
-	printk(KERN_INFO "***** sharp_mipi_lcd_resume\n");
 	return 0;
 }
 

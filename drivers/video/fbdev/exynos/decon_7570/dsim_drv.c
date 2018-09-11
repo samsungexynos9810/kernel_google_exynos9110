@@ -686,7 +686,7 @@ int dsim_reset_panel(struct dsim_device *dsim)
 
 	usleep_range(10000, 11000);
 	gpio_set_value(res->lcd_reset, 1);
-	usleep_range(10000, 11000);
+	usleep_range(15000, 16000);
 	gpio_set_value(res->lcd_reset, 0);
 	usleep_range(1000, 1100);
 	gpio_set_value(res->lcd_reset, 1);
@@ -741,18 +741,6 @@ int dsim_enable_regulator(struct dsim_device *dsim)
 
 	int ret = 0;
 	dsim_info("%s +\n", __func__);
-	ret = regulator_set_voltage(res->reg_v33, 3100000, 3100000);
-	if (ret) {
-		dsim_err("%s : dsim regulator set voltage 3.1V failed\n", __func__);
-		return -EINVAL;
-	}
-
-	ret = regulator_enable(res->reg_v33);
-	if (ret) {
-		dsim_err("%s : dsim regulator 3.1V enable failed\n", __func__);
-		return -EINVAL;
-	}
-
 	ret = regulator_set_voltage(res->reg_v18, 1800000, 1800000);
 	if (ret) {
 		dsim_err("%s : dsim regulator set voltage 1.8V failed\n", __func__);
@@ -764,7 +752,21 @@ int dsim_enable_regulator(struct dsim_device *dsim)
 		dsim_err("%s : dsim regulator 1.8V enable failed\n", __func__);
 		return -EINVAL;
 	}
-	dsim_err("%s - \n", __func__);
+
+	usleep_range(1000, 1100);
+
+	ret = regulator_set_voltage(res->reg_v33, 3100000, 3100000);
+	if (ret) {
+		dsim_err("%s : dsim regulator set voltage 3.1V failed\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = regulator_enable(res->reg_v33);
+	if (ret) {
+		dsim_err("%s : dsim regulator 3.1V enable failed\n", __func__);
+		return -EINVAL;
+	}
+	dsim_info("%s - \n", __func__);
 
 	return 0;
 }
@@ -780,6 +782,15 @@ int dsim_disable_regulator(struct dsim_device *dsim)
 		dsim_err("%s : dsim regulator 3.1V disable failed\n", __func__);
 		return -EINVAL;
 	}
+
+	ret = gpio_request_one(res->lcd_reset, GPIOF_OUT_INIT_LOW, "lcd_reset");
+	if (ret < 0) {
+		dsim_err("failed LCD reset off\n");
+		return -EINVAL;
+	}
+	gpio_free(res->lcd_reset);
+
+	usleep_range(5000, 5100);
 
 	ret = regulator_disable(res->reg_v18);
 	if (ret) {
@@ -845,13 +856,6 @@ int dsim_set_panel_power(struct dsim_device *dsim, bool on)
 
 		}
 	} else {
-		ret = gpio_request_one(res->lcd_reset, GPIOF_OUT_INIT_LOW, "lcd_reset");
-		if (ret < 0) {
-			dsim_err("failed LCD reset off\n");
-			return -EINVAL;
-		}
-		gpio_free(res->lcd_reset);
-
 		if (res->lcd_power[0] > 0) {
 			ret = gpio_request_one(res->lcd_power[0], GPIOF_OUT_INIT_LOW, "lcd_power0");
 			if (ret < 0) {
@@ -880,6 +884,8 @@ int dsim_set_panel_power(struct dsim_device *dsim, bool on)
 
 static int dsim_enable(struct dsim_device *dsim)
 {
+	dsim_info("%s: %d, %d\n", __func__, dsim->state, dsim->doze_state);
+
 	if (dsim->state == DSIM_STATE_HSCLKEN) {
 #ifdef CONFIG_LCD_DOZE_MODE
 		if (IS_DOZE(dsim->doze_state)) {
@@ -1025,8 +1031,10 @@ static int dsim_doze_enable(struct dsim_device *dsim)
 	dsim_runtime_resume(dsim->dev);
 #endif
 
-	if (dsim->doze_state == DOZE_STATE_SUSPEND)
+	if (dsim->doze_state == DOZE_STATE_SUSPEND) {
+		dsim_enable_regulator(dsim);
 		dsim_set_panel_power(dsim, 1);
+	}
 
 	/* DPHY power on */
 	phy_power_on(dsim->phy);

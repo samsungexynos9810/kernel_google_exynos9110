@@ -966,10 +966,10 @@
 		timing,decon_h-porch = <7 1 1>;
 		/* decon V porch : VBP, VFP, VSA */
 		timing,decon_v-porch = <10 2 1>;
-		/* panel max speed : 384Mbps */
-		timing,dsi-hs-clk = <384>;
-		timing,pms = <2 118 2>;
-		timing,dsi-escape-clk = <16>;
+		/* panel max speed : 166Mbps */
+		timing,dsi-hs-clk = <166>;
+		timing,pms = <2 102 3>;
+		timing,dsi-escape-clk = <20>;
 	};
 
 	battery: sub_bat {

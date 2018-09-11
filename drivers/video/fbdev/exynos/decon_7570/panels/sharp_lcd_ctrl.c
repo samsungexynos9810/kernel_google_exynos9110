@@ -213,8 +213,14 @@ int sharp_lcd_enable(void)
 	return 0;
 }
 
+int decon_get_shutdown_state(void);
+
 int sharp_lcd_disable(void)
 {
+	if (decon_get_shutdown_state())
+		msleep(1500);
+	else
+		msleep(200);
 	sharp_power_sequence_off();
 
 	return 0;

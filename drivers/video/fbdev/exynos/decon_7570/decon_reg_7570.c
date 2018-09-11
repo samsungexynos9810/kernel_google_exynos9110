@@ -189,6 +189,8 @@ void decon_reg_set_linecnt_op_threshold(u32 id, int dsi_idx, u32 th)
 void decon_reg_set_clkval(u32 id, u32 clkdiv)
 {
 	decon_write_mask(id, VCLKCON0, ~0, VCLKCON0_CLKVALUP);
+
+	decon_write(id, VCLKCON1, 0x00000001);
 }
 
 void decon_reg_direct_on_off(u32 id, u32 en)
