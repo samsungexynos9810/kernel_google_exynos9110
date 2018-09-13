@@ -50,6 +50,7 @@
 #define AK4678_PLL_MASTER 3
 #define AK4678_PLL_24MHZ (7 << 0)
 
+/* control ak4678 codec */
 /* load parameter from boot */
 int MicGain = 13;
 int IDVol = 169;
@@ -58,6 +59,7 @@ module_param(IDVol, int, S_IRUGO | S_IWUSR);
 #define AK4678_07_MIC_AMP_GAIN 0x07
 #define AK4678_11_LIN_VOLUME 0x11
 
+/* control audio mixer */
 static void __iomem *dispaud_vclk;
 #define PA_CMU_DISPAUD 0x148D0000
 #define CLK_CON_DIV_CLK_DISPAUD_MIXER 0x410
@@ -116,7 +118,6 @@ static int kingyo_hw_params(
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	int rfs = 256, bfs = 64;
 	int ret;
-	unsigned int data;
 
 	gprintk("fs=%u\n", params_rate(params));
 
@@ -150,12 +151,10 @@ static int kingyo_hw_params(
 		return ret;
 	}
 
-	/* Set mic volume depending on units */
-	data = (MicGain & 0xF) |  ((MicGain & 0xF) << 4);
+	/* TODO: we should use widget rather than sysclk api */
 	gprintk("update MicGain=%d, IDVol=%d\n", MicGain, IDVol);
-	snd_soc_write(rtd->codec, AK4678_07_MIC_AMP_GAIN, data);
-	snd_soc_write(rtd->codec, AK4678_11_LIN_VOLUME, IDVol);
-	snd_soc_write(rtd->codec, AK4678_12_RIN_VOLUME, IDVol);
+	snd_soc_dai_set_sysclk(codec_dai, AK4678_07_MIC_AMP_GAIN, MicGain, 0);
+	snd_soc_dai_set_sysclk(codec_dai, AK4678_11_LIN_VOLUME, IDVol, 0);
 
 	return ret;
 }
