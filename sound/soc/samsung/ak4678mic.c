@@ -109,6 +109,7 @@ struct ak4678_priv {
 	u16 fsno; 		/* fs  0 : fs <= 12kHz,  1: 12kHz < fs <= 24kHz, 2: fs > 24kHz */
 	u16 pllMode;
 	int pdn;
+	struct delayed_work mute_work;
 	bool suspended;
 	struct regulator_bulk_data core_supplies[AK4678_NUM_CORE_SUPPLIES];
 #ifdef PINCTL_I2C
@@ -117,6 +118,8 @@ struct ak4678_priv {
 	struct pinctrl_state *pinctrl_state_suspend;
 #endif
 };
+
+static u8 idvol;
 
 /* ak4678 register cache & default register settings */
 static const struct reg_default ak4678_reg[] = {
@@ -137,8 +140,8 @@ static const struct reg_default ak4678_reg[] = {
 	{0xE, 0x03},  /*	0x0E	AK4678_0E_LINEOUT_VOLUME	*/
 	{0xF, 0x19},  /*	0x0F	AK4678_0F_HP_VOLUME	*/
 	{0x10, 0xDD}, /*	0x10	AK4678_10_SPRC_VOLUME	*/
-	{0x11, 0xA9}, /*	0x11	AK4678_11_LIN_VOLUME	*/
-	{0x12, 0xA9}, /*	0x12	AK4678_12_RIN_VOLUME	*/
+	{0x11, 0x00}, /*	0x11	AK4678_11_LIN_VOLUME	*/
+	{0x12, 0x00}, /*	0x12	AK4678_12_RIN_VOLUME	*/
 	{0x13, 0xC9}, /*	0x13	AK4678_13_ALCREF_SELECT	*/
 	{0x14, 0x00}, /*	0x14	AK4678_14_DIGMIX_CONTROL	*/
 	{0x15, 0x10}, /*	0x15	AK4678_15_ALCTIMER_SELECT	*/
@@ -298,6 +301,28 @@ static const struct reg_default ak4678_reg[] = {
 	{0xAF, 0x2B}, /*	0xAF	AK4678_AF_DVLCH_HPF_CO_EFFICIENT_3	*/
 };
 
+
+/*
+ * Delay mute procedure
+ */
+
+#define MUTE_DELAY_TIME 200
+
+static void mute_delaywork(struct work_struct *work)
+{
+	struct ak4678_priv *ak4678 =
+		container_of(work, struct ak4678_priv, mute_work.work);
+	gprintk("\n");
+	snd_soc_write(ak4678->codec, AK4678_11_LIN_VOLUME, idvol);
+	snd_soc_write(ak4678->codec, AK4678_12_RIN_VOLUME, idvol);
+}
+
+/*
+ * Digital filter paremeters
+ *	they are decided by sampling frequency,
+ *  we have some tables split by frequency range
+ *  index 0 : fs <= 12kHz,  1: 12kHz < fs <= 24kHz, 2: fs > 24kHz
+ */
 #define AK4678_FS_NUM 3
 #define AK4678_FS_LOW 12000
 #define AK4678_FS_MIDDLE 24000
@@ -406,7 +431,18 @@ static int ak4678_hw_params(struct snd_pcm_substream *substream,
 static int ak4678_set_dai_sysclk(
 	struct snd_soc_dai *dai, int clk_id, unsigned int freq, int dir)
 {
-	gprintk("\n");
+	gprintk("%d <= %d\n", clk_id, freq);
+
+	/* TODO: we should use widget rather than sysclk api */
+	switch (clk_id) {
+		case AK4678_07_MIC_AMP_GAIN:
+			snd_soc_write(dai->codec, AK4678_07_MIC_AMP_GAIN,
+					(freq & 0xF) |  ((freq & 0xF) << 4));
+			break;
+		case AK4678_11_LIN_VOLUME:
+			idvol = freq;
+			break;
+	}
 	return 0;
 }
 
@@ -512,6 +548,9 @@ static int ak4678_set_prepare(
 	int ret = 0;
 	struct snd_soc_codec *codec = dai->codec;
 	gprintk("\n");
+	/* mute volume */
+	snd_soc_write(codec, AK4678_11_LIN_VOLUME, 0);
+	snd_soc_write(codec, AK4678_12_RIN_VOLUME, 0);
 	/* record prepare */
 	/*  <ctl name="PFSEL" value="ADC"/> */
 	/*  <ctl name="PFSDO" value="PFSEL"/> */
@@ -546,13 +585,18 @@ static int ak4678_trigger(
 	struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
 {
 	int ret = 0;
+	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(dai->codec);
+
 	gprintk("cmd = %d\n", cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+		queue_delayed_work(system_power_efficient_wq,
+			&ak4678->mute_work, msecs_to_jiffies(MUTE_DELAY_TIME));
 		break;
 
 	case SNDRV_PCM_TRIGGER_STOP:
+		cancel_delayed_work_sync(&ak4678->mute_work);
 		break;
 	}
 
@@ -692,49 +736,19 @@ static int ak4678_init_reg(struct snd_soc_codec *codec)
 	return 0;
 }
 
-#ifdef PINCTL_I2C
-static int i2c_pinctrl_init(struct ak4678_priv *ak4678)
-{
-	int err;
-	struct device *dev = &ak4678->i2c->dev;
-
-	ak4678->pinctrl = devm_pinctrl_get(&(ak4678->i2c->dev));
-	if (IS_ERR_OR_NULL(ak4678->pinctrl)) {
-		err = PTR_ERR(ak4678->pinctrl);
-		dev_err(dev, "Target does not use pinctrl %d\n", err);
-		return err;
-	}
-
-	ak4678->pinctrl_state_active =
-		pinctrl_lookup_state(ak4678->pinctrl, "i2c_active");
-	if (IS_ERR_OR_NULL(ak4678->pinctrl_state_active)) {
-		err = PTR_ERR(ak4678->pinctrl_state_active);
-		dev_err(dev, "Can not lookup active pinctrl state %d\n", err);
-		return err;
-	}
-
-	ak4678->pinctrl_state_suspend =
-		pinctrl_lookup_state(ak4678->pinctrl, "i2c_suspend");
-	if (IS_ERR_OR_NULL(ak4678->pinctrl_state_suspend)) {
-		err = PTR_ERR(ak4678->pinctrl_state_suspend);
-		dev_err(dev, "Can not lookup suspend pinctrl state %d\n", err);
-		return err;
-	}
-	return 0;
-}
-#endif
-
 static int ak4678_probe(struct snd_soc_codec *codec)
 {
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 	int ret = 0;
-
 	gprintk("\n");
 
 #ifdef PINCTL_I2C
 	if (i2c_pinctrl_init(ak4678) != 0)
 		gprintk("failed pin control\n");
 #endif
+
+	INIT_DELAYED_WORK(&ak4678->mute_work, mute_delaywork);
+
 	if (ak4678->pdn > 0) {
 		ret = gpio_request(ak4678->pdn, "ak4678 pdn");
 		if (ret) {
