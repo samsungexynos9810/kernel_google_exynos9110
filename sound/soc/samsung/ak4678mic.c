@@ -74,17 +74,6 @@
 */
 // #define REGULATORCTL_CODEC
 
-/*
-	control pm for i2c to disable interrupt. Before pincontorl for i2c is done.
-	so it should be done on machine driver
-*/
-// #define PINCTL_I2C
-
-/*
-	runtime pm support
-*/
-//#define RUNTIME_PM_I2C
-
 #define AK4678_PORTIIS 0
 
 static int ak4678_runtime_suspend(struct device *dev);
@@ -103,20 +92,10 @@ static const char *ak4678_core_supply_names[] = {
 struct ak4678_priv {
 	struct snd_soc_codec *codec;
 	struct i2c_client *i2c;
-	u16 externClkMode;
-	u16 onStereoEF; /* Stereo Emphasis Filter ON */
-	u16 onDvlcDrc;  /* DVLC and DRC ON */
-	u16 fsno; 		/* fs  0 : fs <= 12kHz,  1: 12kHz < fs <= 24kHz, 2: fs > 24kHz */
-	u16 pllMode;
 	int pdn;
 	struct delayed_work mute_work;
 	bool suspended;
 	struct regulator_bulk_data core_supplies[AK4678_NUM_CORE_SUPPLIES];
-#ifdef PINCTL_I2C
-	struct pinctrl *pinctrl;
-	struct pinctrl_state *pinctrl_state_active;
-	struct pinctrl_state *pinctrl_state_suspend;
-#endif
 };
 
 static u8 idvol;
@@ -301,7 +280,6 @@ static const struct reg_default ak4678_reg[] = {
 	{0xAF, 0x2B}, /*	0xAF	AK4678_AF_DVLCH_HPF_CO_EFFICIENT_3	*/
 };
 
-
 /*
  * Delay mute procedure
  */
@@ -333,12 +311,12 @@ static u8 hpf2[AK4678_FS_NUM][4] = {{0xDE, 0x1D, 0x43, 0x24},
 	{0xE6, 0x1E, 0x34, 0x22}, {0x71, 0x1F, 0x1F, 0x21}};
 
 static u8 fil3band[AK4678_FS_NUM][16] = {
-	{0x87, 0x02, 0x0D, 0x25, 0x79, 0x1D, 0x0D, 0x25,
-	 0x1D, 0x11, 0x3A, 0x02, 0xE3, 0x0E, 0x3A, 0x02},
-	{0x50, 0x01, 0xA0, 0x22, 0xB0, 0x1E, 0xA0, 0x22,
-	 0x04, 0x0A, 0x07, 0x34, 0xFC, 0x15, 0x07, 0x34},
-	{0xAB, 0x00, 0x57, 0x21, 0x55, 0x1F, 0x57, 0x21,
-	 0xB5, 0x05, 0x6A, 0x2B, 0x4B, 0x1A, 0x6A, 0x2B},
+	{0x87, 0x02, 0x0D, 0x25, 0x79, 0x1D, 0x0D, 0x25, 0x1D, 0x11, 0x3A, 0x02,
+		0xE3, 0x0E, 0x3A, 0x02},
+	{0x50, 0x01, 0xA0, 0x22, 0xB0, 0x1E, 0xA0, 0x22, 0x04, 0x0A, 0x07, 0x34,
+		0xFC, 0x15, 0x07, 0x34},
+	{0xAB, 0x00, 0x57, 0x21, 0x55, 0x1F, 0x57, 0x21, 0xB5, 0x05, 0x6A, 0x2B,
+		0x4B, 0x1A, 0x6A, 0x2B},
 };
 
 static u8 fil2ns[AK4678_FS_NUM][8] = {
@@ -347,41 +325,29 @@ static u8 fil2ns[AK4678_FS_NUM][8] = {
 	{0x40, 0x07, 0x80, 0x2E, 0xA9, 0x1F, 0xAD, 0x20},
 };
 
+static u8 wtm_tabl[AK4678_FS_NUM] = {
+	AK4678_WTM_FS11,
+	AK4678_WTM_FS22,
+	AK4678_WTM_FS44,
+};
+
 static int set_fschgpara(struct snd_soc_codec *codec, int fsno)
 {
 	u16 i, nAddr, nWtm;
 	gprintk("\n");
 	nAddr = AK4678_29_FIL1_COEFFICIENT0;
-	for (i = 0; i < 4; i++) {
-		snd_soc_write(codec, nAddr, hpf2[fsno][i]);
-		nAddr++;
-	}
+	for (i = 0; i < 4; i++)
+		snd_soc_write(codec, nAddr + i, hpf2[fsno][i]);
 
 	nAddr = AK4678_A0_DVLCL_LPF_CO_EFFICIENT_0;
-	for (i = 0; i < 16; i++) {
-		snd_soc_write(codec, nAddr, fil3band[fsno][i]);
-		nAddr++;
-	}
+	for (i = 0; i < 16; i++)
+		snd_soc_write(codec, nAddr + i, fil3band[fsno][i]);
 
 	nAddr = AK4678_76_NS_LPF_CO_EFFICIENT_0;
-	for (i = 0; i < 8; i++) {
-		snd_soc_write(codec, nAddr, fil2ns[fsno][i]);
-		nAddr++;
-	}
+	for (i = 0; i < 8; i++)
+		snd_soc_write(codec, nAddr + i, fil2ns[fsno][i]);
 
-	switch (fsno) {
-	case 0:
-		nWtm = AK4678_WTM_FS11;
-		break;
-	case 1:
-		nWtm = AK4678_WTM_FS22;
-		break;
-	case 2:
-	default:
-		nWtm = AK4678_WTM_FS44;
-		break;
-	}
-
+	nWtm = wtm_tabl[fsno];
 	snd_soc_update_bits(codec, AK4678_15_ALCTIMER_SELECT, AK4678_WTM, nWtm);
 	return (0);
 }
@@ -390,10 +356,8 @@ static int ak4678_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 {
 	struct snd_soc_codec *codec = dai->codec;
-	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 	u8 fs;
-	u8 mode = 0;
-	u16 fsno2 = ak4678->fsno;
+	int fsno;
 
 	gprintk("\n");
 
@@ -401,29 +365,10 @@ static int ak4678_hw_params(struct snd_pcm_substream *substream,
 	fs = snd_soc_read(codec, AK4678_03_PLL_MODE_SELECT0);
 	fs &= ~AK4678_FS;
 	fs |= AK4678_FS_48KHZ;
-
 	snd_soc_write(codec, AK4678_03_PLL_MODE_SELECT0, fs);
 
-	if (ak4678->externClkMode == 1) {
-		mode = snd_soc_read(codec, AK4678_04_PLL_MODE_SELECT1);
-		mode &= ~AK4678_PLL_MODE_SELECT_1_CM;
-
-		/* CONFIG_LINF MCLK usually is 256fs. */
-		if (params_rate(params) <= AK4678_FS_MIDDLE) {
-			fsno2 = 1;
-			mode |= AK4678_PLL_MODE_SELECT_1_CM;
-		} else {
-			fsno2 = 2;
-			mode |= AK4678_PLL_MODE_SELECT_1_CM0;
-		}
-
-		snd_soc_write(codec, AK4678_04_PLL_MODE_SELECT1, mode);
-	}
-
-	if (fsno2 != ak4678->fsno) {
-		ak4678->fsno = fsno2;
-		set_fschgpara(codec, fsno2);
-	}
+	fsno = params_rate(params) < AK4678_FS_MIDDLE ? 1 : 2;
+	set_fschgpara(codec, fsno);
 
 	return 0;
 }
@@ -435,13 +380,13 @@ static int ak4678_set_dai_sysclk(
 
 	/* TODO: we should use widget rather than sysclk api */
 	switch (clk_id) {
-		case AK4678_07_MIC_AMP_GAIN:
-			snd_soc_write(dai->codec, AK4678_07_MIC_AMP_GAIN,
-					(freq & 0xF) |  ((freq & 0xF) << 4));
-			break;
-		case AK4678_11_LIN_VOLUME:
-			idvol = freq;
-			break;
+	case AK4678_07_MIC_AMP_GAIN:
+		snd_soc_write(dai->codec, AK4678_07_MIC_AMP_GAIN,
+			(freq & 0xF) | ((freq & 0xF) << 4));
+		break;
+	case AK4678_11_LIN_VOLUME:
+		idvol = freq;
+		break;
 	}
 	return 0;
 }
@@ -591,8 +536,8 @@ static int ak4678_trigger(
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-		queue_delayed_work(system_power_efficient_wq,
-			&ak4678->mute_work, msecs_to_jiffies(MUTE_DELAY_TIME));
+		queue_delayed_work(system_power_efficient_wq, &ak4678->mute_work,
+			msecs_to_jiffies(MUTE_DELAY_TIME));
 		break;
 
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -621,8 +566,6 @@ static int ak4678_set_bias_level(
 			codec, AK4678_00_POWER_MANAGEMENT0, AK4678_PMVCM, AK4678_PMVCM);
 		break;
 	case SND_SOC_BIAS_OFF:
-		if (ak4678->pllMode == 1)
-			snd_soc_update_bits(codec, AK4678_04_PLL_MODE_SELECT1, 0x01, 0x0);
 
 		snd_soc_update_bits(
 			codec, AK4678_00_POWER_MANAGEMENT0, AK4678_PMVCM, 0);
@@ -742,11 +685,6 @@ static int ak4678_probe(struct snd_soc_codec *codec)
 	int ret = 0;
 	gprintk("\n");
 
-#ifdef PINCTL_I2C
-	if (i2c_pinctrl_init(ak4678) != 0)
-		gprintk("failed pin control\n");
-#endif
-
 	INIT_DELAYED_WORK(&ak4678->mute_work, mute_delaywork);
 
 	if (ak4678->pdn > 0) {
@@ -763,13 +701,6 @@ static int ak4678_probe(struct snd_soc_codec *codec)
 
 	ak4678->suspended = true;
 
-	ak4678->externClkMode = 0;
-	ak4678->onStereoEF = 0;
-	ak4678->onDvlcDrc = 0;
-	ak4678->fsno = 2;
-
-	ak4678->pllMode = 0;
-
 	return ret;
 }
 
@@ -779,7 +710,6 @@ static int ak4678_remove(struct snd_soc_codec *codec)
 	gprintk("\n");
 
 	ak4678_set_bias_level(codec, SND_SOC_BIAS_OFF);
-
 	if (ak4678->pdn > 0) {
 		gpio_set_value(ak4678->pdn, 0);
 		gpio_free(ak4678->pdn);
@@ -816,15 +746,6 @@ static int ak4678_runtime_suspend(struct device *dev)
 		gpio_set_value(ak4678->pdn, 0);
 	}
 
-#ifdef PINCTL_I2C
-	if (ak4678->pinctrl) {
-		ret = pinctrl_select_state(
-			ak4678->pinctrl, ak4678->pinctrl_state_suspend);
-		if (ret < 0)
-			dev_err(dev, "Could not set pin to suspend state %d\n", ret);
-	}
-#endif
-
 	ret = regulator_bulk_disable(
 		ARRAY_SIZE(ak4678->core_supplies), ak4678->core_supplies);
 	if (ret != 0) {
@@ -855,31 +776,12 @@ static int ak4678_runtime_resume(struct device *dev)
 		dev_err(dev, "Failed to enable supplies: %d\n", ret);
 	}
 
-#ifdef PINCTL_I2C
-	ret = pinctrl_select_state(ak4678->pinctrl, ak4678->pinctrl_state_active);
-	if (ret != 0)
-		dev_err(dev, "Could not set pin to active state %d\n", ret);
-#endif
 	ak4678_init_reg(ak4678->codec);
 
 	ak4678->suspended = false;
 
 	return 0;
 }
-
-#ifdef RUNTIME_PM_I2C
-static int ak4678_runtime_idle(struct device *dev)
-{
-	gprintk("\n");
-	return 0;
-}
-
-static const struct dev_pm_ops ak4678_pm_ops = {
-	.runtime_suspend = ak4678_runtime_suspend,
-	.runtime_resume = ak4678_runtime_resume,
-	.runtime_idle = ak4678_runtime_idle,
-};
-#endif
 
 static struct snd_soc_codec_driver soc_codec_dev_ak4678 = {
 	.probe = ak4678_probe,
@@ -1094,9 +996,6 @@ static struct i2c_driver ak4678_i2c_driver = {
 			.name = "ak4678mic",
 			.owner = THIS_MODULE,
 			.of_match_table = of_match_ptr(ak4678_i2c_dt_ids),
-#ifdef RUNTIME_PM_I2C
-			.pm = &ak4678_pm_ops,
-#endif
 		},
 	.probe = ak4678_i2c_probe,
 	.remove = ak4678_i2c_remove,
