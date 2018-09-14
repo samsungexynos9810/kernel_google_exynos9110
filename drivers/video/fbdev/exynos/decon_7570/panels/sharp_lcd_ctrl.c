@@ -185,21 +185,6 @@ static void init_lcd(void)
 	//}
 }
 
-#if 0
-static int sharp_mipi_reload_params(void)
-{
-	int ret;
-
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-				MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
-	if (ret)
-		printk(KERN_ERR "failed to write exit sleep command: %d\n", ret);
-
-	usleep_range(17000, 18000);
-	return 0;
-}
-#endif
-
 int sharp_lcd_init(struct decon_lcd * lcd)
 {
 	init_lcd();
@@ -224,4 +209,21 @@ int sharp_lcd_disable(void)
 	sharp_power_sequence_off();
 
 	return 0;
+}
+
+int sharp_lcd_idle_mode(int on)
+{
+	int ret = 0;
+
+	if (on) {
+		msleep(100);
+	} else {
+		ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
+				MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
+		if (ret)
+			printk(KERN_ERR "failed to write exit sleep command: %d\n", ret);
+		usleep_range(17000, 18000);
+	}
+
+	return ret;
 }

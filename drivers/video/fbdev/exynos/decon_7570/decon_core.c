@@ -897,6 +897,7 @@ int decon_enable(struct decon_device *decon)
 				decon->doze_state = DOZE_STATE_NORMAL;
 			}
 		}
+		call_panel_ops(dsim, exitidle, dsim);
 		decon_ambient_enter = 0;
 #endif
 		goto err;
@@ -2636,7 +2637,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 	int ret;
 	u32 crtc;
 	//int blank = 0;
-	//struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
+	struct dsim_device *dsim = container_of(decon->output_sd, struct dsim_device, sd);
 
 	/* enable lpd only when system is ready to interact with driver */
 	decon_lpd_enable();
@@ -2749,6 +2750,7 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 			auo_h120bln017_notify_ambient();
 #endif
 			}
+			call_panel_ops(dsim, enteridle, dsim);
 			decon_ambient_enter = 1;
 #if 0
 			ret = decon_doze_enable(decon);

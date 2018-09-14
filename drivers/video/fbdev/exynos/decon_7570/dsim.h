@@ -158,6 +158,8 @@ struct mipi_dsim_lcd_driver {
 	int	(*enteralpm)(struct dsim_device *dsim);
 	int	(*exitalpm)(struct dsim_device *dsim);
 #endif
+	int	(*enteridle)(struct dsim_device *dsim);
+	int	(*exitidle)(struct dsim_device *dsim);
 };
 
 int dsim_write_data(struct dsim_device *dsim, unsigned int data_id,

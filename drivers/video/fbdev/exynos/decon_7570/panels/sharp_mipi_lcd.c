@@ -128,9 +128,25 @@ static int sharp_mipi_lcd_resume(struct dsim_device *dsim)
 	return 0;
 }
 
+static int sharp_mipi_lcd_enteridle(struct dsim_device *dsim)
+{
+	pr_debug(KERN_INFO "***** sharp_mipi_lcd_enteridle \n");
+	sharp_lcd_idle_mode(1);
+	return 0;
+}
+
+static int sharp_mipi_lcd_exitidle(struct dsim_device *dsim)
+{
+	pr_debug(KERN_INFO "***** sharp_mipi_lcd_exitidle \n");
+	sharp_lcd_idle_mode(0);
+	return 0;
+}
+
 struct mipi_dsim_lcd_driver sharp_mipi_lcd_driver = {
 	.probe			= sharp_mipi_lcd_probe,
 	.displayon		= sharp_mipi_lcd_displayon,
 	.suspend		= sharp_mipi_lcd_suspend,
 	.resume			= sharp_mipi_lcd_resume,
+	.enteridle		= sharp_mipi_lcd_enteridle,
+	.exitidle		= sharp_mipi_lcd_exitidle,
 };
