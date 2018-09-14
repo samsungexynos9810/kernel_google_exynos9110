@@ -973,7 +973,6 @@ static int ak4678_i2c_remove(struct i2c_client *client)
 	sysfs_remove_group(&(client->dev.kobj), &kaudioc_attr_grp);
 #endif
 	snd_soc_unregister_codec(&client->dev);
-	kfree(ak4678);
 
 	return 0;
 }
