@@ -91,7 +91,6 @@ static const char *ak4678_core_supply_names[] = {
 /* AK4678 Codec Private Data */
 struct ak4678_priv {
 	struct snd_soc_codec *codec;
-	struct i2c_client *i2c;
 	int pdn;
 	struct delayed_work mute_work;
 	bool suspended;
@@ -946,8 +945,6 @@ static int ak4678_i2c_probe(
 
 	i2c_set_clientdata(i2c, ak4678);
 
-	ak4678->i2c = i2c;
-
 	ret =
 		snd_soc_register_codec(&i2c->dev, &soc_codec_dev_ak4678, ak4678_dai, 1);
 	if (ret != 0) {
@@ -970,8 +967,6 @@ static int ak4678_i2c_probe(
 
 static int ak4678_i2c_remove(struct i2c_client *client)
 {
-	struct ak4678_priv *ak4678 = i2c_get_clientdata(client);
-
 	gprintk("\n");
 
 #ifdef SYSFS_CODEC
