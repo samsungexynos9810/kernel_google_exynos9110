@@ -997,21 +997,7 @@ static struct i2c_driver ak4678_i2c_driver = {
 	.id_table = ak4678_i2c_id,
 };
 
-static int __init ak4678_modinit(void)
-{
-	int ret;
-
-	gprintk("\n");
-	ret = i2c_add_driver(&ak4678_i2c_driver);
-	if (ret)
-		pr_err("Failed to register ak4678 I2C driver: %d\n", ret);
-
-	return ret;
-}
-module_init(ak4678_modinit);
-
-static void __exit ak4678_exit(void) { i2c_del_driver(&ak4678_i2c_driver); }
-module_exit(ak4678_exit);
+module_i2c_driver(ak4678_i2c_driver);
 
 MODULE_DESCRIPTION("ASoC ak4678 mic codec driver");
 MODULE_AUTHOR("AKM Corporation");
