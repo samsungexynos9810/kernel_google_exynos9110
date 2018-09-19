@@ -20,7 +20,7 @@
 */
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-#include "board-kingyo-rf.h"
+#include "board-medaka-rf.h"
 
 static int dbg_level = DBG_INFO;
 module_param(dbg_level, int, 0644);
@@ -315,8 +315,8 @@ int bluetooth_resume(struct platform_device *pdev)
 	return 0;
 }
 
-static struct of_device_id bluetooth_kingyo_of_match[] = {
-	{ .compatible = "kingyo-bluetooth", },
+static struct of_device_id bluetooth_medaka_of_match[] = {
+	{ .compatible = "medaka-bluetooth", },
 	{ },
 };
 
@@ -326,9 +326,9 @@ static struct platform_driver bluetooth_platform_driver = {
 	.suspend = bluetooth_suspend,
 	.resume = bluetooth_resume,
 	.driver = {
-		.name = "kingyo_bluetooth",
+		.name = "medaka_bluetooth",
 		.owner = THIS_MODULE,
-		.of_match_table = of_match_ptr(bluetooth_kingyo_of_match),
+		.of_match_table = of_match_ptr(bluetooth_medaka_of_match),
     },
 };
 

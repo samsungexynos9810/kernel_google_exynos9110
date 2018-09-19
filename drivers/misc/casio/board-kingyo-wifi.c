@@ -14,7 +14,7 @@
  * GNU General Public License for more details.
  */
 
-#include "board-kingyo-rf.h"
+#include "board-medaka-rf.h"
 #include <linux/kernel.h>
 #include <linux/if.h>
 #include <linux/random.h>

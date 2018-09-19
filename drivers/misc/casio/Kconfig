@@ -20,11 +20,11 @@ config SUBCPU_BATTERY
     depends on MULTI_SENSORS
 	default n
 
-config KINGYO_BLUETOOTH
-	bool "Kingyo board bluetooth"
+config MEDAKA_BLUETOOTH
+	bool "Medaka board bluetooth"
 	default n
 	help
-	  Kingyo board bluetooth.
+	  Medaka board bluetooth.
 
 config KINGYO_GPS
 	bool "Kingyo board gps"
