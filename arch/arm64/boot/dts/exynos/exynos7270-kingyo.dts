@@ -22,7 +22,7 @@
 	};
 
 	chosen {
-		bootargs ="console=ttySAC2,115200 clk_ignore_unused androidboot.hardware=kingyo firmware_class.path=/vendor/firmware ess_setup=0x46000000";
+		bootargs ="console=ttySAC2,115200 clk_ignore_unused androidboot.hardware=medaka firmware_class.path=/vendor/firmware ess_setup=0x46000000";
 		linux,initrd-start = <0x42000000>;
 		linux,initrd-end = <0x420FFFFF>;
 	};
