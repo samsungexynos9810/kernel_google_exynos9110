@@ -2740,6 +2740,13 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 		switch (decon->pwr_mode) {
 		case DECON_POWER_MODE_DOZE:
 			decon_info("%s: DECON_POWER_MODE_DOZE\n", __func__);
+			if (decon->state == DECON_STATE_OFF) {
+				ret = decon_enable(decon);
+				if (ret) {
+					decon_err("failed to enable decon\n");
+					ret = 0;
+				}
+			}
 			call_panel_ops(dsim, enteridle, dsim);
 			decon_ambient_enter = 1;
 #if 0
