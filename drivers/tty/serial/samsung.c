@@ -672,7 +672,7 @@ static unsigned int s3c24xx_serial_tx_empty(struct uart_port *port)
 /* no modem control lines */
 static unsigned int s3c24xx_serial_get_mctrl(struct uart_port *port)
 {
-#ifndef CONFIG_KINGYO_BLUETOOTH
+#ifndef CONFIG_MEDAKA_BLUETOOTH
 	unsigned int umstat = rd_regb(port, S3C2410_UMSTAT);
 
 	if (umstat & S3C2410_UMSTAT_CTS)
@@ -684,7 +684,7 @@ static unsigned int s3c24xx_serial_get_mctrl(struct uart_port *port)
 
 static void s3c24xx_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 {
-#ifndef CONFIG_KINGYO_BLUETOOTH
+#ifndef CONFIG_MEDAKA_BLUETOOTH
 	unsigned int umcon = rd_regl(port, S3C2410_UMCON);
 
 	if (mctrl & TIOCM_RTS)
@@ -1122,7 +1122,7 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	if (ourport->dbg_mode & UART_DBG_MODE)
 		print_uart_mode(port, termios, baud);
 
-#ifdef CONFIG_KINGYO_BLUETOOTH
+#ifdef CONFIG_MEDAKA_BLUETOOTH
 	/*
 	 * Work around. Some delay is required for USI1 (but don't know why)
 	 */
@@ -1212,7 +1212,7 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
 	return 0;
 }
 
-#ifdef CONFIG_KINGYO_BLUETOOTH
+#ifdef CONFIG_MEDAKA_BLUETOOTH
 extern void bt_lpm_exit_lpm_locked(struct uart_port *uport);
 #endif
 
@@ -1220,7 +1220,7 @@ static void s3c24xx_serial_wake_peer(struct uart_port *port)
 {
 	struct s3c2410_uartcfg *cfg = s3c24xx_port_to_cfg(port);
 
-#ifdef CONFIG_KINGYO_BLUETOOTH
+#ifdef CONFIG_MEDAKA_BLUETOOTH
 	if(port->line == PORTLINE_BT)
 		bt_lpm_exit_lpm_locked(port);
 #endif
@@ -1273,7 +1273,7 @@ static void s3c24xx_serial_put_poll_char(struct uart_port *port,
 			 unsigned char c);
 #endif
 
-#if defined(CONFIG_KINGYO_BLUETOOTH)
+#if defined(CONFIG_MEDAKA_BLUETOOTH)
 void s3c24xx_serial_throttle(struct uart_port *port)
 {
 }
@@ -1301,7 +1301,7 @@ static struct uart_ops s3c24xx_serial_ops = {
 	.config_port	= s3c24xx_serial_config_port,
 	.verify_port	= s3c24xx_serial_verify_port,
 	.wake_peer	= s3c24xx_serial_wake_peer,
-#if defined(CONFIG_KINGYO_BLUETOOTH)
+#if defined(CONFIG_MEDAKA_BLUETOOTH)
 	.throttle       = s3c24xx_serial_throttle,
 	.unthrottle     = s3c24xx_serial_unthrottle,
 #endif
@@ -1480,7 +1480,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		s3c24xx_serial_ops.startup = s3c64xx_serial_startup;
 
 	port->uartclk = 1;
-#ifdef CONFIG_KINGYO_BLUETOOTH
+#ifdef CONFIG_MEDAKA_BLUETOOTH
 	if(port->line == PORTLINE_BT || port->line == PORTLINE_SUBCPU) {
 		dbg("set port%d->flags |= UPF_HARD_FLOW\n", port->line);
 		port->flags |= UPF_HARD_FLOW;
@@ -1562,7 +1562,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		return ret;
 	}
 
-#ifdef CONFIG_KINGYO_BLUETOOTH
+#ifdef CONFIG_MEDAKA_BLUETOOTH
 	if(ourport->port.line == PORTLINE_BT) {
 		dbg("set gateuart%d clock rate to 100MHz\n", ourport->port.line);
 		ret = clk_set_rate(ourport->clk, 100000000);

@@ -117,7 +117,7 @@ struct s3c24xx_uart_port {
 #define wr_regl(port, reg, val) __raw_writel(val, portaddr(port, reg))
 
 #endif
-#ifdef CONFIG_KINGYO_BLUETOOTH
+#ifdef CONFIG_MEDAKA_BLUETOOTH
 #define PORTLINE_BT 4
 #define PORTLINE_SUBCPU 3
 #endif
