@@ -1,5 +1,5 @@
 /*
- *  kingyo_ak4678.c
+ *  medaka_ak4678.c
  *
  *  Copyright (c) 2012, Insignal Co., Ltd.
  *
@@ -106,10 +106,10 @@ static int config_audmixer(void)
 }
 
 /*
- * kingyo hw params. (AP I2S Master with mic)
+ * medaka hw params. (AP I2S Master with mic)
  */
 
-static int kingyo_hw_params(
+static int medaka_hw_params(
 	struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -161,27 +161,27 @@ static int kingyo_hw_params(
 
 #ifdef AUDIOIF_POWER_SUPPLY
 
-static int kingyo_aif_startup(struct snd_pcm_substream *substream)
+static int medaka_aif_startup(struct snd_pcm_substream *substream)
 {
 	gprintk("\n");
 	return 0;
 }
 
-static void kingyo_aif_shutdown(struct snd_pcm_substream *substream)
+static void medaka_aif_shutdown(struct snd_pcm_substream *substream)
 {
 	gprintk("\n");
 }
 #endif
 
-static struct snd_soc_ops kingyo_ops = {
+static struct snd_soc_ops medaka_ops = {
 #ifdef AUDIOIF_POWER_SUPPLY
-	.startup = kingyo_aif_startup,
-	.shutdown = kingyo_aif_shutdown,
+	.startup = medaka_aif_startup,
+	.shutdown = medaka_aif_shutdown,
 #endif
-	.hw_params = kingyo_hw_params,
+	.hw_params = medaka_hw_params,
 };
 
-static int kingyo_ak4678_init_paiftx(struct snd_soc_pcm_runtime *rtd)
+static int medaka_ak4678_init_paiftx(struct snd_soc_pcm_runtime *rtd)
 {
 #if 0
 	struct snd_soc_codec *codec = rtd->codec;
@@ -192,20 +192,20 @@ static int kingyo_ak4678_init_paiftx(struct snd_soc_pcm_runtime *rtd)
 	return 0;
 }
 
-static struct snd_soc_dai_link kingyo_dai[] = {
+static struct snd_soc_dai_link medaka_dai[] = {
 	{
-		.name = "Kingyo_AK4678_Mic",
+		.name = "Medaka_AK4678_Mic",
 		.stream_name = "Capture",
 		.codec_name = "ak4678mic.3-0012",
 		.codec_dai_name = "ak4678-mic",
-		.init = kingyo_ak4678_init_paiftx,
+		.init = medaka_ak4678_init_paiftx,
 		.cpu_dai_name = "148a0000.i2s",
 		.platform_name = "148a0000.i2s",
-		.ops = &kingyo_ops,
+		.ops = &medaka_ops,
 	},
 };
 
-static int kingyo_probe(struct snd_soc_card *card)
+static int medaka_probe(struct snd_soc_card *card)
 {
 	gprintk("\n");
 	/* set CLK_DISPAUD_MIXER DIV_RATIO */
@@ -215,18 +215,18 @@ static int kingyo_probe(struct snd_soc_card *card)
 	map_audiomixer();
 	return 0;
 }
-static int kingyo_remove(struct snd_soc_card *card)
+static int medaka_remove(struct snd_soc_card *card)
 {
 	gprintk("\n");
 	return 0;
 }
 
-static struct snd_soc_card kingyo_card = {
-	.name = "KINGYO-AK4678",
-	.probe = kingyo_probe,
-	.remove = kingyo_remove,
-	.dai_link = kingyo_dai,
-	.num_links = ARRAY_SIZE(kingyo_dai),
+static struct snd_soc_card medaka_card = {
+	.name = "MEDAKA-AK4678",
+	.probe = medaka_probe,
+	.remove = medaka_remove,
+	.dai_link = medaka_dai,
+	.num_links = ARRAY_SIZE(medaka_dai),
 };
 
 #ifdef SYSFS_MIXER
@@ -312,11 +312,11 @@ static struct attribute_group kaudio_attr_grp = {
 
 #endif
 
-static int kingyo_ak4678_probe(struct platform_device *pdev)
+static int medaka_ak4678_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct device_node *np = pdev->dev.of_node;
-	struct snd_soc_card *card = &kingyo_card;
+	struct snd_soc_card *card = &medaka_card;
 
 	gprintk("\n");
 	if (!np) {
@@ -343,7 +343,7 @@ static int kingyo_ak4678_probe(struct platform_device *pdev)
 
 	return ret;
 }
-static int kingyo_ak4678_remove(struct platform_device *pdev)
+static int medaka_ak4678_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	gprintk("\n");
@@ -357,23 +357,23 @@ static int kingyo_ak4678_remove(struct platform_device *pdev)
 
 static const struct of_device_id akm_ak4678_of_match[] = {
 	{
-		.compatible = "samsung,kingyo-ak4678",
+		.compatible = "samsung,medaka-ak4678",
 	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, akm_ak4678_of_match);
 
-static struct platform_driver kingyo_ak4678_driver = {
+static struct platform_driver medaka_ak4678_driver = {
 	.driver =
 		{
-			.name = "KINGYO-AK4678",
+			.name = "MEDAKA-AK4678",
 			.owner = THIS_MODULE,
 			.of_match_table = of_match_ptr(akm_ak4678_of_match),
 		},
-	.probe = kingyo_ak4678_probe,
-	.remove = kingyo_ak4678_remove,
+	.probe = medaka_ak4678_probe,
+	.remove = medaka_ak4678_remove,
 };
-module_platform_driver(kingyo_ak4678_driver);
+module_platform_driver(medaka_ak4678_driver);
 
-MODULE_DESCRIPTION("AK4678 ALSA SoC Driver for Koi Board");
+MODULE_DESCRIPTION("AK4678 ALSA SoC Driver for Medaka Board");
 MODULE_LICENSE("GPL");

@@ -10,7 +10,7 @@ dtb-$(CONFIG_SOC_EMULATOR8895) += emulator8895-emulator8895.dtb
 dtb-$(CONFIG_SOC_EXYNOS8895) += exynos8895-universal8895_d1_rev01.dtb
 dtb-$(CONFIG_SOC_EXYNOS8895) += exynos8895-universal8895_d1_rev01_o_temp.dtb
 #dtb-$(CONFIG_SOC_EXYNOS7270) += exynos7270-e7270pro.dtb
-dtb-$(CONFIG_SOC_EXYNOS7270) += exynos7270-kingyo.dtb
+dtb-$(CONFIG_SOC_EXYNOS7270) += exynos7270-medaka.dtb
 
 always		:= $(dtb-y)
 subdir-y	:= $(dts-dirs)

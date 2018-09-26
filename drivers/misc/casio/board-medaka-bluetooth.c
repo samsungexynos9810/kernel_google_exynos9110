@@ -1,5 +1,5 @@
 /*
-*  Bluetooth driver for Kingyo board
+*  Bluetooth driver for Medaka board
 *
 *  Copyright (C) 2017 CASIO Computer Co.,Ltd.
 *
@@ -353,5 +353,5 @@ module_init(bluetooth_init);
 module_exit(bluetooth_exit);
 
 MODULE_ALIAS("platform:CYW4343");
-MODULE_DESCRIPTION("CYW4343W Bluetooth Driver for Kingyo board");
+MODULE_DESCRIPTION("CYW4343W Bluetooth Driver for Medaka board");
 MODULE_LICENSE("GPL");

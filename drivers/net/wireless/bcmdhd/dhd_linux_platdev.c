@@ -517,12 +517,12 @@ static const struct of_device_id wifi_device_dt_match[] = {
 	{ .compatible = "android,bcmdhd_wlan", },
 	{},
 };
-#elif CONFIG_KINGYO_WIFI
+#elif CONFIG_MEDAKA_WIFI
 static const struct of_device_id wifi_device_dt_match[] = {
-	{ .compatible = "kingyo-wifi", },
+	{ .compatible = "medaka-wifi", },
 	{},
 };
-#endif /* CONFIG_DTS | CONFIG_KINGYO_WIFI */
+#endif /* CONFIG_DTS | CONFIG_MEDAKA_WIFI */
 static struct platform_driver wifi_platform_dev_driver = {
 	.probe          = wifi_plat_dev_drv_probe,
 	.remove         = wifi_plat_dev_drv_remove,
@@ -531,9 +531,9 @@ static struct platform_driver wifi_platform_dev_driver = {
 	.shutdown		= wifi_plat_dev_dev_shutdown,
 	.driver         = {
 	.name   = WIFI_PLAT_NAME,
-#if defined(CONFIG_DTS) || defined(CONFIG_KINGYO_WIFI)
+#if defined(CONFIG_DTS) || defined(CONFIG_MEDAKA_WIFI)
 	.of_match_table = wifi_device_dt_match,
-#endif /* CONFIG_DTS | CONFIG_KINGYO_WIFI */
+#endif /* CONFIG_DTS | CONFIG_MEDAKA_WIFI */
 	}
 };
 

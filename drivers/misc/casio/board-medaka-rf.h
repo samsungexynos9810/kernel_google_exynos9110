@@ -1,5 +1,5 @@
 /*
-*  Definitions of the RF module for Kingyo board
+*  Definitions of the RF module for Medaka board
 *
 *  Copyright (C) 2017 CASIO Computer Co.,Ltd.
 *

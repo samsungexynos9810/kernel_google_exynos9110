@@ -302,7 +302,7 @@ static const struct file_operations gps0_fops = {
 static struct class *gps_class;
 static struct cdev gps_cdev0, gps_cdev1;
 
-static int kingyo_gps_probe(struct platform_device *pdev)
+static int medaka_gps_probe(struct platform_device *pdev)
 {
 	int ret, irq;
 	struct gps_info *info;
@@ -311,12 +311,12 @@ static int kingyo_gps_probe(struct platform_device *pdev)
 
 	pr_info("%s\n", __func__);
 
-	ret = alloc_chrdev_region(&devno, 0, 2, "kingyo_gps");
+	ret = alloc_chrdev_region(&devno, 0, 2, "medaka_gps");
 	if (ret < 0) {
 		pr_err("%s: alloc_chrdev_region failed %d\n", __func__, ret);
 		return ret;
 	}
-	gps_class = class_create(THIS_MODULE, "kingyo_gps");
+	gps_class = class_create(THIS_MODULE, "medaka_gps");
 	if (IS_ERR(gps_class)) {
 		ret = PTR_ERR(gps_class);
 		pr_err("%s: class_create failed %d\n", __func__, ret);
@@ -372,7 +372,7 @@ static int kingyo_gps_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	wake_lock_init(&info->wakelock, WAKE_LOCK_SUSPEND, "kingyo_gps");
+	wake_lock_init(&info->wakelock, WAKE_LOCK_SUSPEND, "medaka_gps");
 
 	gpio_direction_input(info->nr_gpio);
 	irq = gpio_to_irq(info->nr_gpio);
@@ -391,23 +391,23 @@ static int kingyo_gps_probe(struct platform_device *pdev)
 	return ret;
 }
 
-static struct of_device_id kingyo_gps_of_match[] = {
-	{ .compatible = "kingyo-gps", },
+static struct of_device_id medaka_gps_of_match[] = {
+	{ .compatible = "medaka-gps", },
 	{ },
 };
 
-static struct platform_driver kingyo_gps_platform_driver = {
-	.probe = kingyo_gps_probe,
+static struct platform_driver medaka_gps_platform_driver = {
+	.probe = medaka_gps_probe,
 	.driver = {
-		.name = "kingyo-gps",
+		.name = "medaka-gps",
 		.owner = THIS_MODULE,
-		.of_match_table = of_match_ptr(kingyo_gps_of_match),
+		.of_match_table = of_match_ptr(medaka_gps_of_match),
 	},
 };
 
-module_platform_driver(kingyo_gps_platform_driver);
+module_platform_driver(medaka_gps_platform_driver);
 
-MODULE_ALIAS("platform:kingyo-gps");
-MODULE_DESCRIPTION("kingyo_gps");
+MODULE_ALIAS("platform:medaka-gps");
+MODULE_DESCRIPTION("medaka_gps");
 MODULE_AUTHOR("casio");
 MODULE_LICENSE("GPL");

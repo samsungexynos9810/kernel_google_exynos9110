@@ -1,5 +1,5 @@
 /*
- * WiFi driver for Kingyo board
+ * WiFi driver for Medaka board
  *
  * Copyright (C) 2013 LGE, Inc
  * Copyright (C) 2017 CASIO Computer Co.,Ltd.
@@ -462,5 +462,5 @@ int __init init_bcm_wifi(void)
 
 device_initcall(init_bcm_wifi);
 
-MODULE_DESCRIPTION("CYW4343W WiFi Driver for Kingyo board");
+MODULE_DESCRIPTION("CYW4343W WiFi Driver for Medaka board");
 MODULE_LICENSE("GPL");

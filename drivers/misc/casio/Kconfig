@@ -26,15 +26,15 @@ config MEDAKA_BLUETOOTH
 	help
 	  Medaka board bluetooth.
 
-config KINGYO_GPS
-	bool "Kingyo board gps"
+config MEDAKA_GPS
+	bool "Medaka board gps"
 	default n
 	help
-	  Kingyo board gps.
+	  Medaka board gps.
 	  
-config KINGYO_WIFI
-	bool "Kingyo board wifi"
+config MEDAKA_WIFI
+	bool "Medaka board wifi"
 	default n
 	help
-	  Kingyo board wifi.
+	  Medaka board wifi.
 endmenu
