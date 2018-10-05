@@ -1010,6 +1010,24 @@ int SUB_LCDBrightnessSet(unsigned char LCDBrightness)
 
 	return Msensors_PushData(&write_buff[0]);
 }
+
+int SUB_LCDForceOnOffSet(unsigned char force_on)
+{
+	unsigned char write_buff[WRITE_DATA_SIZE];
+
+	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
+
+	write_buff[0] = SUB_COM_TYPE_WRITE;
+	write_buff[1] = SUB_COM_SETID_SEG_CMD;
+	write_buff[2] = 1;
+	write_buff[3] = 18;
+	if (force_on)
+		write_buff[4] = 1;
+	else
+		write_buff[4] = 0;
+
+	return Msensors_PushData(&write_buff[0]);
+}
 #endif
 
 MODULE_AUTHOR("Casio");

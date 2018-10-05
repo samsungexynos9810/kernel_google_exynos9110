@@ -61,11 +61,4 @@ static const unsigned char cmd_set_8[2] = {
 	0x20
 };
 
-static const unsigned char cmd_set_9[2] = {
-	/* command */
-	0x51,	/* brightness */
-	/* parameter */
-	0xa0
-};
-
 #endif /* __AUO_H120BLN017_PARAM_H__ */
