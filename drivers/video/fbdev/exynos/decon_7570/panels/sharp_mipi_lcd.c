@@ -27,33 +27,6 @@ static int sharp_lcd_get_brightness(struct backlight_device *bd)
 	return bd->props.brightness;
 }
 
-#ifdef CONFIG_BACKLIGHT_SUBCPU
-static int bl_force_off;
-void sharp_lcd_notify_seglcd(int seglcd_on)
-{
-	bl_force_off = seglcd_on;
-	backlight_update_status(bd);
-}
-
-static int two_layer_mode;	/* 1: 2layer watchface, 0: other watchface */
-void sharp_lcd_notify_2layer(int mode_2layer)
-{
-	two_layer_mode = mode_2layer;
-}
-
-static int ambient_in_2layer;
-void sharp_lcd_notify_ambient(void)
-{
-	if (!two_layer_mode)
-		return;
-	ambient_in_2layer = 1;
-	backlight_update_status(bd);
-	ambient_in_2layer = 0;
-}
-#endif
-
-static int last_brightness = -1;
-
 static int sharp_lcd_set_brightness(struct backlight_device *bd)
 {
 	int brightness = bd->props.brightness;
@@ -68,22 +41,11 @@ static int sharp_lcd_set_brightness(struct backlight_device *bd)
 		if (!(bd->props.state & BL_CORE_FBBLANK))
 			brightness = 1;
 	}
-#if 0
+
 	if (brightness > 0)
 		SUB_LCDBrightnessSet((brightness >> 4) + 1);
 	else
 		SUB_LCDBrightnessSet(0);
-#endif
-	if (bl_force_off || ambient_in_2layer)
-		brightness = 0;
-
-	if (last_brightness != brightness) {
-		if (brightness > 0)
-			SUB_LCDBrightnessSet((brightness >> 4) + 1);
-		else
-			SUB_LCDBrightnessSet(0);
-		last_brightness = brightness;
-	}
 #endif
 
 	return 0;
