@@ -895,6 +895,7 @@
 			samsung,pins = "gpf0-1";
 			samsung,pin-function = <1>;
 			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
 			samsung,pin-con-pdn = <3>;
 			samsung,pin-pud-pdn = <0>;
 		};
