@@ -39,6 +39,13 @@
 					mnt_flags = "ro";
 					fsmgr_flags = "wait,verify";
 				};
+				oem {
+					compatible = "android,oem";
+					dev = "/dev/block/platform/13540000.dwmmc0/by-name/oem";
+					type = "ext4";
+					mnt_flags = "ro";
+					fsmgr_flags = "wait";
+				};
 			};
 		};
 	};
