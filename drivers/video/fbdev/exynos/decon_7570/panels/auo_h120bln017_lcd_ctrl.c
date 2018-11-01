@@ -67,6 +67,12 @@ int auo_h120bln017_lcd_init(struct decon_lcd * lcd)
 		ARRAY_SIZE(cmd_set_8)) < 0)
 		return -1;
 
+	/* cmd_set_9 */
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		(unsigned long) cmd_set_9,
+		ARRAY_SIZE(cmd_set_9)) < 0)
+		return -1;
+
 	/* sleep out */
 	if (dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE, 0x11, 0) < 0)
 		return -1;

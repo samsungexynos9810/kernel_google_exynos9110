@@ -47,9 +47,9 @@ void auo_h120bln017_notify_ambient(void)
 {
 	if (!two_layer_mode)
 		return;
-
-	auo_h120bln017_lcd_brightness_set(0);
-	SUB_LCDForceOnOffSet(1);
+	ambient_in_2layer = 1;
+	backlight_update_status(bd);
+	ambient_in_2layer = 0;
 }
 #endif
 

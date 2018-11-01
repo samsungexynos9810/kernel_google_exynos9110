@@ -2746,9 +2746,6 @@ static int decon_ioctl(struct fb_info *info, unsigned int cmd,
 					decon_err("failed to enable decon\n");
 					ret = 0;
 				}
-#ifdef CONFIG_BACKLIGHT_SUBCPU
-			auo_h120bln017_notify_ambient();
-#endif
 			}
 			call_panel_ops(dsim, enteridle, dsim);
 			decon_ambient_enter = 1;
