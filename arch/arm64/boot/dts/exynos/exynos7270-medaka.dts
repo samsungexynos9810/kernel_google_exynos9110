@@ -966,9 +966,9 @@
 		timing,decon_h-porch = <7 1 1>;
 		/* decon V porch : VBP, VFP, VSA */
 		timing,decon_v-porch = <10 2 1>;
-		/* panel max speed : 166Mbps */
-		timing,dsi-hs-clk = <166>;
-		timing,pms = <2 102 3>;
+		/* panel max speed : 172Mbps */
+		timing,dsi-hs-clk = <172>;
+		timing,pms = <2 106 3>;
 		timing,dsi-escape-clk = <20>;
 	};
 
