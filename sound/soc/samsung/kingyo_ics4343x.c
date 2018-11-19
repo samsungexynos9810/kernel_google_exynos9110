@@ -19,6 +19,7 @@
 
 #include <sound/soc.h>
 #include <linux/regulator/consumer.h>
+#include <linux/delay.h>
 
 #include "i2s.h"
 #include "i2s-regs.h"
@@ -122,7 +123,6 @@ static int kingyo_aif_startup(struct snd_pcm_substream *substream)
 		return ret;
 	}
 
-
 	return 0;
 }
 
@@ -169,9 +169,9 @@ static int set_mixer_clock(struct snd_soc_card *card)
 
 static unsigned int mixer_config_regs[] = {
 	AUDMIXER_REG_10_DMIX1, 0x00,
-	AUDMIXER_REG_11_DMIX2, 0x80,
+	AUDMIXER_REG_11_DMIX2, 0x00,		// 0x80
 	AUDMIXER_REG_0F_DIG_EN, 0x08,
-	AUDMIXER_REG_0D_RMIX_CTL, 0x80,
+	AUDMIXER_REG_0D_RMIX_CTL, 0x00,		// 0x80
 };
 static int map_audiomixer(void)
 {
@@ -255,12 +255,46 @@ static int kingyo_hw_params(struct snd_pcm_substream *substream,
 }
 
 
+struct kingyo_priv {
+	struct delayed_work mute_work;
+};
+
+#define MUTE_DELAY_TIME 250
+
+static void mute_delaywork(struct work_struct *work)
+{
+	writel(0x80, audmixer_reg + AUDMIXER_REG_0D_RMIX_CTL);
+	writel(0x80, audmixer_reg + AUDMIXER_REG_11_DMIX2);
+}
+
+static int kingyo_trigger(
+	struct snd_pcm_substream *substream, int cmd)
+{
+	int ret = 0;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct kingyo_priv *priv = snd_soc_card_get_drvdata(rtd->card);
+
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+		queue_delayed_work(system_power_efficient_wq, &priv->mute_work,
+			msecs_to_jiffies(MUTE_DELAY_TIME));
+		break;
+
+	case SNDRV_PCM_TRIGGER_STOP:
+		cancel_delayed_work_sync(&priv->mute_work);
+		break;
+	}
+
+	return ret;
+}
+
 static struct snd_soc_ops kingyo_ops = {
 #ifdef I2S_POWER_SUPPLY
 	.startup = kingyo_aif_startup,
 	.shutdown = kingyo_aif_shutdown,
 #endif
 	.hw_params = kingyo_hw_params,
+	.trigger = kingyo_trigger,
 };
 
 #ifdef CALL_DAPM_SYNC
@@ -384,6 +418,7 @@ static int kingyo_ics4343X_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
 	struct snd_soc_card *card = &kingyo;
+	struct kingyo_priv *priv;
 	int ret;
 
 	gprintk("\n");
@@ -464,6 +499,12 @@ static int kingyo_ics4343X_probe(struct platform_device *pdev)
 #endif
 
 	gprintk("register card\n");
+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+	if (!priv)
+		return -ENOMEM;
+	INIT_DELAYED_WORK(&priv->mute_work, mute_delaywork);
+	platform_set_drvdata(pdev, priv);
+	snd_soc_card_set_drvdata(card, priv);
 	ret = snd_soc_register_card(card);
 	if (ret) {
 		dev_err(&pdev->dev, "snd_soc_register_card() failed: %d\n", ret);
