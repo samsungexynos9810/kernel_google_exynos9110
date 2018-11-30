@@ -819,8 +819,10 @@ static ssize_t firmware_data_write(struct file *filp, struct kobject *kobj,
 	struct firmware_buf *buf;
 	ssize_t retval;
 
+#ifndef CONFIG_MULTI_SENSORS
 	if (!capable(CAP_SYS_RAWIO))
 		return -EPERM;
+#endif
 
 	mutex_lock(&fw_lock);
 	buf = fw_priv->buf;
