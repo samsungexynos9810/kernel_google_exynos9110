@@ -407,7 +407,7 @@ void kbasep_trace_add(struct kbase_device *kbdev, enum kbase_trace_code code, vo
 	/* MALI_SEC_INTEGRATION : removed JM_SOFTSTOP dump register on t72x.
 	   kbase_job_slot_ctx_priority_check_locked also soft stop atoms on t72x.
 	   but this is not the error situation.*/
-#ifdef MALI_PRODUCT_ID_T72X
+#if defined(CONFIG_SOC_EXYNOS7570) || defined(CONFIG_SOC_EXYNOS7270)
 	if (code == KBASE_TRACE_CODE(JM_HARDSTOP))
 #else
 	if (code == KBASE_TRACE_CODE(JM_SOFTSTOP) || code == KBASE_TRACE_CODE(JM_HARDSTOP))
