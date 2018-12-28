@@ -27,8 +27,8 @@ module_param(dbg_level, int, 0644);
 MODULE_PARM_DESC(dbg_level, "set debug level");
 
 static char bdaddress[20] = {
-	'0', '0', ':', '0', '0', ':', '0', '0', ':',
-	'0', '0', ':', '0', '0', ':', '0', '0',
+	'0', '0', ':', '1', '1', ':', '2', '2', ':',
+	'3', '3', ':', '4', '4', ':', '5', '5',
 	0x00, 0x00, 0x00
 };
 
@@ -335,11 +335,22 @@ static struct platform_driver bluetooth_platform_driver = {
 static int __init bluetooth_init(void)
 {
 	char *pstr;
+	char tmp[17] = {
+		'0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
+		'0', '0', '0', '0', '0', '0', '0'
+	};
 
 	dbg_trace("%s()\n", __func__);
 	pstr = strstr(boot_command_line, "board_shiri_bluetooth.btmac=");
-	if (pstr)
-		memcpy(bdaddress, pstr + 28, 17);
+	if (pstr) {
+		memcpy(tmp, pstr + 28, 17);
+		if(tmp[2] == ':' && tmp[5] == ':' && tmp[8] == ':' &&
+		   tmp[11] == ':' && tmp[14] == ':') {
+			memcpy(bdaddress, tmp, 17);
+		} else {
+		    dbg_err("Error: illegal bt mac addr\n");
+		}
+	}
 	return platform_driver_register(&bluetooth_platform_driver);
 }
 
