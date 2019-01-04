@@ -113,15 +113,16 @@ long strnlen_user(const char __user *str, long count)
 		unsigned long max = max_addr - src_addr;
 		long retval;
 
-		user_access_begin();
-		retval = do_strnlen_user(str, count, max);
-		user_access_end();
-		return retval;
+		if (user_access_begin(VERIFY_READ, str, max)) {
+			retval = do_strnlen_user(str, count, max);
+			user_access_end();
+			return retval;
+		}
 	}
 	return 0;
 }
 EXPORT_SYMBOL(strnlen_user);
-
+#if 0
 /**
  * strlen_user: - Get the size of a user string INCLUDING final NUL.
  * @str: The string to measure.
@@ -155,3 +156,4 @@ long strlen_user(const char __user *str)
 	return 0;
 }
 EXPORT_SYMBOL(strlen_user);
+#endif
