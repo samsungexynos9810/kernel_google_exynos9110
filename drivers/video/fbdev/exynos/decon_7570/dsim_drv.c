@@ -73,6 +73,75 @@ EXPORT_SYMBOL(dsim0_for_decon);
 struct dsim_device *dsim1_for_decon;
 EXPORT_SYMBOL(dsim1_for_decon);
 
+static int dsim_phy_reset_con(int on)
+{
+	void __iomem *reg;
+	u32 cfg = 0;
+
+	/* DISPAUD_MIPI_PHY_CON 0x148F_100C
+	 * M4S4_M_RESETN [0]
+	 * Reset MIPI_PHY M4S4 Master
+	 * 0 = Enable RESETN
+	 * 1 = Release RESETN
+	 */
+	reg = ioremap(0x148F100C, SZ_4);
+	if(!reg) {
+		pr_err("%s, ioremap fail\n", __func__);
+		return -ENOMEM;
+	}
+
+	cfg = readl(reg);
+	/* reset phy con */
+	cfg &= ~(0x1 << 0);
+	writel(cfg, reg);
+
+	/* release a reset of phy con */
+	if (on) {
+		cfg |= (0x1 << 0);
+		writel(cfg, reg);
+	}
+
+	iounmap(reg);
+	dsim_dbg("phy reset done\n");
+	return 0;
+}
+
+static int dsim_phy_isolation_con(int on)
+{
+	void __iomem *reg;
+	u32 cfg = 0;
+	u32 cfg2 = 0;
+
+	/* PMU ALIVE Base Address: 0x11C8_0000
+	 * MIPI_PHY_M4S4_CONTROL 0x070C : MIPI_PHY_M4S4 output isolation control.
+	 * 0 = Isolation enabled ==> off
+	 * 1 = Isolation         ==> on
+	 */
+	reg = ioremap(0x11C8070C, SZ_4);
+	if(!reg) {
+		pr_err("%s, ioremap fail\n", __func__);
+		return -ENOMEM;
+	}
+
+	cfg = readl(reg);
+
+	if (on) {
+		cfg |= (0x1 << 0);
+	} else {
+		cfg &= ~(0x1 << 0);
+	}
+
+	writel(cfg, reg);
+	cfg2 = readl(reg);
+	dsim_dbg("phy isolation write val(0x%X), read val(0x%X)\n", cfg, cfg2);
+	iounmap(reg);
+
+	if (on)
+		dsim_phy_reset_con(on);
+
+	return 0;
+}
+
 static void __dsim_dump(struct dsim_device *dsim)
 {
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4,
@@ -915,7 +984,8 @@ static int dsim_enable(struct dsim_device *dsim)
 	call_panel_ops(dsim, resume, dsim);
 
 	/* DPHY power on */
-	phy_power_on(dsim->phy);
+	//phy_power_on(dsim->phy);
+	dsim_phy_isolation_con(1);
 
 	dsim_reg_set_clocks(dsim->id, &dsim->clks_param.clks, &dsim->lcd_info.dphy_pms, 1);
 	dsim_reg_set_lanes(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane, 1);
@@ -932,7 +1002,6 @@ static int dsim_enable(struct dsim_device *dsim)
 			&dsim->clks_param.clks);
 
 	dsim_reg_start(dsim->id, &dsim->clks_param.clks, DSIM_LANE_CLOCK | dsim->data_lane);
-
 	dsim->state = DSIM_STATE_HSCLKEN;
 
 	/* for Java W SIP 3aa2 panel */
@@ -990,7 +1059,8 @@ static int dsim_disable(struct dsim_device *dsim)
 	dsim_reg_stop(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane);
 	disable_irq(dsim->irq);
 
-	phy_power_off(dsim->phy);
+	dsim_phy_isolation_con(0);
+	//phy_power_off(dsim->phy);
 	dsim_set_panel_power(dsim, 0);
 
 #if defined(CONFIG_PM)
@@ -998,7 +1068,6 @@ static int dsim_disable(struct dsim_device *dsim)
 #else
 	dsim_runtime_suspend(dsim->dev);
 #endif
-
 exit:
 	dsim_dbg("%s: --\n", __func__);
 
@@ -1027,7 +1096,8 @@ static int dsim_doze_enable(struct dsim_device *dsim)
 		dsim_set_panel_power(dsim, 1);
 
 	/* DPHY power on */
-	phy_power_on(dsim->phy);
+	//phy_power_on(dsim->phy);
+	dsim_phy_isolation_con(1);
 
 	dsim_reg_set_clocks(dsim->id, &dsim->clks_param.clks, &dsim->lcd_info.dphy_pms, 1);
 	dsim_reg_set_lanes(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane, 1);
@@ -1080,7 +1150,8 @@ static int dsim_doze_suspend(struct dsim_device *dsim)
 
 	disable_irq(dsim->irq);
 	dsim_reg_stop(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane);
-	phy_power_off(dsim->phy);
+	dsim_phy_isolation_con(0);
+	//phy_power_off(dsim->phy);
 
 #if defined(CONFIG_PM)
 	pm_runtime_put_sync(dsim->dev);
@@ -1126,7 +1197,8 @@ static int dsim_enter_ulps(struct dsim_device *dsim)
 	if (ret < 0)
 		dsim_dump(dsim);
 
-	phy_power_off(dsim->phy);
+	dsim_phy_isolation_con(0);
+	//phy_power_off(dsim->phy);
 
 #if defined(CONFIG_PM)
 	pm_runtime_put_sync(dsim->dev);
@@ -1166,7 +1238,8 @@ static int dsim_exit_ulps(struct dsim_device *dsim)
 	enable_irq(dsim->irq);
 
 	/* DPHY power on */
-	phy_power_on(dsim->phy);
+	//phy_power_on(dsim->phy);
+	dsim_phy_isolation_con(1);
 
 	dsim_reg_set_clocks(dsim->id, &dsim->clks_param.clks, &dsim->lcd_info.dphy_pms, 1);
 	dsim_reg_set_lanes(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane, 1);
@@ -1686,7 +1759,8 @@ static int dsim_probe(struct platform_device *pdev)
 
 	/* DPHY init and power on */
 	phy_init(dsim->phy);
-	phy_power_on(dsim->phy);
+	//phy_power_on(dsim->phy);
+	dsim_phy_isolation_con(1);
 
 	dsim_reg_set_clocks(dsim->id, &dsim->clks_param.clks, &dsim->lcd_info.dphy_pms, 1);
 	dsim_reg_set_lanes(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane, 1);
