@@ -1255,6 +1255,12 @@
 		status = "ok";
 	};
 
+	/* tbase */
+	tee {
+		compatible = "samsung,exynos-tee";
+		interrupts = <0 223 0>;
+	};
+
 	clock_pwm: pwm-clock-controller@13970000 {
 		compatible = "samsung,exynos-pwm-clock";
 		reg = <0x0 0x13970000 0x50>;

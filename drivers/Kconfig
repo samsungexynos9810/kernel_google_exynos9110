@@ -204,6 +204,8 @@ source "drivers/bts/Kconfig"
 
 source "drivers/trace/Kconfig"
 
+source "drivers/gud/Kconfig"
+
 source "drivers/tee/Kconfig"
 
 endmenu
