@@ -565,13 +565,15 @@ int mc_fc_mem_trace(phys_addr_t buffer, u32 size)
 	return convert_fc_ret(mc_fc_generic.as_out.ret);
 }
 
-int mc_fc_nsiq(void)
+int mc_fc_nsiq(u32 sid, u32 payload)
 {
 	union mc_fc_generic fc;
 	int ret;
 
 	memset(&fc, 0, sizeof(fc));
 	fc.as_in.cmd = MC_SMC_N_SIQ;
+	fc.as_in.param[1] = sid;
+	fc.as_in.param[2] = payload;
 	mc_fastcall(&fc);
 	ret = convert_fc_ret(fc.as_out.ret);
 	if (ret)
@@ -580,13 +582,14 @@ int mc_fc_nsiq(void)
 	return ret;
 }
 
-int mc_fc_yield(void)
+int mc_fc_yield(u32 timeslice)
 {
 	union mc_fc_generic fc;
 	int ret;
 
 	memset(&fc, 0, sizeof(fc));
 	fc.as_in.cmd = MC_SMC_N_YIELD;
+	fc.as_in.param[1] = timeslice;
 	mc_fastcall(&fc);
 	ret = convert_fc_ret(fc.as_out.ret);
 	if (ret)
