@@ -223,6 +223,7 @@ ssize_t Msensors_Spi_Send(struct Msensors_state *st, char* send_buf, char* recv_
 extern void SUB_VibratorSet(int timeout);
 extern int SUBCPU_rtc_read_time(uint8_t *data);
 extern int SUB_LCDBrightnessSet(unsigned char LCDBrightness);
+extern int SUB_LCDForceOnOffSet(unsigned char force_on);
 void Msensors_set_backlight_zero_flag(int flg);
 void Msensors_SetTimestamp(void);
 void msensors_fw_up_init(struct Msensors_state *st);

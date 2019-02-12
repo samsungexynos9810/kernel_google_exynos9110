@@ -506,6 +506,11 @@ retrywait:
 	return buf_index;
 }
 
+void sharp_lcd_notify_seglcd(int seglcd_on);
+void sharp_lcd_notify_always_segment(int mode);
+static int mode_always_segment_wf;
+static int mode_always_segment_activity;
+
 static ssize_t Msensors_Write(struct file* file, const char* buf, size_t count,
 						loff_t* offset)
 {
@@ -519,10 +524,25 @@ static ssize_t Msensors_Write(struct file* file, const char* buf, size_t count,
 	ret = copy_from_user(&write_buff[1], buf, count);
 
 	if (!ret) {
+#ifdef CONFIG_BACKLIGHT_SUBCPU
+		if (write_buff[1] == SUB_COM_SETID_SEG_CMD) {
+			if (write_buff[2] == 0) {			// SegLCD On/Off Control
+				sharp_lcd_notify_seglcd((write_buff[3] & 0x80) ? 1 : 0);
+			} else if (write_buff[2] == 9) {	// Notify On/Off AlwaysSegment
+				if ((write_buff[3] & 0x7F) == 0) {
+					mode_always_segment_wf = (write_buff[3] & 0x80) ? 1 : 0;
+				} else {
+					mode_always_segment_activity = (write_buff[3] & 0x80) ? 1 : 0;
+				}
+				sharp_lcd_notify_always_segment((mode_always_segment_wf || mode_always_segment_activity));
+				goto finish;
+			}
+		}
+#endif
 		write_buff[0] = SUB_COM_TYPE_WRITE;	//0xA1
 		Msensors_PushData(&write_buff[0]);
 	}
-
+finish:
 	return ret;
 }
 
@@ -992,6 +1012,24 @@ int SUB_LCDBrightnessSet(unsigned char LCDBrightness)
 	write_buff[0] = SUB_COM_TYPE_WRITE;
 	write_buff[1] = SUB_COM_SETID_LCD_SET;
 	write_buff[2] = LCDBrightness;	/* LCD brightness */
+
+	return Msensors_PushData(&write_buff[0]);
+}
+
+int SUB_LCDForceOnOffSet(unsigned char force_on)
+{
+	unsigned char write_buff[WRITE_DATA_SIZE];
+
+	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
+
+	write_buff[0] = SUB_COM_TYPE_WRITE;
+	write_buff[1] = SUB_COM_SETID_SEG_CMD;
+	write_buff[2] = 1;
+	write_buff[3] = 18;
+	if (force_on)
+		write_buff[4] = 1;
+	else
+		write_buff[4] = 0;
 
 	return Msensors_PushData(&write_buff[0]);
 }

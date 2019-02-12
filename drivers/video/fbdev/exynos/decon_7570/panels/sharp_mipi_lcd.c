@@ -27,6 +27,33 @@ static int sharp_lcd_get_brightness(struct backlight_device *bd)
 	return bd->props.brightness;
 }
 
+#ifdef CONFIG_BACKLIGHT_SUBCPU
+static int bl_force_off;
+void sharp_lcd_notify_seglcd(int seglcd_on)
+{
+	bl_force_off = seglcd_on;
+	backlight_update_status(bd);
+}
+
+static int always_segment_mode;
+void sharp_lcd_notify_always_segment(int mode)
+{
+	always_segment_mode = mode;
+}
+
+static int ambient_in_always_segment_mode;
+void sharp_lcd_notify_ambient(void)
+{
+	if (!always_segment_mode)
+		return;
+
+	ambient_in_always_segment_mode = 1;
+	backlight_update_status(bd);
+	SUB_LCDForceOnOffSet(1);
+	ambient_in_always_segment_mode = 0;
+}
+#endif
+
 static int sharp_lcd_set_brightness(struct backlight_device *bd)
 {
 	int brightness = bd->props.brightness;
@@ -41,6 +68,9 @@ static int sharp_lcd_set_brightness(struct backlight_device *bd)
 		if (!(bd->props.state & BL_CORE_FBBLANK))
 			brightness = 1;
 	}
+
+	if (bl_force_off || ambient_in_always_segment_mode)
+		brightness = 0;
 
 	if (brightness > 0)
 		SUB_LCDBrightnessSet((brightness >> 4) + 1);
