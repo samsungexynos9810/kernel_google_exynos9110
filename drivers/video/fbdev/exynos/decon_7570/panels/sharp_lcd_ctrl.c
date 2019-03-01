@@ -165,8 +165,21 @@ static void sharp_power_on_sequence(void)
 
 static void sharp_power_sequence_off(void)
 {
+	unsigned char cmd_set_1[2] = {0xFF, 0x20};
+	unsigned char cmd_set_2[2] = {0x15, 0x00};
+	unsigned char cmd_set_3[2] = {0xFF, 0x10};
+
 	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
 			MIPI_DCS_SET_DISPLAY_OFF, 0x00);
+
+	/* prevent floating vdd_lcd */
+	dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd_set_1, ARRAY_SIZE(cmd_set_1));
+	dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd_set_2, ARRAY_SIZE(cmd_set_2));
+	dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd_set_3, ARRAY_SIZE(cmd_set_3));
+
 	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
 			MIPI_DCS_ENTER_SLEEP_MODE, 0x00);
 	msleep(110);
