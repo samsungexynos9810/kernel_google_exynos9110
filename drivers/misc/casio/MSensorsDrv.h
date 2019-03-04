@@ -96,7 +96,7 @@
 #define MSENSORS_TYPE_META			0x00		/* Sensor Type Meta */
 #define MSENSORS_TYPE_SUBCPU_LOG	0x1e		/* subcpu log */
 #define MSENSORS_TYPE_TIMESTAMP		0x1f		/* timestamp */
-#define NORMAL_SENSOR_NUM	6
+#define NORMAL_SENSOR_NUM	7
 
 #define SUB_COM_HEAD_INDEX_TYPE			(0x00)		/* HEADER Information Index Type */
 #define SUB_COM_HEAD_INDEX_PACKET		(0x01)		/* HEADER Information Index Packet */
