@@ -31,8 +31,7 @@ static int sharp_lcd_get_brightness(struct backlight_device *bd)
 static int bl_force_off;
 void sharp_lcd_notify_seglcd(int seglcd_on)
 {
-	bl_force_off = seglcd_on;
-	backlight_update_status(bd);
+	bl_force_off = 0;
 }
 
 static int always_segment_mode;
