@@ -535,14 +535,13 @@ static ssize_t Msensors_Write(struct file* file, const char* buf, size_t count,
 					mode_always_segment_activity = (write_buff[3] & 0x80) ? 1 : 0;
 				}
 				sharp_lcd_notify_always_segment((mode_always_segment_wf || mode_always_segment_activity));
-				goto finish;
 			}
 		}
 #endif
 		write_buff[0] = SUB_COM_TYPE_WRITE;	//0xA1
 		Msensors_PushData(&write_buff[0]);
 	}
-finish:
+
 	return ret;
 }
 
