@@ -189,7 +189,6 @@ int gpu_set_target_clk_vol(int clk, bool pending_is_allowed)
 		mutex_lock(&platform->exynos_pm_domain->access_lock);
 		if (!platform->dvs_is_enabled && gpu_is_power_on())
 			prev_clk = gpu_get_cur_clock(platform);
-		prev_clk = gpu_get_cur_clock(platform);
 		mutex_unlock(&platform->exynos_pm_domain->access_lock);
 	}
 #endif
