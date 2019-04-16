@@ -2913,7 +2913,7 @@ static int decon_system_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct decon_device *decon = platform_get_drvdata(pdev);
 
-	printk(KERN_INFO "##### decon_system_suspend : %d\n", decon_ambient_enter);
+	decon_dbg("##### decon_system_suspend : %d\n", decon_ambient_enter);
 
 	if (decon_ambient_enter)
 		decon_doze_suspend(decon);
@@ -2926,7 +2926,7 @@ static int decon_system_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct decon_device *decon = platform_get_drvdata(pdev);
 
-	printk(KERN_INFO "##### decon_system_resume : %d\n", decon_ambient_enter);
+	decon_dbg("##### decon_system_resume : %d\n", decon_ambient_enter);
 
 	if (decon_ambient_enter)
 		decon_doze_enable(decon);

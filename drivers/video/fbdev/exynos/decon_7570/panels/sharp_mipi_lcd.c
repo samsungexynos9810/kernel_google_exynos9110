@@ -102,14 +102,14 @@ static int sharp_mipi_lcd_probe(struct dsim_device *dsim)
 
 static int sharp_mipi_lcd_displayon(struct dsim_device *dsim)
 {
-	printk(KERN_INFO "***** sharp_mipi_lcd_displayon \n");
+	pr_debug("***** sharp_mipi_lcd_displayon \n");
 	sharp_lcd_init(&dsim->lcd_info);
 	return 0;
 }
 
 static int sharp_mipi_lcd_suspend(struct dsim_device *dsim)
 {
-	printk(KERN_INFO "***** sharp_mipi_lcd_suspend \n");
+	pr_debug("***** sharp_mipi_lcd_suspend \n");
 	sharp_lcd_disable();
 	return 0;
 }
@@ -121,14 +121,14 @@ static int sharp_mipi_lcd_resume(struct dsim_device *dsim)
 
 static int sharp_mipi_lcd_enteridle(struct dsim_device *dsim)
 {
-	pr_debug(KERN_INFO "***** sharp_mipi_lcd_enteridle \n");
+	pr_debug("***** sharp_mipi_lcd_enteridle \n");
 	sharp_lcd_idle_mode(1);
 	return 0;
 }
 
 static int sharp_mipi_lcd_exitidle(struct dsim_device *dsim)
 {
-	pr_debug(KERN_INFO "***** sharp_mipi_lcd_exitidle \n");
+	pr_debug("***** sharp_mipi_lcd_exitidle \n");
 	sharp_lcd_idle_mode(0);
 	return 0;
 }

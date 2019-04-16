@@ -1037,7 +1037,7 @@ exit:
 #ifdef CONFIG_LCD_DOZE_MODE
 	dsim->doze_state = DOZE_STATE_NORMAL;
 #endif
-	dsim_info("%s: --\n", __func__);
+	dsim_dbg("%s: --\n", __func__);
 	return 0;
 }
 
@@ -1046,7 +1046,7 @@ static int dsim_disable(struct dsim_device *dsim)
 	if (dsim->state == DSIM_STATE_SUSPEND)
 		goto exit;
 
-	dsim_info("%s: ++\n", __func__);
+	dsim_dbg("%s: ++\n", __func__);
 
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
 	dsim_pkt_go_enable(dsim, false);
@@ -1077,7 +1077,7 @@ static int dsim_disable(struct dsim_device *dsim)
 	dsim_runtime_suspend(dsim->dev);
 #endif
 exit:
-	dsim_info("%s: --\n", __func__);
+	dsim_dbg("%s: --\n", __func__);
 
 	return 0;
 }
@@ -1092,7 +1092,7 @@ static int dsim_doze_enable(struct dsim_device *dsim)
 		goto exit;
 	}
 
-	dsim_info("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
+	dsim_dbg("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
 
 #if defined(CONFIG_PM)
 	pm_runtime_get_sync(dsim->dev);
@@ -1132,7 +1132,7 @@ static int dsim_doze_enable(struct dsim_device *dsim)
 exit:
 	dsim->doze_state = DOZE_STATE_DOZE;
 
-	dsim_info("%s: --\n", __func__);
+	dsim_dbg("%s: --\n", __func__);
 
 	return 0;
 }
@@ -1142,7 +1142,7 @@ static int dsim_doze_suspend(struct dsim_device *dsim)
 	if (dsim->state == DSIM_STATE_SUSPEND)
 		goto exit;
 
-	dsim_info("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
+	dsim_dbg("%s: ++ %d, %d\n", __func__, dsim->state, dsim->doze_state);
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
 	dsim_pkt_go_enable(dsim, false);
 #endif
@@ -1170,7 +1170,7 @@ static int dsim_doze_suspend(struct dsim_device *dsim)
 #endif
 
 exit:
-	dsim_info("%s: --\n", __func__);
+	dsim_dbg("%s: --\n", __func__);
 	return 0;
 }
 #endif
