@@ -1685,7 +1685,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
 		div = (host->bus_hz != clock) ? DIV_ROUND_UP(div, 2) : 0;
 
 		if (clock != slot->__clk_old || force_clkinit)
-			dev_info(&slot->mmc->class_dev,
+			dev_dbg(&slot->mmc->class_dev,
 				 "Bus speed (slot %d) = %dHz (slot req %dHz, actual %dHZ div = %d)\n",
 				 slot->id, host->bus_hz, clock,
 				 div ? ((host->bus_hz / div) >> 1) :
@@ -2299,7 +2299,7 @@ static void dw_mci_emmc_pwr_control(struct mmc_host *mmc, unsigned int power_mod
 	struct dw_mci *host = slot->host;
 	struct dw_mci_exynos_priv_data *priv = host->priv;
 
-	dev_info(host->dev,"emmc power ctrl call : %d (0 = off, 1, = up) \n",power_mode);
+	dev_dbg(host->dev,"emmc power ctrl call : %d (0 = off, 1, = up) \n",power_mode);
 	switch(power_mode){
 		case MMC_POWER_UP:
 			if (!IS_ERR(host->vemmc)) {
