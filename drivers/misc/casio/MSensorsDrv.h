@@ -36,16 +36,6 @@
 #define SUB_COM_SETID_SENSOR_PERIOD		(0x02)		/* Sensor Data Send Period */
 #define SUB_COM_SETID_FIFO_FLUSH		(0x04)		/* FIFO flash */
 
-#define SUB_COM_SETID_ONOFF_ACCELE		(0x21)		/* Acceleratio Non/OFF */
-#define SUB_COM_SETID_ONOFF_MAG			(0x22)		/* Magnetic ON/OFF */
-#define SUB_COM_SETID_ONOFF_GYRO		(0x23)		/* Gyroscope ON/OFF */
-#define SUB_COM_SETID_ONOFF_PRESS		(0x24)		/* Pressure ON/OFF */
-#define SUB_COM_SETID_ONOFF_BHA		(0x25)		/* BHA ON/OFF */
-#define SUB_COM_SETID_ONOFF_STPCOUNTER		(0x26)		/* Step Counter ON/OFF */
-#define SUB_COM_SETID_ONOFF_STPDETECTOR		(0x27)		/* Step Detector ON/OFF */
-#define SUB_COM_SETID_ONOFF_WRIST_TILT	(0x28)	/* Wrist Tilt ON/OFF */
-#define SUB_COM_REQUEST_SUBCPU_LOG 0x2e
-
 #define SUB_COM_SETID_HZ_ACCELE			(0x31)		/* Acceleration Hz */
 #define SUB_COM_SETID_HZ_MAG			(0x32)		/* Magnetic Hz */
 #define SUB_COM_SETID_HZ_GYRO			(0x33)		/* Gyroscope Hz */
@@ -94,7 +84,6 @@
 #define SUB_COM_GETID_NUM	(0x10)	/* Number of GETIDs */
 
 #define MSENSORS_TYPE_META			0x00		/* Sensor Type Meta */
-#define MSENSORS_TYPE_SUBCPU_LOG	0x1e		/* subcpu log */
 #define MSENSORS_TYPE_TIMESTAMP		0x1f		/* timestamp */
 #define NORMAL_SENSOR_NUM	7
 

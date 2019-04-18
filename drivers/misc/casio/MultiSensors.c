@@ -36,7 +36,6 @@
 #define DRV_NAME_CD_01 	"MultiSensors_CD_01"
 
 #define MINOR_COUNT 	(1)
-/* #define CFG_SUBCPU_LOG */
 
 #define INC_INDEX(a, r)	\
 do {	\
@@ -292,11 +291,7 @@ static int SensorReadThread(void *p)
 		type = recv_buf[SUB_COM_HEAD_INDEX_TYPE];
 
 		/* HEADER Information */
-#ifdef CFG_SUBCPU_LOG
-		if (type == SUB_COM_TYPE_BIT_HEAD || type == SUB_COM_TYPE_SUBCPU_LOG) {
-#else
 		if (type == SUB_COM_TYPE_BIT_HEAD) {
-#endif
 			/* Get Header Data */
 			memcpy(&HeaderData[0], &recv_buf[0], HEADER_DATA_SIZE);
 
@@ -307,11 +302,6 @@ static int SensorReadThread(void *p)
 			sensor_num = recv_buf[SUB_COM_HEAD_INDEX_PACKET];
 
 			/* Calc sensors data size */
-#ifdef CFG_SUBCPU_LOG
-			if (type == SUB_COM_TYPE_SUBCPU_LOG)
-			next_recv_size += sensor_num * 65;
-			else
-#endif
 			next_recv_size += sensor_num * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE );
 			PacketDataNum = sensor_num;
 			if (st->spi.pre_send_type==SUB_COM_TYPE_READ) {
@@ -358,19 +348,6 @@ static int SensorReadThread(void *p)
 				/* Sensor Data Proc */
 				if (recv_buf[recv_index] == MSENSORS_TYPE_TIMESTAMP)
 					wake_lock_timeout(&wlock, HZ/5);
-#ifdef CFG_SUBCPU_LOG
-			  if (recv_buf[recv_index] == MSENSORS_TYPE_SUBCPU_LOG) {	// subcpu log
-				for (cnt= 0; cnt < PacketDataNum; cnt++) {
-					if (recv_buf[recv_index] != MSENSORS_TYPE_SUBCPU_LOG) {
-						pr_info("subcpu type invalid\n");
-						break;
-					}
-					recv_index++;
-					printk(KERN_DEBUG "[subcpu] %s", &recv_buf[recv_index]);
-					recv_index += 64;
-				}
-			  } else {
-#endif
 				timestamp_count(&recv_buf[recv_index], PacketDataNum);
 				timestamp_estimate_ts(getTimestamp());
 				for (cnt= 0; cnt < PacketDataNum; cnt++) {
@@ -399,9 +376,6 @@ static int SensorReadThread(void *p)
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
 				wake_up_interruptible_sync(&wait_rd);
-#ifdef CFG_SUBCPU_LOG
-			  }
-#endif
 			}
 		}
 		wb = NULL;
@@ -618,18 +592,6 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	return ret;
 }
 
-#ifdef CFG_SUBCPU_LOG
-static void get_subcpu_log(void)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_REQUEST_SUBCPU_LOG;
-	write_buff[2] = 0xff;
-	Msensors_PushData(&write_buff[0]);
-}
-#endif
-
 static ssize_t read_i2c_status_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -832,10 +794,6 @@ static int Msensors_probe(struct spi_device *spi)
 		goto error_free_dev;
 	}
 	msensors_fw_up_init(st);
-#ifdef CFG_SUBCPU_LOG
-	get_subcpu_log();
-#endif
-
 	proc_create_data("subcpu", S_IRUGO, NULL, &subcpu_proc_fops, NULL);
 
 	dev_dbg(&spi->dev, "Msensors_probe End\n");
