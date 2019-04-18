@@ -67,7 +67,7 @@ static unsigned int		dataBuffWriteIndex;
 static unsigned int		PacketDataNum=0;
 static unsigned char		HeaderData[HEADER_DATA_SIZE] = {
 	0x00, 0x00, 0x00, 0x1e, 0x21, 0x80, 0x00, 0x05 };	/* 2015/1/1 0:0:0 */
-static unsigned char		Flg_driver_ready = 0;
+static volatile int		Flg_driver_ready = 0;
 static unsigned char		Flg_driver_probed = 0;
 static unsigned char		Flg_driver_shutdown = 0;
 
@@ -79,7 +79,6 @@ static volatile int ioctl_complete;
 static wait_queue_head_t wait_rd;
 static wait_queue_head_t wait_subint;
 static volatile int sub_main_int_occur;
-static volatile int data_pushed;
 static int64_t soc_time;
 
 struct Msensors_state *get_msensors_state(void)
@@ -102,11 +101,6 @@ static struct WriteDataBuf *allocWbBuf(void)
 		spin_unlock_irqrestore(&slock, flags);
 	}
 	return NULL;
-}
-
-static void freeWbBuf(struct WriteDataBuf *wb)
-{
-	wb->m_used = 0;
 }
 
 ssize_t Msensors_Spi_Send( struct Msensors_state *st, char* send_buf, char* recv_buf, size_t count )
@@ -166,6 +160,8 @@ void Msensors_SetTimestamp(void)
 	soc_time = getTimestamp();
 }
 
+static volatile int wb_allocnum;
+
 int Msensors_PushData(unsigned char* write_buff)
 {
 	struct WriteDataBuf *wb;
@@ -186,9 +182,9 @@ retry:
 	if (wb) {
 		memcpy(wb->m_data, &write_buff[0], WRITE_DATA_SIZE);
 		spin_lock_irqsave(&slock, flags);
+		wb_allocnum++;
 		list_add_tail(&wb->bqueue, &wd_queue);
 		spin_unlock_irqrestore(&slock, flags);
-		data_pushed = 1;
 		wake_up(&wait_subint);
 	} else if (Flg_driver_ready) {
 		msleep(10);
@@ -392,18 +388,15 @@ retry_check_wq:
 		st->spi.send_buf[SUB_COM_HEAD_INDEX_TYPE] = send_type;
 		st->spi.pre_send_type =  send_type;
 		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
-			wait_event(wait_subint, sub_main_int_occur | Flg_driver_shutdown | data_pushed);
-			if (data_pushed) {
-				data_pushed = 0;
+			wait_event(wait_subint, sub_main_int_occur | Flg_driver_shutdown | wb_allocnum);
+			if (wb_allocnum)
 				goto retry_check_wq;
-			}
 		} else {
 			if (sub_main_int_occur == 0)
 				gpio_set_value(g_st->main_sub_int, 1);
 			wait_event(wait_subint, sub_main_int_occur | Flg_driver_shutdown);
 		}
 		sub_main_int_occur = 0;
-		data_pushed = 0;
 		gpio_set_value(g_st->main_sub_int, 0);
 		if (Flg_driver_shutdown)
 			break;
@@ -421,8 +414,16 @@ retry_check_wq:
 		if (wb) {
 			spin_lock_irqsave(&slock, flags);
 			list_del(&wb->bqueue);
+			wb->m_used = 0;
+			wb_allocnum--;
 			spin_unlock_irqrestore(&slock, flags);
-			freeWbBuf(wb);
+		}
+		if (st->spi.send_buf[0] == SUB_COM_TYPE_WRITE &&
+			st->spi.send_buf[1] == SUB_COM_SETID_MAIN_STATUS &&
+			st->spi.send_buf[2] == 0x1) {	/* suspend */
+			recv_buf[SUB_COM_HEAD_INDEX_TYPE] = SUB_COM_TYPE_BIT_HEAD;
+			recv_buf[SUB_COM_HEAD_INDEX_PACKET] = 0;
+			recv_buf[SUB_COM_HEAD_INDEX_ALART] = 0;
 		}
 	}
 	return 0;
