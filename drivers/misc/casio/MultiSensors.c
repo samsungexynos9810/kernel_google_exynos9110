@@ -112,7 +112,7 @@ ssize_t Msensors_Spi_Send( struct Msensors_state *st, char* send_buf, char* recv
 
 	memset(&xfer, 0, sizeof(xfer));
 	xfer.len = count;
-	xfer.speed_hz = 1000 * 1000;
+	xfer.speed_hz = 4400 * 1000;
 	xfer.tx_buf = send_buf;
 	xfer.rx_buf = recv_buf;
 	xfer.bits_per_word = 8;
@@ -751,7 +751,7 @@ static int Msensors_probe(struct spi_device *spi)
 	st->sdev = spi_dev_get(spi);
 	spi_set_drvdata(spi, st);
 
-	spi->max_speed_hz = 1000 * 1000;
+	spi->max_speed_hz = 4400 * 1000;
 	spi->mode = SPI_MODE_1;	/* CPHA=1 CPOL=0 */
 	spi->bits_per_word = 8;
 	spi_setup(spi);
