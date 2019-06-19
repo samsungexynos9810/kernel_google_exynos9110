@@ -1,5 +1,5 @@
 /*
- * WiFi driver for Medaka board
+ * WiFi driver for Tai board
  *
  * Copyright (C) 2013 LGE, Inc
  * Copyright (C) 2017 CASIO Computer Co.,Ltd.
@@ -14,7 +14,7 @@
  * GNU General Public License for more details.
  */
 
-#include "board-medaka-rf.h"
+#include "board-tai-rf.h"
 #include <linux/kernel.h>
 #include <linux/if.h>
 #include <linux/random.h>
@@ -462,5 +462,5 @@ int __init init_bcm_wifi(void)
 
 device_initcall(init_bcm_wifi);
 
-MODULE_DESCRIPTION("CYW4343W WiFi Driver for Medaka board");
+MODULE_DESCRIPTION("CYW4343W WiFi Driver for Tai board");
 MODULE_LICENSE("GPL");

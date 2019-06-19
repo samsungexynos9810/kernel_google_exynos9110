@@ -517,12 +517,12 @@ static const struct of_device_id wifi_device_dt_match[] = {
 	{ .compatible = "android,bcmdhd_wlan", },
 	{},
 };
-#elif CONFIG_MEDAKA_WIFI
+#elif CONFIG_TAI_WIFI
 static const struct of_device_id wifi_device_dt_match[] = {
-	{ .compatible = "medaka-wifi", },
+	{ .compatible = "tai-wifi", },
 	{},
 };
-#endif /* CONFIG_DTS | CONFIG_MEDAKA_WIFI */
+#endif /* CONFIG_DTS | CONFIG_TAI_WIFI */
 static struct platform_driver wifi_platform_dev_driver = {
 	.probe          = wifi_plat_dev_drv_probe,
 	.remove         = wifi_plat_dev_drv_remove,
@@ -531,9 +531,9 @@ static struct platform_driver wifi_platform_dev_driver = {
 	.shutdown		= wifi_plat_dev_dev_shutdown,
 	.driver         = {
 	.name   = WIFI_PLAT_NAME,
-#if defined(CONFIG_DTS) || defined(CONFIG_MEDAKA_WIFI)
+#if defined(CONFIG_DTS) || defined(CONFIG_TAI_WIFI)
 	.of_match_table = wifi_device_dt_match,
-#endif /* CONFIG_DTS | CONFIG_MEDAKA_WIFI */
+#endif /* CONFIG_DTS | CONFIG_TAI_WIFI */
 	}
 };
 

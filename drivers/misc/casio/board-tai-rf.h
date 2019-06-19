@@ -1,5 +1,5 @@
 /*
-*  Definitions of the RF module for Medaka board
+*  Definitions of the RF module for Tai board
 *
 *  Copyright (C) 2017 CASIO Computer Co.,Ltd.
 *

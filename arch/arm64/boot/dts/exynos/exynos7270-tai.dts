@@ -10,7 +10,7 @@
 */
 
 /dts-v1/;
-#include "exynos7270-medaka.dtsi"
+#include "exynos7270-tai.dtsi"
 
 / {
 	model = "Exynos 7270 SMDK board";
@@ -22,7 +22,7 @@
 	};
 
 	chosen {
-		bootargs ="console=ttySAC2,115200 clk_ignore_unused androidboot.hardware=medaka firmware_class.path=/vendor/firmware ess_setup=0x46000000";
+		bootargs ="console=ttySAC2,115200 clk_ignore_unused androidboot.hardware=tai firmware_class.path=/vendor/firmware ess_setup=0x46000000";
 		linux,initrd-start = <0x42000000>;
 		linux,initrd-end = <0x420FFFFF>;
 	};
@@ -254,7 +254,7 @@
 	};
 
 	bluetooth {
-		compatible = "medaka-bluetooth";
+		compatible = "tai-bluetooth";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		pinctrl-names = "default";
@@ -262,13 +262,13 @@
 	};
 
 	wlan {
-		compatible = "medaka-wifi";
+		compatible = "tai-wifi";
 		pinctrl-names = "default";
 		pinctrl-0 = <&wlan_main_wkup &wlan_reset>;
 	};
 
-	medaka_gps {
-		compatible = "medaka-gps";
+	tai_gps {
+		compatible = "tai-gps";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		pinctrl-names = "default";
@@ -1022,7 +1022,7 @@
 	};
 
 	sound {
-		compatible = "samsung,medaka-ak4678";
+		compatible = "samsung,tai-ak4678";
 		clocks = <&clock 740>, <&clock 742>;
 		clock-names = "fout_aud_pll", "audmixer_dout";
 		samsung,audio-cpu = <&i2s0>;

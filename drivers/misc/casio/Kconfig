@@ -20,21 +20,21 @@ config SUBCPU_BATTERY
     depends on MULTI_SENSORS
 	default n
 
-config MEDAKA_BLUETOOTH
-	bool "Medaka board bluetooth"
+config TAI_BLUETOOTH
+	bool "Tai board bluetooth"
 	default n
 	help
-	  Medaka board bluetooth.
+	  Tai board bluetooth.
 
-config MEDAKA_GPS
-	bool "Medaka board gps"
+config TAI_GPS
+	bool "Tai board gps"
 	default n
 	help
-	  Medaka board gps.
+	  Tai board gps.
 	  
-config MEDAKA_WIFI
-	bool "Medaka board wifi"
+config TAI_WIFI
+	bool "Tai board wifi"
 	default n
 	help
-	  Medaka board wifi.
+	  Tai board wifi.
 endmenu

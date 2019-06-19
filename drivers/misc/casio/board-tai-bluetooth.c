@@ -1,5 +1,5 @@
 /*
-*  Bluetooth driver for Medaka board
+*  Bluetooth driver for Tai board
 *
 *  Copyright (C) 2017 CASIO Computer Co.,Ltd.
 *
@@ -20,7 +20,7 @@
 */
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-#include "board-medaka-rf.h"
+#include "board-tai-rf.h"
 
 static int dbg_level = DBG_INFO;
 module_param(dbg_level, int, 0644);
@@ -315,8 +315,8 @@ int bluetooth_resume(struct platform_device *pdev)
 	return 0;
 }
 
-static struct of_device_id bluetooth_medaka_of_match[] = {
-	{ .compatible = "medaka-bluetooth", },
+static struct of_device_id bluetooth_tai_of_match[] = {
+	{ .compatible = "tai-bluetooth", },
 	{ },
 };
 
@@ -326,9 +326,9 @@ static struct platform_driver bluetooth_platform_driver = {
 	.suspend = bluetooth_suspend,
 	.resume = bluetooth_resume,
 	.driver = {
-		.name = "medaka_bluetooth",
+		.name = "tai_bluetooth",
 		.owner = THIS_MODULE,
-		.of_match_table = of_match_ptr(bluetooth_medaka_of_match),
+		.of_match_table = of_match_ptr(bluetooth_tai_of_match),
     },
 };
 
@@ -364,5 +364,5 @@ module_init(bluetooth_init);
 module_exit(bluetooth_exit);
 
 MODULE_ALIAS("platform:CYW4343");
-MODULE_DESCRIPTION("CYW4343W Bluetooth Driver for Medaka board");
+MODULE_DESCRIPTION("CYW4343W Bluetooth Driver for Tai board");
 MODULE_LICENSE("GPL");
