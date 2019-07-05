@@ -64,7 +64,6 @@ static struct device		*class_dev;
 static struct Msensors_data	Msensors_data_buff[MSENSORS_DATA_MAX];
 static unsigned int		dataBuffReadIndex;
 static unsigned int		dataBuffWriteIndex;
-static unsigned int		PacketDataNum=0;
 static unsigned char		HeaderData[HEADER_DATA_SIZE] = {
 	0x00, 0x00, 0x00, 0x1e, 0x21, 0x80, 0x00, 0x05 };	/* 2015/1/1 0:0:0 */
 static volatile int		Flg_driver_ready = 0;
@@ -267,6 +266,7 @@ static int SensorReadThread(void *p)
 	unsigned char type;
 	unsigned char send_type;
 	int sensor_num;
+	static int sensor_wake_num, sensor_norm_num, sensor_ppg_num;
 	int sensor_type;
 	int cnt;
 	int recv_index;
@@ -293,18 +293,32 @@ static int SensorReadThread(void *p)
 
 			/* Sub Header Infomation Proc */
 			sub_HeaderInfoProc();
-			sensor_num = recv_buf[2];
+			if (recv_buf[3] == (18<<1) && recv_buf[4] == ((1<<5)|1)) {
+				/* 2018/1/1 was written. SubCPU firmware is old.
+				 * To avoid kernel panic, clear these values.
+				 * Note:
+				 * We don't have allowed to use old subcpu firmware. Therefore
+				 * this may happens only once during ROM update. During ROM update,
+				 * sensor is never used, so clearing value is enough.
+				 */
+				recv_buf[3] = 0;
+				recv_buf[4] = 0;
+				recv_buf[5] = 0;
+			}
+			sensor_wake_num = recv_buf[3] << 8 | recv_buf[2];
+			sensor_norm_num = recv_buf[5] << 8 | recv_buf[4];
+			sensor_ppg_num = recv_buf[7] << 8 | recv_buf[6];
+			sensor_num = sensor_wake_num + sensor_norm_num + sensor_ppg_num;
 
 			/* Calc sensors data size */
 			next_recv_size += sensor_num * (SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE);
-			PacketDataNum = sensor_num;
 			if (st->spi.pre_send_type == SUB_COM_TYPE_READ) {
 				next_recv_size += SUB_COM_DATA_SIZE_GETDATA + SUB_COM_ID_SIZE;
-				if (PacketDataNum == 0)
+				if (sensor_num == 0)
 					send_type = SUB_COM_TYPE_GETDATA;
 				else
 					send_type = SUB_COM_TYPE_SENSOR_GETDATA;
-			} else if (PacketDataNum) {
+			} else if (sensor_num) {
 				send_type = SUB_COM_TYPE_SENSOR;
 			}
 		} else if (type == SUB_COM_TYPE_FWUP_READY) {	/* 0x81 */
@@ -340,24 +354,18 @@ static int SensorReadThread(void *p)
 				(type == SUB_COM_TYPE_SENSOR_GETDATA)) {	/* Get Data and Sensor Data */
 				event_time = soc_time - elapsed_time * 1000000LL;
 				/* Sensor Data Proc */
-				if (recv_buf[recv_index] == MSENSORS_TYPE_TIMESTAMP)
+				if (sensor_wake_num)
 					wake_lock_timeout(&wlock, HZ/5);
-				timestamp_count(&recv_buf[recv_index], PacketDataNum);
-				timestamp_estimate_ts(getTimestamp());
-				for (cnt= 0; cnt < PacketDataNum; cnt++) {
-					sensor_type = recv_buf[recv_index++];
 
+				for (cnt = 0; cnt < sensor_wake_num; cnt++) {
+					sensor_type = recv_buf[recv_index++];
 					if (sensor_type == MSENSORS_TYPE_TIMESTAMP) {
 						elapsed_time = recv_buf[recv_index+3]<<24 | recv_buf[recv_index+2]<<16 |
 										recv_buf[recv_index+1]<<8 | recv_buf[recv_index];
 						event_time = soc_time - elapsed_time * 1000000LL;
 					} else {
-						if ((sensor_type & 0x1f) > NORMAL_SENSOR_NUM) {
-							Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
-						} else {
-							Msensors_data_buff[dataBuffWriteIndex].timestamp =
-								get_timestamp((sensor_type & 0x1f) - 1);
-						}
+						Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
+
 						Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
 						memcpy(&Msensors_data_buff[dataBuffWriteIndex].sensor_value[0],
 											&recv_buf[recv_index], 6);
@@ -367,6 +375,26 @@ static int SensorReadThread(void *p)
 							INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
 						spin_unlock_irqrestore(&slock, flags);
 					}
+					recv_index += SUB_COM_DATA_SIZE_PACKET;
+				}
+				if (sensor_norm_num) {
+					timestamp_count(&recv_buf[recv_index], sensor_norm_num);
+					timestamp_estimate_ts(getTimestamp());
+				}
+				for (cnt = 0; cnt < sensor_norm_num; cnt++) {
+					sensor_type = recv_buf[recv_index++];
+					Msensors_data_buff[dataBuffWriteIndex].timestamp =
+						get_timestamp((sensor_type & 0x1f) - 1);
+
+					Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
+					memcpy(&Msensors_data_buff[dataBuffWriteIndex].sensor_value[0],
+										&recv_buf[recv_index], 6);
+					spin_lock_irqsave(&slock, flags);
+					INC_INDEX(dataBuffWriteIndex, MSENSORS_DATA_MAX);
+					if (dataBuffWriteIndex == dataBuffReadIndex)
+						INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
+					spin_unlock_irqrestore(&slock, flags);
+
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
 				wake_up_interruptible_sync(&wait_rd);
