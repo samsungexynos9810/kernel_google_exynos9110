@@ -136,6 +136,7 @@
 #define IOC_STEP_YESTERDAY	_IOR('K', 8, __u32)
 #define IOC_BATTERY_LOG_START		_IOR('K', 9, __u32)
 #define IOC_BATTERY_LOG_GET_DATA	_IOR('K', 10, __u32)
+#define IOC_GET_BATTERY_VERSION _IOR('K', 11, __u32) /* Supported only on Kingyo. Please ignore this on other models. */
 
 
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
