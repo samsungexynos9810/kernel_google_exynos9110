@@ -88,8 +88,7 @@
 #define NORMAL_SENSOR_NUM	7
 
 #define SUB_COM_HEAD_INDEX_TYPE			(0x00)		/* HEADER Information Index Type */
-#define SUB_COM_HEAD_INDEX_PACKET		(0x01)		/* HEADER Information Index Packet */
-#define SUB_COM_HEAD_INDEX_ALART		(0x02)		/* HEADER Information Index Alart */
+#define SUB_COM_HEAD_INDEX_ALART		(0x01)		/* HEADER Information Index Alart */
 
 #define SUB_COM_TYPE_SIZE			(0x01)		/* Type Size */
 #define SUB_COM_ID_SIZE				(0x01)		/* ID Size */

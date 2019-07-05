@@ -202,14 +202,14 @@ static void sub_HeaderInfoProc(void)
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 
 	/* charger or battery property changed */
-	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG1)) {
+	if (HeaderData[SUB_COM_HEAD_INDEX_ALART] & (1 << SUB_ALERT_BIT_POWER_CHG1)) {
 		write_buff[0] = SUB_COM_TYPE_READ;
 		write_buff[1] = SUB_COM_GETID_POWER_PROP1;
 		write_buff[2] = 0xff;
 		Msensors_PushData(&write_buff[0]);
 	}
 
-	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG2)) {
+	if (HeaderData[SUB_COM_HEAD_INDEX_ALART] & (1 << SUB_ALERT_BIT_POWER_CHG2)) {
 		write_buff[0] = SUB_COM_TYPE_READ;
 		write_buff[1] = SUB_COM_GETID_POWER_PROP2;
 		write_buff[2] = 0xff;
@@ -293,20 +293,18 @@ static int SensorReadThread(void *p)
 
 			/* Sub Header Infomation Proc */
 			sub_HeaderInfoProc();
-
-			/* Get sensors data num */
-			sensor_num = recv_buf[SUB_COM_HEAD_INDEX_PACKET];
+			sensor_num = recv_buf[2];
 
 			/* Calc sensors data size */
-			next_recv_size += sensor_num * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE );
+			next_recv_size += sensor_num * (SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE);
 			PacketDataNum = sensor_num;
-			if (st->spi.pre_send_type==SUB_COM_TYPE_READ) {
+			if (st->spi.pre_send_type == SUB_COM_TYPE_READ) {
 				next_recv_size += SUB_COM_DATA_SIZE_GETDATA + SUB_COM_ID_SIZE;
-				if(PacketDataNum == 0)
+				if (PacketDataNum == 0)
 					send_type = SUB_COM_TYPE_GETDATA;
 				else
 					send_type = SUB_COM_TYPE_SENSOR_GETDATA;
-			} else if(PacketDataNum) {
+			} else if (PacketDataNum) {
 				send_type = SUB_COM_TYPE_SENSOR;
 			}
 		} else if (type == SUB_COM_TYPE_FWUP_READY) {	/* 0x81 */
@@ -422,8 +420,7 @@ retry_check_wq:
 			st->spi.send_buf[1] == SUB_COM_SETID_MAIN_STATUS &&
 			st->spi.send_buf[2] == 0x1) {	/* suspend */
 			recv_buf[SUB_COM_HEAD_INDEX_TYPE] = SUB_COM_TYPE_BIT_HEAD;
-			recv_buf[SUB_COM_HEAD_INDEX_PACKET] = 0;
-			recv_buf[SUB_COM_HEAD_INDEX_ALART] = 0;
+			memset(&recv_buf[SUB_COM_HEAD_INDEX_ALART], 0, 7);
 		}
 	}
 	return 0;
@@ -922,15 +919,9 @@ void SUB_VibratorSet(int timeout)
 int SUBCPU_rtc_read_time(uint8_t *data)
 {
 	uint8_t *p;
-	uint32_t version;
 
-	version = g_st->fw.maj_ver << 16 | g_st->fw.min_ver << 8 | g_st->fw.revision;
-	if (version >= 0x150a00) {
-		sub_read_command(SUB_COM_GETID_RTC_DATE_TIME);
-		p = SubReadData;
-	} else {
-		p = &HeaderData[3];
-	}
+	sub_read_command(SUB_COM_GETID_RTC_DATE_TIME);
+	p = SubReadData;
 	data[RTC_YEAR]  = (uint8_t)(p[0] >> 1);
 	data[RTC_MONTH] = (uint8_t)(((p[0] & 0x01) << 3) |
 			                    ((p[1] & 0xE0) >> 5));
