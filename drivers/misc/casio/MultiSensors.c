@@ -237,23 +237,47 @@ static void timestamp_count(uint8_t *recv, int packetnum)
 	for (i = 0; i < packetnum; i++) {
 		type = *recv;
 		recv += (SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE);
-		if (type == 0)
+#if (NORMAL_SENSOR_NUM == 7)
+		type &= 0x7;
+		if (type == MSENSORS_TYPE_META)
 			continue;
-		type = (type & 0x1f) - 1;
+		type--;
+		++cnt_num[type];
+#else
+		type &= 0x1f;
+		if (type == MSENSORS_TYPE_META)
+			continue;
+		type--;
 		if (type < NORMAL_SENSOR_NUM)
 			++cnt_num[type];
+#endif
 	}
 }
 
-
-static int64_t get_timestamp(int type)
+static int64_t get_timestamp(int sensor_type)
 {
 	int64_t t;
 	int u;
+	int type;
+
+#if (NORMAL_SENSOR_NUM == 7)
+	type = sensor_type & 0x7;
+	if (type == MSENSORS_TYPE_META)
+		return 0;
+	type--;
+#else
+	type = sensor_type & 0x1f;
+	if (type == MSENSORS_TYPE_META)
+		return 0;
+	type--;
+	if (type >= NORMAL_SENSOR_NUM)
+		return meas_tri;
+#endif
 	++cnt_idx[type];
 	/* the lower 10 bit is used for the index of decrease */
 	u = cnt_num[type] - cnt_idx[type];
-	if ( u < 0 ) u = 0;  /* not occure but safe*/
+	if (u < 0)
+		u = 0;  /* not occure but safe*/
 	t = meas_tri + u;
 	return t;
 }
@@ -384,7 +408,7 @@ static int SensorReadThread(void *p)
 				for (cnt = 0; cnt < sensor_norm_num; cnt++) {
 					sensor_type = recv_buf[recv_index++];
 					Msensors_data_buff[dataBuffWriteIndex].timestamp =
-						get_timestamp((sensor_type & 0x1f) - 1);
+						get_timestamp(sensor_type);
 
 					Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
 					memcpy(&Msensors_data_buff[dataBuffWriteIndex].sensor_value[0],
