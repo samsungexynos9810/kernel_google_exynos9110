@@ -26,31 +26,12 @@
 #define SUB_COM_TYPE_SET_FW_SIZE		(0xAF)		/* Set SUBCPU FW Size */
 #define SUB_COM_TYPE_BIT_HEAD			(0x80)		/* HEADER Information */
 #define SUB_COM_TYPE_FWUP_READY			(0x81)		/* SubCPU is ready for FWUpdate */
-#define SUB_COM_TYPE_SUBCPU_LOG			(0x83)		/* SubCPU log info */
 #define SUB_COM_TYPE_FW_RECV_SIZE		(0x40)		/* SubCPU Receive FW size */
 #define SUB_COM_TYPE_FW_RECV_PKT		(0x8F)		/* SubCPU Receive FW pkt */
 #define SUB_COM_TYPE_GETDATA			(0xF1)		/* GetData */
 #define SUB_COM_TYPE_SENSOR			(0xF2)		/* Sensor Data(Get Data Non) */
 #define SUB_COM_TYPE_SENSOR_GETDATA		(0xF3)		/* Sensor Data(Get Data True) */
 #define SUB_COM_SETID_MAIN_STATUS		(0x01)		/* MAIN status */
-#define SUB_COM_SETID_SENSOR_PERIOD		(0x02)		/* Sensor Data Send Period */
-#define SUB_COM_SETID_FIFO_FLUSH		(0x04)		/* FIFO flash */
-
-#define SUB_COM_SETID_HZ_ACCELE			(0x31)		/* Acceleration Hz */
-#define SUB_COM_SETID_HZ_MAG			(0x32)		/* Magnetic Hz */
-#define SUB_COM_SETID_HZ_GYRO			(0x33)		/* Gyroscope Hz */
-#define SUB_COM_SETID_HZ_PRESS			(0x34)		/* Pressure Hz */
-#define SUB_COM_SETID_HZ_BHA		(0x35)		/* BHA Hz */
-#define SUB_COM_SETID_HZ_STPCOUNTER		(0x36)		/* Step Counter Hz */
-#define SUB_COM_SETID_HZ_STPDETECTOR	(0x37)		/* Step Detector Hz */
-
-#define SUB_COM_SETID_BATCH_ACCELE			(0x11)		/* Acceleration Hz */
-#define SUB_COM_SETID_BATCH_MAG			(0x12)		/* Magnetic Hz */
-#define SUB_COM_SETID_BATCH_GYRO			(0x13)		/* Gyroscope Hz */
-#define SUB_COM_SETID_BATCH_PRESS			(0x14)		/* Pressure Hz */
-#define SUB_COM_SETID_BATCH_BHA		(0x15)		/* BHA Hz */
-#define SUB_COM_SETID_BATCH_STPCOUNTER		(0x16)		/* Step Counter Hz */
-#define SUB_COM_SETID_BATCH_STPDETECTOR	(0x17)		/* Step Detector Hz */
 
 #define SUB_COM_SETID_VIB_SET			(0x40)		/* Vibrator Settiong */
 #define SUB_COM_SETID_BUZ_SET			(0x41)		/* Buzzer Settiong (no used) */
@@ -106,25 +87,6 @@
 
 #define SUB_ALERT_BIT_POWER_CHG2		(0)		/* Power property changed2  */
 #define SUB_ALERT_BIT_POWER_CHG1		(1)		/* Power property changed1 */
-#define SUB_ALERT_BIT_RESERVE2			(2)		/* Reserve 2 */
-#define SUB_ALERT_BIT_RESERVE3			(3)		/* Reserve 3 */
-#define SUB_ALERT_BIT_RESERVE4			(4)		/* Reserve 4 */
-#define SUB_ALERT_BIT_RESERVE5			(5)		/* Reserve 5 */
-#define SUB_ALERT_BIT_RESERVE6			(6)		/* Reserve 6 */
-#define SUB_ALERT_BIT_RESERVE7			(7)		/* Reserve 7 */
-
-#define DEMO_CMD_DATA_MAX  			(6)		/* Demo Command Data index max size */
-
-#define PARAM_INDEX_ACCELE_X                	(  0U)
-#define PARAM_INDEX_ACCELE_Y                	(  2U)
-#define PARAM_INDEX_ACCELE_Z                	(  4U)
-#define PARAM_INDEX_MAG_X                   	(  0U)
-#define PARAM_INDEX_MAG_Y                   	(  2U)
-#define PARAM_INDEX_MAG_Z                   	(  4U)
-#define PARAM_INDEX_GYRO_X                  	(  0U)
-#define PARAM_INDEX_GYRO_Y                  	(  2U)
-#define PARAM_INDEX_GYRO_Z                  	(  4U)
-#define PARAM_INDEX_PRESS                   	(  0U)
 
 
 #define IOC_GET_VERSION	_IOR('K', 0, __u32)
