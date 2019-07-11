@@ -36,6 +36,7 @@ static void show_fw_status(struct Msensors_state *st)
 static int msensor_do_update(struct Msensors_state *st, uint8_t *data, size_t size)
 {
 	uint16_t pktnum;
+	unsigned char *recv_buf = &st->spi.send_buf[0];
 
 	/* send packet num */
 	pktnum = (size + 511) / 512;
@@ -43,12 +44,12 @@ static int msensor_do_update(struct Msensors_state *st, uint8_t *data, size_t si
 	st->spi.send_buf[0] = SUB_COM_TYPE_SET_FW_SIZE;	/* 0xAF */
 	st->spi.send_buf[1] = (uint8_t)(pktnum & 0xff);
 	st->spi.send_buf[2] = (uint8_t)(pktnum >> 8);
-	spi_send_wrapper_for_fwup(st->spi.send_buf, st->spi.recv_buf, WRITE_DATA_SIZE);
-	if (st->spi.recv_buf[0] != SUB_COM_TYPE_FW_RECV_SIZE)
+	spi_send_wrapper_for_fwup(st->spi.send_buf, recv_buf, WRITE_DATA_SIZE);
+	if (recv_buf[0] != SUB_COM_TYPE_FW_RECV_SIZE)
 		return 1;
 
-	st->spi.send_buf[0] = SUB_COM_TYPE_SET_FW_DATA;
 	while (!kthread_should_stop()) {
+		st->spi.send_buf[0] = SUB_COM_TYPE_SET_FW_DATA;
 		if (size < 512) {
 			memcpy(&st->spi.send_buf[4], data, size);
 			size = 0;
@@ -57,8 +58,8 @@ static int msensor_do_update(struct Msensors_state *st, uint8_t *data, size_t si
 			size -= 512;
 			data += 512;
 		}
-		spi_send_wrapper_for_fwup(st->spi.send_buf, st->spi.recv_buf, 516);
-		if (st->spi.recv_buf[0] != SUB_COM_TYPE_FW_RECV_PKT)
+		spi_send_wrapper_for_fwup(st->spi.send_buf, recv_buf, 516);
+		if (recv_buf[0] != SUB_COM_TYPE_FW_RECV_PKT)
 			return 2;
 		if (size == 0)
 			break;

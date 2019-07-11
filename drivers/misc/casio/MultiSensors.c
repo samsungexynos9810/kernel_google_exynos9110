@@ -295,17 +295,17 @@ static int SensorReadThread(void *p)
 	int cnt;
 	int recv_index;
 	int next_recv_size;
-	unsigned char* recv_buf = &st->spi.recv_buf[0];
+	unsigned char *recv_buf = &st->spi.send_buf[0];
 	int64_t event_time;
 	uint32_t elapsed_time = 0;
 	unsigned long flags;
 	struct WriteDataBuf *wb;
+	int suspend_requested;
 
 	while (!kthread_should_stop()) {
 
 		next_recv_size = SUB_COM_TYPE_SIZE;
 		send_type = SUB_COM_TYPE_RES_NOMAL;
-		memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
 
 		/* Get Type */
 		type = recv_buf[SUB_COM_HEAD_INDEX_TYPE];
@@ -424,6 +424,7 @@ static int SensorReadThread(void *p)
 				wake_up_interruptible_sync(&wait_rd);
 			}
 		}
+		memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, 7);
 		wb = NULL;
 		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
 			next_recv_size += SUB_COM_HEAD_SIZE_SETDATA + SUB_COM_ID_SIZE;
@@ -454,12 +455,16 @@ retry_check_wq:
 		while (!Flg_driver_ready)
 			msleep(10);
 
+		suspend_requested = 0;
 		if (st->spi.send_buf[0] == SUB_COM_TYPE_WRITE &&
-			st->spi.send_buf[1] == SUB_COM_SETID_MAIN_STATUS &&
-			st->spi.send_buf[2] == 0x2)	/* shutdown */
-			Flg_driver_shutdown = 1;
+			st->spi.send_buf[1] == SUB_COM_SETID_MAIN_STATUS) {
+			if (st->spi.send_buf[2] == 0x2)	/* shutdown */
+				Flg_driver_shutdown = 1;
+			else if (st->spi.send_buf[2] == 0x1)	/* suspend */
+				suspend_requested = 1;
+		}
 		Msensors_SetTimestamp();
-		Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], next_recv_size);
+		Msensors_Spi_Send(st, &st->spi.send_buf[0], recv_buf, next_recv_size);
 
 		if (wb) {
 			spin_lock_irqsave(&slock, flags);
@@ -468,9 +473,7 @@ retry_check_wq:
 			wb_allocnum--;
 			spin_unlock_irqrestore(&slock, flags);
 		}
-		if (st->spi.send_buf[0] == SUB_COM_TYPE_WRITE &&
-			st->spi.send_buf[1] == SUB_COM_SETID_MAIN_STATUS &&
-			st->spi.send_buf[2] == 0x1) {	/* suspend */
+		if (suspend_requested) {	/* suspend */
 			recv_buf[SUB_COM_HEAD_INDEX_TYPE] = SUB_COM_TYPE_BIT_HEAD;
 			memset(&recv_buf[SUB_COM_HEAD_INDEX_ALART], 0, 7);
 		}
@@ -706,6 +709,8 @@ static struct file_operations Msensors_fops = {
 
 static void Msensors_init(struct Msensors_state *st)
 {
+	unsigned char *recv_buf = &st->spi.send_buf[0];
+
 	memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
 	st->spi.send_buf[0] = SUB_COM_TYPE_WRITE;
 	st->spi.send_buf[1] = SUB_COM_SETID_MAIN_STATUS;
@@ -717,7 +722,7 @@ static void Msensors_init(struct Msensors_state *st)
 	wait_event(wait_subint, sub_main_int_occur);
 	sub_main_int_occur = 0;
 	gpio_set_value(g_st->main_sub_int, 0);
-	Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], WRITE_DATA_SIZE);
+	Msensors_Spi_Send(st, &st->spi.send_buf[0], recv_buf, WRITE_DATA_SIZE);
 }
 
 static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)

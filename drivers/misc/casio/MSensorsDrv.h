@@ -130,7 +130,6 @@ struct Msensors_fw {
 struct Msensors_spi {
 	struct task_struct *sensor_read_thread;
 	unsigned char send_buf[SPI_DATA_MAX];
-	unsigned char recv_buf[SPI_DATA_MAX];
 	unsigned int  pre_send_type;
 };
 
