@@ -16,7 +16,7 @@
 /*============================================================================*/
 /* define */
 /*============================================================================*/
-#define MSENSORS_DATA_MAX			(8192)
+#define MSENSORS_DATA_MAX			(16384)
 #define MSENSORS_BATCH_MAX_TIME_NS		(10000000000)	/* 10sec */
 
 #define SUB_COM_TYPE_RES_NOMAL			(0xA0)		/* Nomal Response */
@@ -81,7 +81,7 @@
 #define SUB_COM_DATA_SIZE_PACKET		(0x06)		/* Data Size Packet */
 #define SUB_COM_DATA_SIZE_RTC			(0x05)		/* Data Size RTC */
 
-#define SUB_COM_MAX_PACKET			(0xFF)		/* Packet MAX */
+#define SUB_COM_MAX_PACKET			9216		/* Packet MAX */
 
 #define SUB_COM_SEND_DUMMY			(0xFF)		/* Send Dummy Data */
 
