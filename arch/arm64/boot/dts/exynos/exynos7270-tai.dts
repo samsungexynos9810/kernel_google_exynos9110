@@ -955,12 +955,12 @@
 	sharp_lcd: sharp_lcd_custom {
 		/* 0: video mode, 1: DP command mode, 2: MIPI command mode */
 		mode = <2>;
-		/* custom (320 x 300) */
+		/* custom (360 x 360) */
 		panel_name = "sharp_lcd";
-		resolution = <320 300>;
-		/* DISP I/F resolution width : 300, height : 320 */
-		dispif_resol = <300 320>;
-		size = <34 32>;
+		resolution = <360 360>;
+		/* DISP I/F resolution width : 300, height : 432 */
+		dispif_resol = <300 432>;
+		size = <30 30>;
 		timing,refresh = <60>;
 		/* dsim H porch : hbp, hfp, hsa */
 		timing,dsim_h-porch = <1 1 1>;
