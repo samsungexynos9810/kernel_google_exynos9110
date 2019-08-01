@@ -137,6 +137,7 @@ struct Msensors_state {
 	struct spi_device *sdev;
 	struct cdev cdev;
 	unsigned int sub_main_int;
+	unsigned int sub_main_int3;
 	unsigned int main_sub_int;
 	struct Msensors_spi spi;
 	struct Msensors_fw fw;

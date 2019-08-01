@@ -378,8 +378,6 @@ static int SensorReadThread(void *p)
 				(type == SUB_COM_TYPE_SENSOR_GETDATA)) {	/* Get Data and Sensor Data */
 				event_time = soc_time - elapsed_time * 1000000LL;
 				/* Sensor Data Proc */
-				if (sensor_wake_num)
-					wake_lock_timeout(&wlock, HZ/5);
 
 				for (cnt = 0; cnt < sensor_wake_num; cnt++) {
 					sensor_type = recv_buf[recv_index++];
@@ -728,6 +726,14 @@ static void Msensors_init(struct Msensors_state *st)
 static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)
 {
 	sub_main_int_occur = 1;
+	wake_lock_timeout(&wlock, HZ/5);
+	wake_up(&wait_subint);
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t sub_main_int3_isr(int irq, void *dev)
+{
+	sub_main_int_occur = 1;
 	wake_up(&wait_subint);
 	return IRQ_HANDLED;
 }
@@ -812,10 +818,24 @@ static int Msensors_probe(struct spi_device *spi)
 
 	st->sub_main_int = of_get_named_gpio(spi->dev.of_node,	"nsw,sub_main_int", 0);
 	pr_info("%s: sub_main_int = %d\n", __func__, st->sub_main_int);
+	st->sub_main_int3 = of_get_named_gpio(spi->dev.of_node,	"nsw,sub_main_int3", 0);
+	pr_info("%s: sub_main_int3 = %d\n", __func__, st->sub_main_int3);
 	st->main_sub_int = of_get_named_gpio(spi->dev.of_node,	"nsw,main_sub_int", 0);
 	pr_info("%s: main_sub_int = %d\n", __func__, st->main_sub_int);
 
 	g_st = st;
+
+	rc = gpio_request(st->sub_main_int3, "sub_main_int3_gpio");
+	if (unlikely(rc)) {
+		return rc;
+	}
+	gpio_direction_input(st->sub_main_int3);
+	irq = gpio_to_irq(st->sub_main_int3);
+	ret = request_irq(irq, sub_main_int3_isr, IRQF_TRIGGER_RISING, "sub_main_int3", NULL);
+	if (ret) {
+		gpio_free(st->sub_main_int3);
+		return ret;
+	}
 
 	rc = gpio_request(st->sub_main_int, "sub_main_int_gpio");
 	if (unlikely(rc)) {
