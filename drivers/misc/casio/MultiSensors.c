@@ -222,14 +222,14 @@ static int64_t meas_tri;
 
 static void timestamp_estimate_ts(int64_t measTri)
 {
-	meas_tri = measTri & ~(0x3FF);
+	meas_tri = measTri & ~(0x3FFF);
 }
 
 static void timestamp_count(uint8_t *recv, int packetnum)
 {
 	int i, type;
 
-	for (i = 0; i < NORMAL_SENSOR_NUM; i++) {
+	for (i = 0; i < NORMAL_SENSOR_NUM - 1; i++) {
 		cnt_num[i] = 0;
 		cnt_idx[i] = 0;
 	}
@@ -254,6 +254,14 @@ static void timestamp_count(uint8_t *recv, int packetnum)
 	}
 }
 
+static void timestamp_count_ppg(int packetnum)
+{
+	int type = MSENSORS_TYPE_PPG - 1;
+
+	cnt_idx[type] = 0;
+	cnt_num[type] = packetnum;
+}
+
 static int64_t get_timestamp(int sensor_type)
 {
 	int64_t t;
@@ -274,7 +282,22 @@ static int64_t get_timestamp(int sensor_type)
 		return meas_tri;
 #endif
 	++cnt_idx[type];
-	/* the lower 10 bit is used for the index of decrease */
+	/* the lower 14 bit is used for the index of decrease */
+	u = cnt_num[type] - cnt_idx[type];
+	if (u < 0)
+		u = 0;  /* not occure but safe*/
+	t = meas_tri + u;
+	return t;
+}
+
+static int64_t get_timestamp_ppg(void)
+{
+	int64_t t;
+	int u;
+	int type = MSENSORS_TYPE_PPG - 1;
+
+	++cnt_idx[type];
+	/* the lower 14 bit is used for the index of decrease */
 	u = cnt_num[type] - cnt_idx[type];
 	if (u < 0)
 		u = 0;  /* not occure but safe*/
@@ -290,7 +313,7 @@ static int SensorReadThread(void *p)
 	unsigned char type;
 	unsigned char send_type;
 	int sensor_num;
-	static int sensor_wake_num, sensor_norm_num, sensor_ppg_num;
+	static uint16_t sensor_wake_num, sensor_norm_num, sensor_ppg_num, meta_num_ppg;
 	int sensor_type;
 	int cnt;
 	int recv_index;
@@ -332,10 +355,14 @@ static int SensorReadThread(void *p)
 			sensor_wake_num = recv_buf[3] << 8 | recv_buf[2];
 			sensor_norm_num = recv_buf[5] << 8 | recv_buf[4];
 			sensor_ppg_num = recv_buf[7] << 8 | recv_buf[6];
+			meta_num_ppg = sensor_ppg_num >> 14;
+			sensor_ppg_num &= 0x3fff;
 			sensor_num = sensor_wake_num + sensor_norm_num + sensor_ppg_num;
 
 			/* Calc sensors data size */
-			next_recv_size += sensor_num * (SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE);
+			next_recv_size += (sensor_wake_num + sensor_norm_num) *
+								(SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE);
+			next_recv_size += sensor_ppg_num * 4;
 			if (st->spi.pre_send_type == SUB_COM_TYPE_READ) {
 				next_recv_size += SUB_COM_DATA_SIZE_GETDATA + SUB_COM_ID_SIZE;
 				if (sensor_num == 0)
@@ -399,10 +426,8 @@ static int SensorReadThread(void *p)
 					}
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
-				if (sensor_norm_num) {
-					timestamp_count(&recv_buf[recv_index], sensor_norm_num);
-					timestamp_estimate_ts(getTimestamp());
-				}
+				timestamp_count(&recv_buf[recv_index], sensor_norm_num);
+				timestamp_estimate_ts(getTimestamp());
 				for (cnt = 0; cnt < sensor_norm_num; cnt++) {
 					sensor_type = recv_buf[recv_index++];
 					Msensors_data_buff[dataBuffWriteIndex].timestamp =
@@ -418,6 +443,31 @@ static int SensorReadThread(void *p)
 					spin_unlock_irqrestore(&slock, flags);
 
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
+				}
+				timestamp_count_ppg(sensor_ppg_num - meta_num_ppg);
+				for (cnt = 0; cnt < sensor_ppg_num; cnt++) {
+					uint16_t sensor_u16[2];
+					memcpy(sensor_u16, &recv_buf[recv_index], 4);
+					if (sensor_u16[0] == 0xffff && sensor_u16[1] == 0xffff) {	//meta
+						Msensors_data_buff[dataBuffWriteIndex].sensor_type =
+							MSENSORS_TYPE_META;
+						Msensors_data_buff[dataBuffWriteIndex].timestamp = 0;
+						sensor_u16[0] = MSENSORS_TYPE_PPG;
+					} else {
+						Msensors_data_buff[dataBuffWriteIndex].sensor_type =
+							MSENSORS_TYPE_PPG;
+						Msensors_data_buff[dataBuffWriteIndex].timestamp =
+							get_timestamp_ppg();
+					}
+					Msensors_data_buff[dataBuffWriteIndex].sensor_val_u16[0] = sensor_u16[0];
+					Msensors_data_buff[dataBuffWriteIndex].sensor_val_u16[1] = sensor_u16[1];
+					spin_lock_irqsave(&slock, flags);
+					INC_INDEX(dataBuffWriteIndex, MSENSORS_DATA_MAX);
+					if (dataBuffWriteIndex == dataBuffReadIndex)
+						INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
+					spin_unlock_irqrestore(&slock, flags);
+
+					recv_index += 4;
 				}
 				wake_up_interruptible_sync(&wait_rd);
 			}

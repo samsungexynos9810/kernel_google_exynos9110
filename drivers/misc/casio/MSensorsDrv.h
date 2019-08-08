@@ -65,6 +65,7 @@
 #define SUB_COM_GETID_NUM	(0x10)	/* Number of GETIDs */
 
 #define MSENSORS_TYPE_META			0x00		/* Sensor Type Meta */
+#define MSENSORS_TYPE_PPG			0x07
 #define MSENSORS_TYPE_TIMESTAMP		0x1f		/* timestamp */
 #define NORMAL_SENSOR_NUM	7
 
@@ -147,7 +148,10 @@ struct Msensors_data {
 	__u64 timestamp;
 	char sensor_type;
 	char handle;
-	char sensor_value[6];
+	union {
+		char sensor_value[6];
+		uint16_t sensor_val_u16[3];
+	};
 };
 
 /*============================================================================*/
