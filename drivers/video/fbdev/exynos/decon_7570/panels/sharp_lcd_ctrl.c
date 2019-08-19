@@ -20,9 +20,12 @@
 static void sharp_mipi_select_page(uint8_t page)
 {
 	int ret;
+	uint8_t cmd[2];
 
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			0xFF, page);
+	cmd[0] = 0xFF;
+	cmd[1] = page;
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd, ARRAY_SIZE(cmd));
 	if (ret)
 		printk(KERN_ERR "failed to select page 0x%02x: %d\n", page, ret);
 	udelay(300);
@@ -106,6 +109,70 @@ static void sharp_init_commands(int id1)
 }
 #endif
 
+#if defined(LCD_SAMPLE_PRODUCT)
+/*
+static int sharp_lcd_get_reg(uint8_t reg)
+{
+	uint8_t read_data;
+	int ret;
+
+	ret = dsim_rd_data(ID, MIPI_DSI_DCS_READ, reg, 1, &read_data);
+	if (ret) {
+		printk(KERN_ERR "# error sharp_lcd_get_reg: %d\n", ret);
+		return -1;
+	}
+	printk(KERN_INFO "# 0x%02x, 0x%02x\n", reg, read_data);
+
+	return read_data;
+}
+*/
+static void sharp_lcd_sample_setting(void)
+{
+	int i, ret;
+	uint8_t cmd[2];
+
+	sharp_mipi_select_page(0x24);
+	for (i=0; i<ARRAY_SIZE(SHARP_SAMPLE_CMDS1); i++) {
+		cmd[0] = SHARP_SAMPLE_CMDS1[i][0];
+		cmd[1] = SHARP_SAMPLE_CMDS1[i][1];
+		ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd, ARRAY_SIZE(cmd));
+		if (ret)
+			printk(KERN_ERR "failed to write CMDS1[%d]: %d\n", i, ret);
+	}
+
+	sharp_mipi_select_page(0xE0);
+	for (i=0; i<ARRAY_SIZE(SHARP_SAMPLE_CMDS2); i++) {
+		cmd[0] = SHARP_SAMPLE_CMDS2[i][0];
+		cmd[1] = SHARP_SAMPLE_CMDS2[i][1];
+		ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd, ARRAY_SIZE(cmd));
+		if (ret)
+			printk(KERN_ERR "failed to write CMDS2[%d]: %d\n", i, ret);
+	}
+
+	sharp_mipi_select_page(0x20);
+	for (i=0; i<ARRAY_SIZE(SHARP_SAMPLE_CMDS3); i++) {
+		cmd[0] = SHARP_SAMPLE_CMDS3[i][0];
+		cmd[1] = SHARP_SAMPLE_CMDS3[i][1];
+		ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd, ARRAY_SIZE(cmd));
+		if (ret)
+			printk(KERN_ERR "failed to write CMDS3[%d]: %d\n", i, ret);
+	}
+
+	sharp_mipi_select_page(0x21);
+	for (i=0; i<ARRAY_SIZE(SHARP_SAMPLE_CMDS4); i++) {
+		cmd[0] = SHARP_SAMPLE_CMDS4[i][0];
+		cmd[1] = SHARP_SAMPLE_CMDS4[i][1];
+		ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd, ARRAY_SIZE(cmd));
+		if (ret)
+			printk(KERN_ERR "failed to write CMDS4[%d]: %d\n", i, ret);
+	}
+}
+#endif
+
 static void sharp_power_on_sequence(void)
 {
 	int ret;
@@ -118,35 +185,50 @@ static void sharp_power_on_sequence(void)
 	unsigned char PWRON_CMD_06[2]	= {0x35, 0x00 }; /* TEAR ON */
 	unsigned char PWRON_CMD_07[2]	= {0x11, 0x00 }; /* EXIT SLEEP MODE */
 	unsigned char PWRON_CMD_08[2]	= {0x29, 0x00 }; /* DISPLAY ON */
+#if defined(LCD_SAMPLE_PRODUCT)
+	unsigned char PWRON_CMD_SAMPLE1[2]	= {0xC0, 0x00 };
+	unsigned char PWRON_CMD_SAMPLE2[2]	= {0x36, 0x02 };
+#endif
 
-
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_01[0], PWRON_CMD_01[1]);
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)PWRON_CMD_01, ARRAY_SIZE(PWRON_CMD_01));
 	if (ret)
 		printk(KERN_ERR "failed to write CMD01: %d\n", ret);
 
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_02[0], PWRON_CMD_02[1]);
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)PWRON_CMD_02, ARRAY_SIZE(PWRON_CMD_02));
 	if (ret)
 		printk(KERN_ERR "failed to write CMD02: %d\n", ret);
 
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_03[0], PWRON_CMD_03[1]);
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)PWRON_CMD_03, ARRAY_SIZE(PWRON_CMD_03));
 	if (ret)
 		printk(KERN_ERR "failed to write CMD03: %d\n", ret);
 
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_04[0], PWRON_CMD_04[1]);
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)PWRON_CMD_04, ARRAY_SIZE(PWRON_CMD_04));
 	if (ret)
 		printk(KERN_ERR "failed to write CMD04: %d\n", ret);
+
+#if defined(LCD_SAMPLE_PRODUCT)
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)PWRON_CMD_SAMPLE1, ARRAY_SIZE(PWRON_CMD_SAMPLE1));
+	if (ret)
+		printk(KERN_ERR "failed to write PWRON_CMD_SAMPLE1: %d\n", ret);
+
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)PWRON_CMD_SAMPLE2, ARRAY_SIZE(PWRON_CMD_SAMPLE2));
+	if (ret)
+		printk(KERN_ERR "failed to write PWRON_CMD_SAMPLE2: %d\n", ret);
+#endif
 
 	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long)PWRON_CMD_05, ARRAY_SIZE(PWRON_CMD_05));
 	if (ret)
 		printk(KERN_ERR "failed to write CMD05: %d\n", ret);
 
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_06[0], PWRON_CMD_06[1]);
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)PWRON_CMD_06, ARRAY_SIZE(PWRON_CMD_06));
 	if (ret)
 		printk(KERN_ERR "failed to write CMD06: %d\n", ret);
 
@@ -187,15 +269,10 @@ static void sharp_power_sequence_off(void)
 
 static void init_lcd(void)
 {
-	//int ret;
-
+#if defined(LCD_SAMPLE_PRODUCT)
+	sharp_lcd_sample_setting();
+#endif
 	sharp_mipi_select_page(0x10);
-	//ret = sharp_get_display_id1();
-	/* if device is older than PVT */
-	//if (ret != 0x02) {
-	//	sharp_init_commands(ret);
-	//	sharp_mipi_select_page(0x10);
-	//}
 }
 
 int sharp_lcd_init(struct decon_lcd * lcd)
