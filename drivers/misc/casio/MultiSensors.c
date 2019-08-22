@@ -324,6 +324,7 @@ static int SensorReadThread(void *p)
 	unsigned long flags;
 	struct WriteDataBuf *wb;
 	int suspend_requested;
+	uint32_t masked_idx;
 
 	while (!kthread_should_stop()) {
 
@@ -413,16 +414,13 @@ static int SensorReadThread(void *p)
 										recv_buf[recv_index+1]<<8 | recv_buf[recv_index];
 						event_time = soc_time - elapsed_time * 1000000LL;
 					} else {
-						Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
+						masked_idx = dataBuffWriteIndex & (MSENSORS_DATA_MAX - 1);
+						Msensors_data_buff[masked_idx].timestamp = event_time;
 
-						Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
-						memcpy(&Msensors_data_buff[dataBuffWriteIndex].sensor_value[0],
+						Msensors_data_buff[masked_idx].sensor_type = sensor_type;
+						memcpy(&Msensors_data_buff[masked_idx].sensor_value[0],
 											&recv_buf[recv_index], 6);
-						spin_lock_irqsave(&slock, flags);
-						INC_INDEX(dataBuffWriteIndex, MSENSORS_DATA_MAX);
-						if (dataBuffWriteIndex == dataBuffReadIndex)
-							INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
-						spin_unlock_irqrestore(&slock, flags);
+						dataBuffWriteIndex++;
 					}
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
@@ -430,43 +428,35 @@ static int SensorReadThread(void *p)
 				timestamp_estimate_ts(getTimestamp());
 				for (cnt = 0; cnt < sensor_norm_num; cnt++) {
 					sensor_type = recv_buf[recv_index++];
-					Msensors_data_buff[dataBuffWriteIndex].timestamp =
+					masked_idx = dataBuffWriteIndex & (MSENSORS_DATA_MAX - 1);
+					Msensors_data_buff[masked_idx].timestamp =
 						get_timestamp(sensor_type);
 
-					Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
-					memcpy(&Msensors_data_buff[dataBuffWriteIndex].sensor_value[0],
+					Msensors_data_buff[masked_idx].sensor_type = sensor_type;
+					memcpy(&Msensors_data_buff[masked_idx].sensor_value[0],
 										&recv_buf[recv_index], 6);
-					spin_lock_irqsave(&slock, flags);
-					INC_INDEX(dataBuffWriteIndex, MSENSORS_DATA_MAX);
-					if (dataBuffWriteIndex == dataBuffReadIndex)
-						INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
-					spin_unlock_irqrestore(&slock, flags);
-
+					dataBuffWriteIndex++;
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
 				timestamp_count_ppg(sensor_ppg_num - meta_num_ppg);
 				for (cnt = 0; cnt < sensor_ppg_num; cnt++) {
 					uint16_t sensor_u16[2];
 					memcpy(sensor_u16, &recv_buf[recv_index], 4);
+					masked_idx = dataBuffWriteIndex & (MSENSORS_DATA_MAX - 1);
 					if (sensor_u16[0] == 0xffff && sensor_u16[1] == 0xffff) {	//meta
-						Msensors_data_buff[dataBuffWriteIndex].sensor_type =
+						Msensors_data_buff[masked_idx].sensor_type =
 							MSENSORS_TYPE_META;
-						Msensors_data_buff[dataBuffWriteIndex].timestamp = 0;
+						Msensors_data_buff[masked_idx].timestamp = 0;
 						sensor_u16[0] = MSENSORS_TYPE_PPG;
 					} else {
-						Msensors_data_buff[dataBuffWriteIndex].sensor_type =
+						Msensors_data_buff[masked_idx].sensor_type =
 							MSENSORS_TYPE_PPG;
-						Msensors_data_buff[dataBuffWriteIndex].timestamp =
+						Msensors_data_buff[masked_idx].timestamp =
 							get_timestamp_ppg();
 					}
-					Msensors_data_buff[dataBuffWriteIndex].sensor_val_u16[0] = sensor_u16[0];
-					Msensors_data_buff[dataBuffWriteIndex].sensor_val_u16[1] = sensor_u16[1];
-					spin_lock_irqsave(&slock, flags);
-					INC_INDEX(dataBuffWriteIndex, MSENSORS_DATA_MAX);
-					if (dataBuffWriteIndex == dataBuffReadIndex)
-						INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
-					spin_unlock_irqrestore(&slock, flags);
-
+					Msensors_data_buff[masked_idx].sensor_val_u16[0] = sensor_u16[0];
+					Msensors_data_buff[masked_idx].sensor_val_u16[1] = sensor_u16[1];
+					dataBuffWriteIndex++;
 					recv_index += 4;
 				}
 				wake_up_interruptible_sync(&wait_rd);
@@ -550,6 +540,7 @@ static ssize_t Msensors_Read( struct file* file, char* buf, size_t count, loff_t
 	int ret;
 	int data_num = count / sizeof(struct Msensors_data);
 	struct Msensors_state *st;
+	uint32_t masked_idx;
 
 	st = file->private_data;
 retrywait:
@@ -558,6 +549,10 @@ retrywait:
 	if (ret < 0) {
 		return ret;
 	}
+	if ((dataBuffWriteIndex - dataBuffReadIndex) > MSENSORS_DATA_MAX) {
+		pr_info("Msensors_Read %u, %u\n", dataBuffWriteIndex, dataBuffReadIndex);
+		dataBuffReadIndex = dataBuffWriteIndex - MSENSORS_DATA_MAX;
+	}
 	while (cnt < data_num) {
 		if (dataBuffWriteIndex == dataBuffReadIndex) {
 			if (cnt == 0)
@@ -565,17 +560,18 @@ retrywait:
 			else
 				break;	/* no data */
 		}
+		masked_idx = dataBuffReadIndex & (MSENSORS_DATA_MAX - 1);
 		if (cyttsp5_get_palm_on()) {
-			if (Msensors_data_buff[dataBuffReadIndex].sensor_type == MSENSORS_HANDLE_WRIST_TILT) {
-				INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
+			if (Msensors_data_buff[masked_idx].sensor_type == MSENSORS_HANDLE_WRIST_TILT) {
+				dataBuffReadIndex++;
 				continue;
 			}
 		}
-		if (copy_to_user(buf+buf_index, &Msensors_data_buff[dataBuffReadIndex], size))
+		if (copy_to_user(buf + buf_index, &Msensors_data_buff[masked_idx], size))
 			return -EFAULT;
 		buf_index += size;
 		cnt++;
-		INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
+		dataBuffReadIndex++;
 	}
 
 	return buf_index;
