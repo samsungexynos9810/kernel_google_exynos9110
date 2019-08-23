@@ -243,9 +243,8 @@ static void sharp_power_on_sequence(void)
 #else
 	unsigned char PWRON_CMD_01[2]	= {0xFB, 0x01};
 	unsigned char PWRON_CMD_02[2]	= {0x01, 0xAA};
-	unsigned char PWRON_CMD_03[2]	= {0xFF, 0x10};
-	unsigned char PWRON_CMD_04[2]	= {0x11, 0x00};
-	unsigned char PWRON_CMD_05[2]	= {0x29, 0x00};
+	unsigned char PWRON_CMD_03[2]	= {0x11, 0x00};
+	unsigned char PWRON_CMD_04[2]	= {0x29, 0x00};
 
 	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long)PWRON_CMD_01, ARRAY_SIZE(PWRON_CMD_01));
@@ -257,21 +256,18 @@ static void sharp_power_on_sequence(void)
 	if (ret)
 		printk(KERN_ERR "failed to write CMD02: %d\n", ret);
 
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned long)PWRON_CMD_03, ARRAY_SIZE(PWRON_CMD_03));
+	sharp_mipi_select_page(0x10);
+
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
+			PWRON_CMD_03[0], PWRON_CMD_03[1]);
 	if (ret)
 		printk(KERN_ERR "failed to write CMD03: %d\n", ret);
+	msleep(130);
 
 	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
 			PWRON_CMD_04[0], PWRON_CMD_04[1]);
 	if (ret)
 		printk(KERN_ERR "failed to write CMD04: %d\n", ret);
-	msleep(130);
-
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_05[0], PWRON_CMD_05[1]);
-	if (ret)
-		printk(KERN_ERR "failed to write CMD05: %d\n", ret);
 	msleep(50);
 #endif
 }
