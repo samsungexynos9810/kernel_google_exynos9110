@@ -78,6 +78,7 @@ static volatile int ioctl_complete;
 static wait_queue_head_t wait_rd;
 static wait_queue_head_t wait_subint;
 static volatile int sub_main_int_occur;
+static volatile int64_t time_tmp;
 static int64_t soc_time;
 
 struct Msensors_state *get_msensors_state(void)
@@ -154,11 +155,6 @@ static int64_t getTimestamp(void)
 	return timespec_to_ns(&ts);
 }
 
-void Msensors_SetTimestamp(void)
-{
-	soc_time = getTimestamp();
-}
-
 static volatile int wb_allocnum;
 
 int Msensors_PushData(unsigned char* write_buff)
@@ -218,12 +214,6 @@ static void sub_HeaderInfoProc(void)
 
 static uint32_t cnt_num[NORMAL_SENSOR_NUM];	// number of samples
 static uint32_t cnt_idx[NORMAL_SENSOR_NUM];
-static int64_t meas_tri;
-
-static void timestamp_estimate_ts(int64_t measTri)
-{
-	meas_tri = measTri & ~(0x3FFF);
-}
 
 static void timestamp_count(uint8_t *recv, int packetnum)
 {
@@ -261,6 +251,8 @@ static void timestamp_count_ppg(int packetnum)
 	cnt_idx[type] = 0;
 	cnt_num[type] = packetnum;
 }
+
+static int64_t meas_tri;
 
 static int64_t get_timestamp(int sensor_type)
 {
@@ -425,7 +417,7 @@ static int SensorReadThread(void *p)
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
 				timestamp_count(&recv_buf[recv_index], sensor_norm_num);
-				timestamp_estimate_ts(getTimestamp());
+				meas_tri = soc_time & ~(0x3FFF);
 				for (cnt = 0; cnt < sensor_norm_num; cnt++) {
 					sensor_type = recv_buf[recv_index++];
 					masked_idx = dataBuffWriteIndex & (MSENSORS_DATA_MAX - 1);
@@ -486,6 +478,8 @@ retry_check_wq:
 			wait_event(wait_subint, sub_main_int_occur | Flg_driver_shutdown);
 		}
 		sub_main_int_occur = 0;
+		if ((send_type & 0xf0) == SUB_COM_TYPE_RES_NOMAL)
+			soc_time = time_tmp;
 		gpio_set_value(g_st->main_sub_int, 0);
 		if (Flg_driver_shutdown)
 			break;
@@ -501,7 +495,6 @@ retry_check_wq:
 			else if (st->spi.send_buf[2] == 0x1)	/* suspend */
 				suspend_requested = 1;
 		}
-		Msensors_SetTimestamp();
 		Msensors_Spi_Send(st, &st->spi.send_buf[0], recv_buf, next_recv_size);
 
 		if (wb) {
@@ -797,6 +790,7 @@ static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)
 {
 	sub_main_int_occur = 1;
 	wake_lock_timeout(&wlock, HZ/5);
+	time_tmp = getTimestamp();
 	wake_up(&wait_subint);
 	return IRQ_HANDLED;
 }
@@ -804,6 +798,7 @@ static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)
 static irqreturn_t sub_main_int3_isr(int irq, void *dev)
 {
 	sub_main_int_occur = 1;
+	time_tmp = getTimestamp();
 	wake_up(&wait_subint);
 	return IRQ_HANDLED;
 }
