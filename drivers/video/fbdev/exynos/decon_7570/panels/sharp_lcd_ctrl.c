@@ -242,7 +242,7 @@ static void sharp_power_on_sequence(void)
 	msleep(50);
 #else
 	unsigned char PWRON_CMD_01[2]	= {0xFB, 0x01};
-	unsigned char PWRON_CMD_02[2]	= {0x01, 0xAA};
+	unsigned char PWRON_CMD_02[2]	= {0x15, 0x00};
 	unsigned char PWRON_CMD_03[2]	= {0x11, 0x00};
 	unsigned char PWRON_CMD_04[2]	= {0x29, 0x00};
 
@@ -274,20 +274,16 @@ static void sharp_power_on_sequence(void)
 
 static void sharp_power_sequence_off(void)
 {
-	unsigned char cmd_set_1[2] = {0xFF, 0x20};
-	unsigned char cmd_set_2[2] = {0x15, 0x00};
-	unsigned char cmd_set_3[2] = {0xFF, 0x10};
+	unsigned char cmd_set_1[2] = {0x15, 0x00};
 
 	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
 			MIPI_DCS_SET_DISPLAY_OFF, 0x00);
 
 	/* prevent floating vdd_lcd */
+	sharp_mipi_select_page(0x20);
 	dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned long)cmd_set_1, ARRAY_SIZE(cmd_set_1));
-	dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned long)cmd_set_2, ARRAY_SIZE(cmd_set_2));
-	dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned long)cmd_set_3, ARRAY_SIZE(cmd_set_3));
+	sharp_mipi_select_page(0x10);
 
 	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
 			MIPI_DCS_ENTER_SLEEP_MODE, 0x00);
@@ -300,7 +296,7 @@ static void init_lcd(void)
 	sharp_lcd_sample_setting();
 	sharp_mipi_select_page(0x10);
 #else
-	sharp_mipi_select_page(0xE0);
+	sharp_mipi_select_page(0x20);
 #endif
 }
 
