@@ -641,7 +641,7 @@ static void get_subcpu_version(uint8_t *buf)
 
 static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	int ret;
+	int ret = 0, getid, copynum = 4;
 	uint8_t buf[3];
 
 	/* this function must be reentrant */
@@ -649,42 +649,54 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	if (cmd == IOC_GET_VERSION) {
 		get_subcpu_version(buf);
 		ret = copy_to_user((void __user *)arg, buf, 3);
-	} else if (cmd == IOC_ACCEL_ADJ) {
-		/* accelerometer factory adjustment */
-		ret = sub_read_command(SUB_COM_GETID_ACC_ADJ);
-		if (ret >= 0)
-			ret = copy_to_user((void __user *)arg, SubReadData, 3);
-	} else if (cmd == IOC_POWER_WARN) {
-		ret = sub_read_command(SUB_COM_GETID_POWER_WARN);
-		if (ret >= 0)
-			ret = copy_to_user((void __user *)arg, SubReadData, 2);
-	} else if (cmd == IOC_HEIGHT_CORR) {
-		ret = sub_read_command(SUB_COM_GETID_HEIGHT_CORR);
-		if (ret >= 0)
-			ret = copy_to_user((void __user *)arg, SubReadData, 4);
-	} else if (cmd == IOC_PRESSURE_CORR) {
-		ret = sub_read_command(SUB_COM_GETID_PRESSURE_CORR);
-		if (ret >= 0)
-			ret = copy_to_user((void __user *)arg, SubReadData, 4);
-	} else if (cmd == IOC_STEP_TODAY) {
-		ret = sub_read_command(SUB_COM_GETID_STEP_TODAY);
-		if (ret >= 0)
-			ret = copy_to_user((void __user *)arg, SubReadData, 4);
-	} else if (cmd == IOC_STEP_YESTERDAY) {
-		ret = sub_read_command(SUB_COM_GETID_STEP_YESTERDAY);
-		if (ret >= 0)
-			ret = copy_to_user((void __user *)arg, SubReadData, 4);
-	} else if (cmd == IOC_BATTERY_LOG_START) {
-		ret = sub_read_command(SUB_COM_GETID_BATTERY_LOG_START);
-		if (ret >= 0)
-			ret = copy_to_user((void __user *)arg, SubReadData, 5);
-	} else if (cmd == IOC_BATTERY_LOG_GET_DATA) {
-		ret = sub_read_command(SUB_COM_GETID_BATTERY_LOG_GET_DATA);
-		if (ret >= 0)
-			ret = copy_to_user((void __user *)arg, SubReadData, 6);
-	} else {
-		ret = -1;
-		pr_info("%s: unknown command %x\n", __func__, cmd);
+		return ret;
+	}
+	switch (cmd) {
+		case IOC_ACCEL_ADJ:
+			/* accelerometer factory adjustment */
+			getid = SUB_COM_GETID_ACC_ADJ;
+			copynum = 3;
+			break;
+
+		case IOC_POWER_WARN:
+			getid = SUB_COM_GETID_POWER_WARN;
+			copynum = 2;
+			break;
+
+		case IOC_HEIGHT_CORR:
+			getid = SUB_COM_GETID_HEIGHT_CORR;
+			break;
+
+		case IOC_PRESSURE_CORR:
+			getid = SUB_COM_GETID_PRESSURE_CORR;
+			break;
+
+		case IOC_STEP_TODAY:
+			getid = SUB_COM_GETID_STEP_TODAY;
+			break;
+
+		case IOC_STEP_YESTERDAY:
+			getid = SUB_COM_GETID_STEP_YESTERDAY;
+			break;
+
+		case IOC_BATTERY_LOG_START:
+			getid = SUB_COM_GETID_BATTERY_LOG_START;
+			copynum = 5;
+			break;
+
+		case IOC_BATTERY_LOG_GET_DATA:
+			getid = SUB_COM_GETID_BATTERY_LOG_GET_DATA;
+			copynum = 6;
+			break;
+
+		default:
+			ret = -1;
+			copynum = 0;
+			pr_info("%s: unknown command %x\n", __func__, cmd);
+	}
+	if (ret == 0) {
+		if ((ret = sub_read_command(getid)) >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, copynum);
 	}
 	return ret;
 }
