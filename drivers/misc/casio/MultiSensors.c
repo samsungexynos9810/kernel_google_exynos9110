@@ -694,6 +694,10 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			getid = SUB_COM_GETID_CENTER_HEART;
 			break;
 
+		case IOC_BHA_NOW:
+			getid = SUB_COM_GETID_BHA_NOW;
+			break;
+
 		default:
 			ret = -1;
 			copynum = 0;

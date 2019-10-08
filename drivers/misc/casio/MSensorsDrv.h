@@ -65,7 +65,8 @@
 #define SUB_COM_GETID_HEART_NOW		0x10
 #define SUB_COM_GETID_PDLC_MODE		0x11
 #define SUB_COM_GETID_CENTER_HEART	0x12
-#define SUB_COM_GETID_NUM	(0x13)	/* Number of GETIDs */
+#define SUB_COM_GETID_BHA_NOW	0x13
+#define SUB_COM_GETID_NUM	(0x14)	/* Number of GETIDs */
 
 #define MSENSORS_TYPE_META			0x00		/* Sensor Type Meta */
 #define MSENSORS_TYPE_PPG			0x07
@@ -106,6 +107,7 @@
 #define IOC_HEART_NOW	_IOR('K', 12, __u32)
 #define IOC_PDLC_MODE	_IOR('K', 13, __u32)
 #define IOC_CENTER_HEART	_IOR('K', 14, __u32)
+#define IOC_BHA_NOW	_IOR('K', 15, __u32)
 
 
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
