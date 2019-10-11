@@ -214,10 +214,16 @@ static void sub_HeaderInfoProc(void)
 
 static uint32_t cnt_num[NORMAL_SENSOR_NUM];	// number of samples
 static uint32_t cnt_idx[NORMAL_SENSOR_NUM];
+static int64_t meas_tri[NORMAL_SENSOR_NUM];
 
 static void timestamp_count(uint8_t *recv, int packetnum)
 {
 	int i, type;
+	uint32_t delta;
+	uint8_t *recv2;
+
+	if (packetnum == 0)
+		return;
 
 	for (i = 0; i < NORMAL_SENSOR_NUM - 1; i++) {
 		cnt_num[i] = 0;
@@ -226,7 +232,16 @@ static void timestamp_count(uint8_t *recv, int packetnum)
 
 	for (i = 0; i < packetnum; i++) {
 		type = *recv;
+		recv2 = recv;
 		recv += (SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE);
+		if (type == MSENSORS_TYPE_TIMESTAMP) {
+			delta = recv2[1] | recv2[2]<<8 | recv2[3]<<16 | recv2[4]<<24;
+			type = recv2[5];
+			type &= 0x7;
+			meas_tri[type] = soc_time - delta * 1000000LL;
+			meas_tri[type] &= ~0x3fff;
+			continue;
+		}
 #if (NORMAL_SENSOR_NUM == 7)
 		type &= 0x7;
 		if (type == MSENSORS_TYPE_META)
@@ -244,15 +259,16 @@ static void timestamp_count(uint8_t *recv, int packetnum)
 	}
 }
 
-static void timestamp_count_ppg(int packetnum)
+static void timestamp_count_ppg(int packetnum, int meta_num)
 {
 	int type = MSENSORS_TYPE_PPG - 1;
 
-	cnt_idx[type] = 0;
-	cnt_num[type] = packetnum;
-}
+	if (packetnum == 0)
+		return;
 
-static int64_t meas_tri;
+	cnt_idx[type] = 0;
+	cnt_num[type] = packetnum - meta_num;
+}
 
 static int64_t get_timestamp(int sensor_type)
 {
@@ -271,14 +287,14 @@ static int64_t get_timestamp(int sensor_type)
 		return 0;
 	type--;
 	if (type >= NORMAL_SENSOR_NUM)
-		return meas_tri;
+		return 0;
 #endif
 	++cnt_idx[type];
 	/* the lower 14 bit is used for the index of decrease */
 	u = cnt_num[type] - cnt_idx[type];
 	if (u < 0)
 		u = 0;  /* not occure but safe*/
-	t = meas_tri + u;
+	t = meas_tri[type] + u;
 	return t;
 }
 
@@ -293,7 +309,7 @@ static int64_t get_timestamp_ppg(void)
 	u = cnt_num[type] - cnt_idx[type];
 	if (u < 0)
 		u = 0;  /* not occure but safe*/
-	t = meas_tri + u;
+	t = meas_tri[type] + u;
 	return t;
 }
 
@@ -305,7 +321,7 @@ static int SensorReadThread(void *p)
 	unsigned char type;
 	unsigned char send_type;
 	int sensor_num;
-	static uint16_t sensor_wake_num, sensor_norm_num, sensor_ppg_num, meta_num_ppg;
+	uint16_t sensor_wake_num, sensor_norm_num, sensor_ppg_num, meta_num_ppg;
 	int sensor_type;
 	int cnt;
 	int recv_index;
@@ -417,20 +433,21 @@ static int SensorReadThread(void *p)
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
 				timestamp_count(&recv_buf[recv_index], sensor_norm_num);
-				meas_tri = soc_time & ~(0x3FFF);
 				for (cnt = 0; cnt < sensor_norm_num; cnt++) {
 					sensor_type = recv_buf[recv_index++];
-					masked_idx = dataBuffWriteIndex & (MSENSORS_DATA_MAX - 1);
-					Msensors_data_buff[masked_idx].timestamp =
-						get_timestamp(sensor_type);
+					if (sensor_type != MSENSORS_TYPE_TIMESTAMP) {
+						masked_idx = dataBuffWriteIndex & (MSENSORS_DATA_MAX - 1);
+						Msensors_data_buff[masked_idx].timestamp =
+							get_timestamp(sensor_type);
 
-					Msensors_data_buff[masked_idx].sensor_type = sensor_type;
-					memcpy(&Msensors_data_buff[masked_idx].sensor_value[0],
-										&recv_buf[recv_index], 6);
-					dataBuffWriteIndex++;
+						Msensors_data_buff[masked_idx].sensor_type = sensor_type;
+						memcpy(&Msensors_data_buff[masked_idx].sensor_value[0],
+											&recv_buf[recv_index], 6);
+						dataBuffWriteIndex++;
+					}
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
-				timestamp_count_ppg(sensor_ppg_num - meta_num_ppg);
+				timestamp_count_ppg(sensor_ppg_num, meta_num_ppg);
 				for (cnt = 0; cnt < sensor_ppg_num; cnt++) {
 					uint16_t sensor_u16[2];
 					memcpy(sensor_u16, &recv_buf[recv_index], 4);
