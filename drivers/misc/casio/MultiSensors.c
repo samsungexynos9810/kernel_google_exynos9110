@@ -524,6 +524,9 @@ retry_check_wq:
 		if (suspend_requested) {	/* suspend */
 			recv_buf[SUB_COM_HEAD_INDEX_TYPE] = SUB_COM_TYPE_BIT_HEAD;
 			memset(&recv_buf[SUB_COM_HEAD_INDEX_ALART], 0, 7);
+			masked_idx = dataBuffWriteIndex & (MSENSORS_DATA_MAX - 1);
+			Msensors_data_buff[masked_idx].sensor_type = MSENSORS_TYPE_TIMESTAMP;
+			dataBuffWriteIndex++;
 		}
 	}
 	return 0;
