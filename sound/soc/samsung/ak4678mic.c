@@ -540,7 +540,7 @@ static int ak4678_trigger(
 		break;
 
 	case SNDRV_PCM_TRIGGER_STOP:
-		cancel_delayed_work_sync(&ak4678->mute_work);
+		cancel_delayed_work(&ak4678->mute_work);
 		break;
 	}
 
