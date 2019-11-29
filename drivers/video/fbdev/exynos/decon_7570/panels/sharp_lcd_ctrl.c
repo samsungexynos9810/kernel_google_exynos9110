@@ -333,10 +333,28 @@ int sharp_lcd_idle_mode(int on)
 	if (on) {
 		msleep(100);
 	} else {
-		ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-				MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
+		unsigned char PWRON_CMD_01[2]	= {0xFB, 0x01};
+		unsigned char PWRON_CMD_02[2]	= {0x15, 0x00};
+		unsigned char PWRON_CMD_03[2]	= {0x11, 0x00};
+
+		sharp_mipi_select_page(0x20);
+
+		ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+				(unsigned long)PWRON_CMD_01, ARRAY_SIZE(PWRON_CMD_01));
 		if (ret)
-			printk(KERN_ERR "failed to write exit sleep command: %d\n", ret);
+			printk(KERN_ERR "failed to write CMD01: %d\n", ret);
+
+		ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+				(unsigned long)PWRON_CMD_02, ARRAY_SIZE(PWRON_CMD_02));
+		if (ret)
+			printk(KERN_ERR "failed to write CMD02: %d\n", ret);
+
+		sharp_mipi_select_page(0x10);
+
+		ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
+				PWRON_CMD_03[0], PWRON_CMD_03[1]);
+		if (ret)
+			printk(KERN_ERR "failed to write CMD03: %d\n", ret);
 		usleep_range(17000, 18000);
 	}
 
