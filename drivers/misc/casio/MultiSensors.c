@@ -313,6 +313,20 @@ static int64_t get_timestamp_ppg(void)
 	return t;
 }
 
+static void inject_sleeptime(uint32_t sec, uint16_t dp)
+{
+	struct timespec64 system_time, rtc_time, sleep_time;
+
+	getnstimeofday64(&system_time);
+	rtc_time.tv_sec = sec;
+	rtc_time.tv_nsec = dp;
+	rtc_time.tv_nsec *= 1953125;
+	rtc_time.tv_nsec /= 64;
+
+	sleep_time = timespec64_sub(rtc_time, system_time);
+	timekeeping_inject_sleeptime64(&sleep_time);
+}
+
 static struct wake_lock wlock;
 
 static int SensorReadThread(void *p)
@@ -395,6 +409,9 @@ static int SensorReadThread(void *p)
 				(type == SUB_COM_TYPE_SENSOR_GETDATA )) {	/* Get Data and Sensor Data */
 				if (recv_buf[recv_index] == SUB_COM_GETID_SUB_CPU_VER) {
 					Msensors_set_fw_version(st, &recv_buf[recv_index + 1]);
+				} else if (recv_buf[recv_index] == SUB_COM_GETID_UNIX_TIME) {
+					inject_sleeptime(*((uint32_t *)&recv_buf[recv_index+1]),
+									*((uint16_t *)&recv_buf[recv_index+5]));
 #ifdef CONFIG_SUBCPU_BATTERY
 				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP1) {
 					subcpu_battery_update_status1(recv_buf);
@@ -1023,7 +1040,7 @@ static int Msensors_suspend(struct device *dev)
 	return 0;
 }
 
-static void Msensors_complete(struct device *dev)
+static int Msensors_resume(struct device *dev)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
@@ -1031,11 +1048,16 @@ static void Msensors_complete(struct device *dev)
 
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 
+	write_buff[0] = SUB_COM_TYPE_READ;
+	write_buff[1] = SUB_COM_GETID_UNIX_TIME;
+	Msensors_PushData(&write_buff[0]);
+
 	write_buff[0] = SUB_COM_TYPE_WRITE;
 	write_buff[1] = SUB_COM_SETID_MAIN_STATUS;
 	write_buff[2] = 0x0;	/* Nomal */
-
 	Msensors_PushData(&write_buff[0]);
+
+	return 0;
 }
 
 static int Msensors_runtime_suspend(struct device *dev)
@@ -1050,7 +1072,7 @@ static int Msensors_runtime_resume(struct device *dev)
 
 static const struct dev_pm_ops Msensors_pm = {
 	.suspend = Msensors_suspend,
-	.complete = Msensors_complete,
+	.resume = Msensors_resume,
 	SET_RUNTIME_PM_OPS(Msensors_runtime_suspend,
 			   Msensors_runtime_resume, NULL)
 };

@@ -67,7 +67,8 @@
 #define SUB_COM_GETID_CENTER_HEART	0x12
 #define SUB_COM_GETID_BHA_NOW	0x13
 #define SUB_COM_GETID_HRM_THER_AD	0x14
-#define SUB_COM_GETID_NUM	(0x15)	/* Number of GETIDs */
+#define SUB_COM_GETID_UNIX_TIME	0x15
+#define SUB_COM_GETID_NUM	(0x16)	/* Number of GETIDs */
 
 #define MSENSORS_TYPE_META			0x00		/* Sensor Type Meta */
 #define MSENSORS_TYPE_PPG			0x07

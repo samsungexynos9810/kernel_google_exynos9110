@@ -45,11 +45,13 @@ int rtc_hctosys_ret = -ENODEV;
  * system's wall clock; restore it on resume().
  */
 
+#ifndef CONFIG_MULTI_SENSORS
 static struct timespec64 old_rtc, old_system, old_delta;
-
+#endif
 
 static int rtc_suspend(struct device *dev)
 {
+#ifndef CONFIG_MULTI_SENSORS
 	struct rtc_device	*rtc = to_rtc_device(dev);
 	struct rtc_time		tm;
 	struct timespec64	delta, delta_delta;
@@ -90,12 +92,13 @@ static int rtc_suspend(struct device *dev)
 		/* Otherwise try to adjust old_system to compensate */
 		old_system = timespec64_sub(old_system, delta_delta);
 	}
-
+#endif
 	return 0;
 }
 
 static int rtc_resume(struct device *dev)
 {
+#ifndef CONFIG_MULTI_SENSORS
 	struct rtc_device	*rtc = to_rtc_device(dev);
 	struct rtc_time		tm;
 	struct timespec64	new_system, new_rtc;
@@ -140,6 +143,7 @@ static int rtc_resume(struct device *dev)
 
 	if (sleep_time.tv_sec >= 0)
 		timekeeping_inject_sleeptime64(&sleep_time);
+#endif
 	rtc_hctosys_ret = 0;
 	return 0;
 }
