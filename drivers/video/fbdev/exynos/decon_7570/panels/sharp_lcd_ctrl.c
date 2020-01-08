@@ -328,33 +328,39 @@ int sharp_lcd_disable(void)
 
 int sharp_lcd_idle_mode(int on)
 {
-	int ret = 0;
+	int i, ret;
+	uint8_t cmd[2];
 
 	if (on) {
 		msleep(100);
 	} else {
-		unsigned char PWRON_CMD_01[2]	= {0xFB, 0x01};
-		unsigned char PWRON_CMD_02[2]	= {0x15, 0x00};
-		unsigned char PWRON_CMD_03[2]	= {0x11, 0x00};
-
 		sharp_mipi_select_page(0x20);
+		for (i=0; i<ARRAY_SIZE(SHARP_RELOAD_PARAM_1); i++) {
+			cmd[0] = SHARP_RELOAD_PARAM_1[i][0];
+			cmd[1] = SHARP_RELOAD_PARAM_1[i][1];
+			ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+				(unsigned long)cmd, ARRAY_SIZE(cmd));
+			if (ret)
+				printk(KERN_ERR "failed to write SHARP_RELOAD_PARAM_1[%d]: %d\n", i, ret);
+		}
 
-		ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-				(unsigned long)PWRON_CMD_01, ARRAY_SIZE(PWRON_CMD_01));
-		if (ret)
-			printk(KERN_ERR "failed to write CMD01: %d\n", ret);
-
-		ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-				(unsigned long)PWRON_CMD_02, ARRAY_SIZE(PWRON_CMD_02));
-		if (ret)
-			printk(KERN_ERR "failed to write CMD02: %d\n", ret);
+		sharp_mipi_select_page(0x21);
+		for (i=0; i<ARRAY_SIZE(SHARP_RELOAD_PARAM_2); i++) {
+			cmd[0] = SHARP_RELOAD_PARAM_2[i][0];
+			cmd[1] = SHARP_RELOAD_PARAM_2[i][1];
+			ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+				(unsigned long)cmd, ARRAY_SIZE(cmd));
+			if (ret)
+				printk(KERN_ERR "failed to write SHARP_RELOAD_PARAM_2[%d]: %d\n", i, ret);
+		}
 
 		sharp_mipi_select_page(0x10);
 
 		ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-				PWRON_CMD_03[0], PWRON_CMD_03[1]);
+				MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
 		if (ret)
-			printk(KERN_ERR "failed to write CMD03: %d\n", ret);
+			printk(KERN_ERR "failed to write MIPI_DCS_ENTER_SLEEP_MODE: %d\n", ret);
+
 		usleep_range(17000, 18000);
 	}
 
