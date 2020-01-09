@@ -68,7 +68,6 @@ static unsigned char		HeaderData[HEADER_DATA_SIZE] = {
 	0x00, 0x00, 0x00, 0x1e, 0x21, 0x80, 0x00, 0x05 };	/* 2015/1/1 0:0:0 */
 static volatile int		Flg_driver_ready = 0;
 static unsigned char		Flg_driver_probed = 0;
-static unsigned char		Flg_driver_shutdown = 0;
 
 static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
@@ -166,7 +165,7 @@ int Msensors_PushData(unsigned char* write_buff)
 	if (g_st->fw.status == MSENSORS_FW_UP_UPDATING)
 		return -EPROBE_DEFER;
 
-	if (Flg_driver_probed == 0 || Flg_driver_shutdown) {
+	if (Flg_driver_probed == 0) {
 		dev_info(&g_st->sdev->dev, "write command type:%02x id:%02x ignored.\n"
 				,write_buff[1] , write_buff[2]);
 		return -EPROBE_DEFER;
@@ -503,20 +502,18 @@ retry_check_wq:
 		st->spi.send_buf[SUB_COM_HEAD_INDEX_TYPE] = send_type;
 		st->spi.pre_send_type =  send_type;
 		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
-			wait_event(wait_subint, sub_main_int_occur | Flg_driver_shutdown | wb_allocnum);
+			wait_event(wait_subint, sub_main_int_occur | wb_allocnum);
 			if (wb_allocnum)
 				goto retry_check_wq;
 		} else {
 			if (sub_main_int_occur == 0)
 				gpio_set_value(g_st->main_sub_int, 1);
-			wait_event(wait_subint, sub_main_int_occur | Flg_driver_shutdown);
+			wait_event(wait_subint, sub_main_int_occur);
 		}
 		sub_main_int_occur = 0;
 		if ((send_type & 0xf0) == SUB_COM_TYPE_RES_NOMAL)
 			soc_time = time_tmp;
 		gpio_set_value(g_st->main_sub_int, 0);
-		if (Flg_driver_shutdown)
-			break;
 
 		while (!Flg_driver_ready)
 			msleep(10);
@@ -525,11 +522,13 @@ retry_check_wq:
 		if (st->spi.send_buf[0] == SUB_COM_TYPE_WRITE &&
 			st->spi.send_buf[1] == SUB_COM_SETID_MAIN_STATUS) {
 			if (st->spi.send_buf[2] == 0x2)	/* shutdown */
-				Flg_driver_shutdown = 1;
+				suspend_requested = 2;
 			else if (st->spi.send_buf[2] == 0x1)	/* suspend */
 				suspend_requested = 1;
 		}
 		Msensors_Spi_Send(st, &st->spi.send_buf[0], recv_buf, next_recv_size);
+		if (suspend_requested == 2)	/* shutdown */
+			break;
 
 		if (wb) {
 			spin_lock_irqsave(&slock, flags);
@@ -538,7 +537,7 @@ retry_check_wq:
 			wb_allocnum--;
 			spin_unlock_irqrestore(&slock, flags);
 		}
-		if (suspend_requested) {	/* suspend */
+		if (suspend_requested == 1) {	/* suspend */
 			recv_buf[SUB_COM_HEAD_INDEX_TYPE] = SUB_COM_TYPE_BIT_HEAD;
 			memset(&recv_buf[SUB_COM_HEAD_INDEX_ALART], 0, 7);
 			masked_idx = dataBuffWriteIndex & (MSENSORS_DATA_MAX - 1);
@@ -1015,8 +1014,6 @@ static void Msensors_shutdown(struct spi_device *spi)
 		msleep(10);
 		count++;
 	}
-
-	Flg_driver_shutdown = 1;
 }
 
 static int Msensors_suspend(struct device *dev)
