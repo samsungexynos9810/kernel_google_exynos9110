@@ -65,8 +65,19 @@ static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
 
 /* Target load.  Lower values result in higher CPU speeds. */
+#ifdef CONFIG_MULTI_SENSORS
+static unsigned int default_target_loads[] = {
+	40, 546000,
+	84, 676000,
+	88, 757000,
+	92, 839000,
+	94, 902000,
+	99
+};
+#else
 #define DEFAULT_TARGET_LOAD 90
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
+#endif
 
 #define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
 #define DEFAULT_ABOVE_HISPEED_DELAY DEFAULT_TIMER_RATE
