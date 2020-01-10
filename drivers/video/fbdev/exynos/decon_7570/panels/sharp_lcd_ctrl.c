@@ -353,15 +353,6 @@ int sharp_lcd_idle_mode(int on)
 			if (ret)
 				printk(KERN_ERR "failed to write SHARP_RELOAD_PARAM_2[%d]: %d\n", i, ret);
 		}
-
-		sharp_mipi_select_page(0x10);
-
-		ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-				MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
-		if (ret)
-			printk(KERN_ERR "failed to write MIPI_DCS_ENTER_SLEEP_MODE: %d\n", ret);
-
-		usleep_range(17000, 18000);
 	}
 
 	return ret;
