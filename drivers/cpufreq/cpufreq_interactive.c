@@ -67,9 +67,7 @@ static struct mutex gov_lock;
 /* Target load.  Lower values result in higher CPU speeds. */
 #ifdef CONFIG_MULTI_SENSORS
 static unsigned int default_target_loads[] = {
-	40, 546000,
-	84, 676000,
-	88, 757000,
+	40, 757000,
 	92, 839000,
 	94, 902000,
 	99
