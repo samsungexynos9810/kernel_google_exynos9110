@@ -451,13 +451,9 @@ int decon_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 		return -EINVAL;
 	}
 
-	if (decon->pdata->psr_mode == DECON_MIPI_COMMAND_MODE) {
-		x = var->xres;
-		y = var->yres;
-	} else {
-		x = var->xres + var->left_margin + var->right_margin + var->hsync_len;
-		y = var->yres + var->upper_margin + var->lower_margin + var->vsync_len;
-	}
+	x = var->xres + var->left_margin + var->right_margin + var->hsync_len;
+	y = var->yres + var->upper_margin + var->lower_margin + var->vsync_len;
+
 	hz = 1000000000000ULL;		/* 1e12 picoseconds per second */
 
 	hz += (x * y) / 2;
@@ -626,15 +622,10 @@ static void decon_fb_missing_pixclock(struct decon_fb_videomode *win_mode,
 	u32 div;
 	u32 width, height;
 
-	if (mode == DECON_MIPI_COMMAND_MODE) {
-		width = win_mode->videomode.xres;
-		height = win_mode->videomode.yres;
-	} else {
-		width  = win_mode->videomode.left_margin + win_mode->videomode.hsync_len +
-			win_mode->videomode.right_margin + win_mode->videomode.xres;
-		height = win_mode->videomode.upper_margin + win_mode->videomode.vsync_len +
-			win_mode->videomode.lower_margin + win_mode->videomode.yres;
-	}
+	width  = win_mode->videomode.left_margin + win_mode->videomode.hsync_len +
+		win_mode->videomode.right_margin + win_mode->videomode.xres;
+	height = win_mode->videomode.upper_margin + win_mode->videomode.vsync_len +
+		win_mode->videomode.lower_margin + win_mode->videomode.yres;
 
 	div = width * height * (win_mode->videomode.refresh ? : 60);
 

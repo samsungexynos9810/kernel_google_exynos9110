@@ -3175,8 +3175,10 @@ static void decon_missing_pixclock(struct decon_fb_videomode *win_mode)
 	u32 div;
 	u32 width, height;
 
-	width = win_mode->videomode.xres;
-	height = win_mode->videomode.yres;
+	width  = win_mode->videomode.left_margin + win_mode->videomode.hsync_len +
+		win_mode->videomode.right_margin + win_mode->videomode.xres;
+	height = win_mode->videomode.upper_margin + win_mode->videomode.vsync_len +
+		win_mode->videomode.lower_margin + win_mode->videomode.yres;
 
 	div = width * height * (win_mode->videomode.refresh ? : 60);
 
