@@ -624,6 +624,9 @@ static ssize_t Msensors_Write(struct file* file, const char* buf, size_t count,
 	ret = copy_from_user(&write_buff[1], buf, count);
 
 	if (!ret) {
+		if (write_buff[1] == SUB_COM_SETID_RTC)
+			return 0;
+
 #ifdef CONFIG_BACKLIGHT_SUBCPU
 		if (write_buff[1] == SUB_COM_SETID_SEG_CMD) {
 			if (write_buff[2] == 0) {			// SegLCD On/Off Control
@@ -1101,6 +1104,22 @@ void SUB_VibratorSet(int timeout)
 	write_buff[1] = SUB_COM_SETID_VIB_SET;
 	write_buff[2] = (timeout >> 0) & 0xFF;	/* ms */
 	write_buff[3] = (timeout >> 8) & 0xFF;	/* ms */
+
+	Msensors_PushData(&write_buff[0]);
+}
+
+void SUBCPU_rtc_write_time(uint8_t *data)
+{
+	unsigned char write_buff[WRITE_DATA_SIZE];
+
+	write_buff[0] = SUB_COM_TYPE_WRITE;
+	write_buff[1] = SUB_COM_SETID_RTC;
+	write_buff[2] = 0;
+	write_buff[3] = ((data[RTC_YEAR] << 1) | ((data[RTC_MONTH] >> 3) & 1));
+	write_buff[4] = ((data[RTC_MONTH] << 5) | (data[RTC_DATE] & 0x1f));
+	write_buff[5] = (__builtin_ctz(data[RTC_WEEKDAY]) << 5) | (data[RTC_HOUR] & 0x1f);
+	write_buff[6] = data[RTC_MIN];
+	write_buff[7] = data[RTC_SEC];
 
 	Msensors_PushData(&write_buff[0]);
 }

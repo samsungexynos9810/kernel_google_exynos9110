@@ -187,6 +187,7 @@ struct Msensors_state *get_msensors_state(void);
 int Msensors_PushData(unsigned char* write_buff);
 ssize_t Msensors_Spi_Send(struct Msensors_state *st, char* send_buf, char* recv_buf, size_t count);
 extern void SUB_VibratorSet(int timeout);
+void SUBCPU_rtc_write_time(uint8_t *data);
 extern int SUBCPU_rtc_read_time(uint8_t *data);
 extern int SUB_LCDBrightnessSet(unsigned char LCDBrightness);
 extern int SUB_LCDForceOnOffSet(unsigned char force_on);

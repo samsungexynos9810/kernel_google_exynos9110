@@ -38,7 +38,9 @@ struct s2m_rtc_info {
 	struct s2mpw01_dev	*iodev;
 	struct rtc_device	*rtc_dev;
 	struct mutex		lock;
-	struct work_struct	irq_work;
+	struct work_struct	settime_work;
+	u8			data[NR_RTC_CNT_REGS];
+	u32			adjmsec;
 	int			irq;
 	bool			use_irq;
 	bool			wtsr_en;
@@ -165,25 +167,25 @@ out:
 	return ret;
 }
 
-static int s2m_rtc_set_time(struct device *dev, struct rtc_time *tm)
+static void settime_worker(struct work_struct *w)
 {
-	struct s2m_rtc_info *info = dev_get_drvdata(dev);
-	u8 data[NR_RTC_CNT_REGS];
 	int ret;
+	struct s2m_rtc_info *info = container_of(w, struct s2m_rtc_info, settime_work);
 
-	ret = s2m_tm_to_data(tm, data);
-	if (ret < 0)
-		return ret;
-
+	if (info->adjmsec)
+		msleep(info->adjmsec);
+#if defined(CONFIG_MULTI_SENSORS)
+	SUBCPU_rtc_write_time(info->data);
+#endif
 	dev_info(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
-			__func__, data[RTC_YEAR] + 2000, data[RTC_MONTH],
-			data[RTC_DATE], data[RTC_HOUR] & 0x1f, data[RTC_MIN],
-			data[RTC_SEC], data[RTC_WEEKDAY],
-			data[RTC_HOUR] & HOUR_PM_MASK ? "PM" : "AM");
+			__func__, info->data[RTC_YEAR] + 2000, info->data[RTC_MONTH],
+			info->data[RTC_DATE], info->data[RTC_HOUR] & 0x1f, info->data[RTC_MIN],
+			info->data[RTC_SEC], info->data[RTC_WEEKDAY],
+			info->data[RTC_HOUR] & HOUR_PM_MASK ? "PM" : "AM");
 
 	mutex_lock(&info->lock);
 	ret = s2mpw01_bulk_write(info->i2c, S2MP_RTC_REG_SEC, NR_RTC_CNT_REGS,
-			data);
+			info->data);
 	if (ret < 0) {
 		dev_err(info->dev, "%s: fail to write time reg(%d)\n", __func__,
 			ret);
@@ -193,6 +195,55 @@ static int s2m_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	ret = s2m_rtc_update(info, S2M_RTC_WRITE_TIME);
 out:
 	mutex_unlock(&info->lock);
+
+}
+
+static int s2m_rtc_set_time(struct device *dev, struct rtc_time *tm)
+{
+	struct s2m_rtc_info *info = dev_get_drvdata(dev);
+	int ret;
+	struct timespec64 system_time, rtc_time, timediff;
+
+	/*
+	 * In AlarmImpl::setTime() in com_android_server_AlarmManagerService.cpp,
+	 * settimeofday() is called before calling ioctl(RTC_SET_TIME).
+	 * Therefore, it is safe to refer to the system time here
+	 * to adjust sub-second.
+	 */
+	info->adjmsec = 0;
+	/* add 1sec to tm */
+	if (tm->tm_sec < 59) {
+		tm->tm_sec++;
+	} else if (tm->tm_min < 59) {
+		tm->tm_min++;
+		tm->tm_sec = 0;
+	} else if (tm->tm_hour < 23) {
+		tm->tm_hour++;
+		tm->tm_min = 0;
+		tm->tm_sec = 0;
+	}
+
+	rtc_time.tv_sec = rtc_tm_to_time64(tm);
+	rtc_time.tv_nsec = 0;
+
+	getnstimeofday64(&system_time);
+
+	timediff = timespec64_sub(rtc_time, system_time);
+	if (timediff.tv_sec == 0 && timediff.tv_nsec > 0)
+		info->adjmsec = timediff.tv_nsec / 1000000;
+
+	dev_dbg(info->dev, "gettofday: %ld.%ld\n",
+		system_time.tv_sec, system_time.tv_nsec/1000000);
+	dev_dbg(info->dev, "rtctofday: %ld.%ld\n",
+		rtc_time.tv_sec, rtc_time.tv_nsec);
+	dev_dbg(info->dev, "adjmsec: %d\n", info->adjmsec);
+
+	ret = s2m_tm_to_data(tm, info->data);
+	if (ret < 0)
+		return ret;
+
+	schedule_work(&info->settime_work);
+
 	return ret;
 }
 
@@ -604,6 +655,7 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
+	INIT_WORK(&info->settime_work, settime_worker);
 	mutex_init(&info->lock);
 	info->dev = &pdev->dev;
 	info->iodev = iodev;
