@@ -811,14 +811,16 @@ out:
 }
 
 static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
-					unsigned nr_pages, unsigned op_flag)
+				      unsigned nr_pages, unsigned op_flag,
+				      bool for_write)
 {
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
 	struct bio *bio;
 	struct bio_post_read_ctx *ctx;
 	unsigned int post_read_steps = 0;
 
-	bio = f2fs_bio_alloc(sbi, min_t(int, nr_pages, BIO_MAX_PAGES), false);
+	bio = f2fs_bio_alloc(sbi, min_t(int, nr_pages, BIO_MAX_PAGES),
+								for_write);
 	if (!bio)
 		return ERR_PTR(-ENOMEM);
 	f2fs_target_device(sbi, blkaddr, bio);
@@ -840,12 +842,12 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 
 /* This can handle encryption stuffs */
 static int f2fs_submit_page_read(struct inode *inode, struct page *page,
-							block_t blkaddr)
+						block_t blkaddr, bool for_write)
 {
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
 	struct bio *bio;
 
-	bio = f2fs_grab_read_bio(inode, blkaddr, 1, 0);
+	bio = f2fs_grab_read_bio(inode, blkaddr, 1, 0, for_write);
 	if (IS_ERR(bio))
 		return PTR_ERR(bio);
 
@@ -1031,7 +1033,7 @@ got_it:
 		return page;
 	}
 
-	err = f2fs_submit_page_read(inode, page, dn.data_blkaddr);
+	err = f2fs_submit_page_read(inode, page, dn.data_blkaddr, for_write);
 	if (err)
 		goto put_err;
 	return page;
@@ -1834,7 +1836,7 @@ submit_and_realloc:
 	}
 	if (bio == NULL) {
 		bio = f2fs_grab_read_bio(inode, block_nr, nr_pages,
-				is_readahead ? REQ_RAHEAD : 0);
+				is_readahead ? REQ_RAHEAD : 0, false);
 		if (IS_ERR(bio)) {
 			ret = PTR_ERR(bio);
 			bio = NULL;
@@ -2804,7 +2806,7 @@ repeat:
 			err = -EFSCORRUPTED;
 			goto fail;
 		}
-		err = f2fs_submit_page_read(inode, page, blkaddr);
+		err = f2fs_submit_page_read(inode, page, blkaddr, true);
 		if (err)
 			goto fail;
 
