@@ -66,8 +66,6 @@ static unsigned int		dataBuffReadIndex;
 static unsigned int		dataBuffWriteIndex;
 static unsigned char		HeaderData[HEADER_DATA_SIZE] = {
 	0x00, 0x00, 0x00, 0x1e, 0x21, 0x80, 0x00, 0x05 };	/* 2015/1/1 0:0:0 */
-static volatile int		Flg_driver_ready = 0;
-static unsigned char		Flg_driver_probed = 0;
 
 static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
@@ -165,12 +163,6 @@ int Msensors_PushData(unsigned char* write_buff)
 	if (g_st->fw.status == MSENSORS_FW_UP_UPDATING)
 		return -EPROBE_DEFER;
 
-	if (Flg_driver_probed == 0) {
-		dev_info(&g_st->sdev->dev, "write command type:%02x id:%02x ignored.\n"
-				,write_buff[1] , write_buff[2]);
-		return -EPROBE_DEFER;
-	}
-
 retry:
 	wb = allocWbBuf();
 	if (wb) {
@@ -180,7 +172,7 @@ retry:
 		list_add_tail(&wb->bqueue, &wd_queue);
 		spin_unlock_irqrestore(&slock, flags);
 		wake_up(&wait_subint);
-	} else if (Flg_driver_ready) {
+	} else {
 		msleep(10);
 		counter++;
 		if (counter < 10)
@@ -344,7 +336,7 @@ static int SensorReadThread(void *p)
 	uint32_t elapsed_time = 0;
 	unsigned long flags;
 	struct WriteDataBuf *wb;
-	int suspend_requested;
+	int suspend_requested = 0;
 	uint32_t masked_idx;
 
 	while (!kthread_should_stop()) {
@@ -411,6 +403,7 @@ static int SensorReadThread(void *p)
 				} else if (recv_buf[recv_index] == SUB_COM_GETID_UNIX_TIME) {
 					inject_sleeptime(*((uint32_t *)&recv_buf[recv_index+1]),
 									*((uint16_t *)&recv_buf[recv_index+5]));
+					soc_time = time_tmp = getTimestamp();
 #ifdef CONFIG_SUBCPU_BATTERY
 				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP1) {
 					subcpu_battery_update_status1(recv_buf);
@@ -489,6 +482,14 @@ static int SensorReadThread(void *p)
 		}
 		memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, 7);
 		wb = NULL;
+
+		if (suspend_requested == 1) {
+			/* wait for pushing GET_UNIXTIME  */
+			while (list_empty(&wd_queue)) {
+				msleep(10);
+			}
+		}
+
 		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
 			next_recv_size += SUB_COM_HEAD_SIZE_SETDATA + SUB_COM_ID_SIZE;
 retry_check_wq:
@@ -514,9 +515,6 @@ retry_check_wq:
 		if ((send_type & 0xf0) == SUB_COM_TYPE_RES_NOMAL)
 			soc_time = time_tmp;
 		gpio_set_value(g_st->main_sub_int, 0);
-
-		while (!Flg_driver_ready)
-			msleep(10);
 
 		suspend_requested = 0;
 		if (st->spi.send_buf[0] == SUB_COM_TYPE_WRITE &&
@@ -969,9 +967,6 @@ static int Msensors_probe(struct spi_device *spi)
 	add_sysfs_interfaces(&spi->dev);
 
 	enable_irq_wake(irq);
-
-	Flg_driver_ready = 1;
-	Flg_driver_probed = 1;
 	Msensors_init(st);
 
 	st->spi.pre_send_type = 0;
@@ -1035,16 +1030,12 @@ static int Msensors_suspend(struct device *dev)
 		msleep(10);
 		count++;
 	}
-	Flg_driver_ready = 0;
-
 	return 0;
 }
 
 static int Msensors_resume(struct device *dev)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	Flg_driver_ready = 1;
 
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 
