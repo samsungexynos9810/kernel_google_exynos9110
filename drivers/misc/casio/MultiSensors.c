@@ -352,20 +352,6 @@ static int SensorReadThread(void *p)
 			/* Get Header Data */
 			memcpy(&HeaderData[0], &recv_buf[0], HEADER_DATA_SIZE);
 
-			/* Sub Header Infomation Proc */
-			sub_HeaderInfoProc();
-			if (recv_buf[3] == (18<<1) && recv_buf[4] == ((1<<5)|1)) {
-				/* 2018/1/1 was written. SubCPU firmware is old.
-				 * To avoid kernel panic, clear these values.
-				 * Note:
-				 * We don't have allowed to use old subcpu firmware. Therefore
-				 * this may happens only once during ROM update. During ROM update,
-				 * sensor is never used, so clearing value is enough.
-				 */
-				recv_buf[3] = 0;
-				recv_buf[4] = 0;
-				recv_buf[5] = 0;
-			}
 			sensor_wake_num = recv_buf[3] << 8 | recv_buf[2];
 			sensor_norm_num = recv_buf[5] << 8 | recv_buf[4];
 			sensor_ppg_num = recv_buf[7] << 8 | recv_buf[6];
@@ -484,11 +470,14 @@ static int SensorReadThread(void *p)
 		wb = NULL;
 
 		if (suspend_requested == 1) {
-			/* wait for pushing GET_UNIXTIME  */
-			while (list_empty(&wd_queue)) {
+			/* wait for pushing GETID_UNIX_TIME and SETID_MAIN_STATUS */
+			while (wb_allocnum < 2) {
 				msleep(10);
 			}
 		}
+		if (type == SUB_COM_TYPE_BIT_HEAD)
+			/* Sub Header Infomation Proc */
+			sub_HeaderInfoProc();
 
 		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
 			next_recv_size += SUB_COM_HEAD_SIZE_SETDATA + SUB_COM_ID_SIZE;
