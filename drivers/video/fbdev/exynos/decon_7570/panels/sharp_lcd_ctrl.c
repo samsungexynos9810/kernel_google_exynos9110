@@ -241,53 +241,62 @@ static void sharp_power_on_sequence(void)
 		printk(KERN_ERR "failed to write CMD10: %d\n", ret);
 	msleep(50);
 #else
-	unsigned char PWRON_CMD_01[2]	= {0xFB, 0x01};
-	unsigned char PWRON_CMD_02[2]	= {0x15, 0x00};
-	unsigned char PWRON_CMD_03[2]	= {0x11, 0x00};
-	unsigned char PWRON_CMD_04[2]	= {0x29, 0x00};
-
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned long)PWRON_CMD_01, ARRAY_SIZE(PWRON_CMD_01));
-	if (ret)
-		printk(KERN_ERR "failed to write CMD01: %d\n", ret);
-
-	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned long)PWRON_CMD_02, ARRAY_SIZE(PWRON_CMD_02));
-	if (ret)
-		printk(KERN_ERR "failed to write CMD02: %d\n", ret);
+	unsigned char PWRON_CMD_01[2]	= {0x11, 0x00};
+	unsigned char PWRON_CMD_02[2]	= {0x29, 0x00};
 
 	sharp_mipi_select_page(0x10);
 
 	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_03[0], PWRON_CMD_03[1]);
+			PWRON_CMD_01[0], PWRON_CMD_01[1]);
 	if (ret)
-		printk(KERN_ERR "failed to write CMD03: %d\n", ret);
+		printk(KERN_ERR "failed to write CMD01: %d\n", ret);
+
 	msleep(130);
 
 	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_04[0], PWRON_CMD_04[1]);
+			PWRON_CMD_02[0], PWRON_CMD_02[1]);
 	if (ret)
-		printk(KERN_ERR "failed to write CMD04: %d\n", ret);
+		printk(KERN_ERR "failed to write CMD02: %d\n", ret);
+
 	msleep(50);
 #endif
 }
 
 static void sharp_power_sequence_off(void)
 {
-	unsigned char cmd_set_1[2] = {0x15, 0x00};
+	int ret;
+	unsigned char cmd_set_1[2] = {0x30, 0x30};
+	unsigned char cmd_set_2[2] = {0x0B, 0x80};
+	unsigned char cmd_set_3[2] = {0x0C, 0x80};
 
-	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			MIPI_DCS_SET_DISPLAY_OFF, 0x00);
-
-	/* prevent floating vdd_lcd */
-	sharp_mipi_select_page(0x20);
-	dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned long)cmd_set_1, ARRAY_SIZE(cmd_set_1));
 	sharp_mipi_select_page(0x10);
 
-	dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
-			MIPI_DCS_ENTER_SLEEP_MODE, 0x00);
-	msleep(110);
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE,
+			MIPI_DCS_SET_DISPLAY_OFF, 0x00);
+	if (ret)
+		printk(KERN_ERR "MIPI_DCS_SET_DISPLAY_OFF: %d\n", ret);
+
+	msleep(35);
+
+	/* prevent floating vdd_31 && lcd flicker */
+	sharp_mipi_select_page(0x20);
+
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd_set_1, ARRAY_SIZE(cmd_set_1));
+	if (ret)
+		printk(KERN_ERR "failed to write CMD01: %d\n", ret);
+
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd_set_2, ARRAY_SIZE(cmd_set_2));
+	if (ret)
+		printk(KERN_ERR "failed to write CMD02: %d\n", ret);
+
+	ret = dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned long)cmd_set_3, ARRAY_SIZE(cmd_set_3));
+	if (ret)
+		printk(KERN_ERR "failed to write CMD03: %d\n", ret);
+
+	msleep(65);
 }
 
 static void init_lcd(void)
@@ -295,8 +304,6 @@ static void init_lcd(void)
 #if defined(LCD_SAMPLE_PRODUCT)
 	sharp_lcd_sample_setting();
 	sharp_mipi_select_page(0x10);
-#else
-	sharp_mipi_select_page(0x20);
 #endif
 }
 
