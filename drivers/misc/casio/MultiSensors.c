@@ -66,6 +66,7 @@ static unsigned int		dataBuffReadIndex;
 static unsigned int		dataBuffWriteIndex;
 static unsigned char		HeaderData[HEADER_DATA_SIZE] = {
 	0x00, 0x00, 0x00, 0x1e, 0x21, 0x80, 0x00, 0x05 };	/* 2015/1/1 0:0:0 */
+static volatile int Flg_driver_ready;
 
 static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
@@ -504,6 +505,9 @@ retry_check_wq:
 		if ((send_type & 0xf0) == SUB_COM_TYPE_RES_NOMAL)
 			soc_time = time_tmp;
 		gpio_set_value(g_st->main_sub_int, 0);
+
+		while (!Flg_driver_ready)
+			msleep(10);
 
 		suspend_requested = 0;
 		if (st->spi.send_buf[0] == SUB_COM_TYPE_WRITE &&
@@ -963,6 +967,7 @@ static int Msensors_probe(struct spi_device *spi)
 	enable_irq_wake(irq);
 	Msensors_init(st);
 
+	Flg_driver_ready = 1;
 	st->spi.pre_send_type = 0;
 	st->spi.sensor_read_thread = kthread_run(SensorReadThread, st,DRV_NAME);
 	if (IS_ERR(st->spi.sensor_read_thread)) {
@@ -1024,6 +1029,8 @@ static int Msensors_suspend(struct device *dev)
 		msleep(10);
 		count++;
 	}
+	Flg_driver_ready = 0;
+
 	return 0;
 }
 
@@ -1031,6 +1038,7 @@ static int Msensors_resume(struct device *dev)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
+	Flg_driver_ready = 1;
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 
 	write_buff[0] = SUB_COM_TYPE_READ;
