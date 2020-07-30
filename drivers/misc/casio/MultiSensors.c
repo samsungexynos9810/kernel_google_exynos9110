@@ -647,11 +647,9 @@ static int sub_read_command(uint8_t command)
 	write_buff[0] = SUB_COM_TYPE_READ;
 	write_buff[1] = command;
 	write_buff[2] = 0xff;
-	mutex_lock(&mlock);
 	ioctl_complete = 0;
 	Msensors_PushData(&write_buff[0]);
 	ret = wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
-	mutex_unlock(&mlock);
 	return ret;
 }
 
@@ -743,8 +741,10 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			pr_info("%s: unknown command %x\n", __func__, cmd);
 	}
 	if (ret == 0) {
+		mutex_lock(&mlock);
 		if ((ret = sub_read_command(getid)) >= 0)
 			ret = copy_to_user((void __user *)arg, SubReadData, copynum);
+		mutex_unlock(&mlock);
 	}
 	return ret;
 }
@@ -752,8 +752,14 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 static ssize_t read_i2c_status_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
+	ssize_t ret;
+
+	mutex_lock(&mlock);
 	sub_read_command(SUB_COM_GETID_I2C_STATUS);
-	return sprintf(buf, "i2c_status: %d\n", SubReadData[0]);
+	ret = sprintf(buf, "i2c_status: %d\n", SubReadData[0]);
+	mutex_unlock(&mlock);
+
+	return ret;
 
 }
 
@@ -762,22 +768,32 @@ static ssize_t read_acc_offset_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	int16_t *offset;
+	ssize_t ret;
 
+	mutex_lock(&mlock);
 	sub_read_command(SUB_COM_GETID_ACC_READ_OFFSET);
 	offset = (int16_t *)SubReadData;
-	return sprintf(buf, "acc_offset: %d,%d,%d\n",
+	ret = sprintf(buf, "acc_offset: %d,%d,%d\n",
 		offset[0], offset[1], offset[2]);
+	mutex_unlock(&mlock);
+
+	return ret;
 }
 
 static ssize_t read_acc_gain_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	uint16_t *gain;
+	ssize_t ret;
 
+	mutex_lock(&mlock);
 	sub_read_command(SUB_COM_GETID_ACC_READ_GAIN);
 	gain = (int16_t *)SubReadData;
-	return sprintf(buf, "acc_gain: %d,%d,%d\n",
+	ret = sprintf(buf, "acc_gain: %d,%d,%d\n",
 		gain[0], gain[1], gain[2]);
+	mutex_unlock(&mlock);
+
+	return ret;
 }
 
 static struct device_attribute attributes[] = {
@@ -850,11 +866,14 @@ static int subcpu_proc_show(struct seq_file *m, void *v)
 {
 	uint16_t *p = (uint16_t *)SubReadData;
 
+	mutex_lock(&mlock);
 	sub_read_command(SUB_COM_GETID_FG_VER);
 	seq_printf(m, "subcpu %02x.%02x.%02x\n",
 		g_st->fw.maj_ver, g_st->fw.min_ver,  g_st->fw.revision);
 	seq_printf(m, "subcpu reset cause %02x\n", g_st->fw.subcpu_reset_cause);
 	seq_printf(m, "fg %04x, par %04x\n", p[0], p[1]);
+	mutex_unlock(&mlock);
+
 	return 0;
 }
 
@@ -1121,6 +1140,7 @@ int SUBCPU_rtc_read_time(uint8_t *data)
 {
 	uint8_t *p;
 
+	mutex_lock(&mlock);
 	sub_read_command(SUB_COM_GETID_RTC_DATE_TIME);
 	p = SubReadData;
 	data[RTC_YEAR]  = (uint8_t)(p[0] >> 1);
@@ -1131,6 +1151,7 @@ int SUBCPU_rtc_read_time(uint8_t *data)
 	data[RTC_HOUR]  = (uint8_t)(p[2] & 0x1F);
 	data[RTC_MIN]   = p[3];
 	data[RTC_SEC]   = p[4];
+	mutex_unlock(&mlock);
 
 	return 0;
 }
