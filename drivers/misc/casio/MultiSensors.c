@@ -176,7 +176,7 @@ retry:
 	} else {
 		msleep(10);
 		counter++;
-		if (counter < 10)
+		if (counter < 100)
 			goto retry;
 	}
 	return 0;
